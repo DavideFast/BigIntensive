@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { spawn } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
+import pg from "pg";
 
 dotenv.config();
 
@@ -13,6 +14,15 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = Number(process.env.PORT || 3001);
 const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:5173";
+
+// Citus Database connection
+const pool = new pg.Pool({
+  user: process.env.CITUS_POSTGRES_USER || "postgres",
+  password: process.env.CITUS_POSTGRES_PASSWORD || "postgres",
+  host: process.env.CITUS_HOST || "citus-coordinator",
+  port: process.env.CITUS_PORT || 5432,
+  database: process.env.CITUS_POSTGRES_DB || "bigintensive",
+});
 
 app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
@@ -153,6 +163,116 @@ app.post("/force-plate/start", (req, res) => {
     interval_s: interval_s || 2,
     message: "Force plate simulation started in background",
   });
+});
+
+// Athletes endpoints
+app.get("/athletes", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT athlete_id, nome, cognome, eta, sesso, altezza_cm, peso_kg, created_at FROM athletes ORDER BY created_at DESC",
+    );
+    res.json({ items: result.rows, total: result.rows.length });
+  } catch (err) {
+    console.error("Database error:", err.message);
+    res.status(500).json({ error: "Database error", details: err.message });
+  }
+});
+
+app.get("/athletes/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      "SELECT athlete_id, nome, cognome, eta, sesso, altezza_cm, peso_kg, created_at FROM athletes WHERE athlete_id = $1",
+      [id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Athlete not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Database error:", err.message);
+    res.status(500).json({ error: "Database error", details: err.message });
+  }
+});
+
+app.post("/athletes", async (req, res) => {
+  const { nome, cognome, eta, sesso, altezza_cm, peso_kg } = req.body || {};
+
+  if (!nome || !cognome || !eta || !sesso || !altezza_cm || !peso_kg) {
+    return res.status(400).json({
+      error: "Missing required fields",
+      required: ["nome", "cognome", "eta", "sesso", "altezza_cm", "peso_kg"],
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      "INSERT INTO athletes (nome, cognome, eta, sesso, altezza_cm, peso_kg) VALUES ($1, $2, $3, $4, $5, $6) RETURNING athlete_id, nome, cognome, eta, sesso, altezza_cm, peso_kg, created_at",
+      [nome, cognome, eta, sesso, altezza_cm, peso_kg],
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error("Database error:", err.message);
+    res.status(500).json({ error: "Database error", details: err.message });
+  }
+});
+
+app.put("/athletes/:id", async (req, res) => {
+  const { id } = req.params;
+  const { nome, cognome, eta, sesso, altezza_cm, peso_kg } = req.body || {};
+
+  if (!nome && !cognome && !eta && !sesso && !altezza_cm && !peso_kg) {
+    return res.status(400).json({ error: "No fields to update" });
+  }
+
+  try {
+    const updates = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (nome !== undefined) {
+      updates.push(`nome = $${paramIndex++}`);
+      values.push(nome);
+    }
+    if (cognome !== undefined) {
+      updates.push(`cognome = $${paramIndex++}`);
+      values.push(cognome);
+    }
+    if (eta !== undefined) {
+      updates.push(`eta = $${paramIndex++}`);
+      values.push(eta);
+    }
+    if (sesso !== undefined) {
+      updates.push(`sesso = $${paramIndex++}`);
+      values.push(sesso);
+    }
+    if (altezza_cm !== undefined) {
+      updates.push(`altezza_cm = $${paramIndex++}`);
+      values.push(altezza_cm);
+    }
+    if (peso_kg !== undefined) {
+      updates.push(`peso_kg = $${paramIndex++}`);
+      values.push(peso_kg);
+    }
+
+    updates.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(id);
+
+    const query = `UPDATE athletes SET ${updates.join(", ")} WHERE athlete_id = $${paramIndex} RETURNING athlete_id, nome, cognome, eta, sesso, altezza_cm, peso_kg, updated_at`;
+
+    const result = await pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Athlete not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Database error:", err.message);
+    res.status(500).json({ error: "Database error", details: err.message });
+  }
 });
 
 app.listen(port, () => {
