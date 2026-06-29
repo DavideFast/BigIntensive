@@ -72,6 +72,18 @@ Apri in Jupyter il notebook:
 
 ## Comandi utili
 
+- Avviare tutta la piattaforma (Spark + Jupyter + Citus + Kafka):
+
+  ```powershell
+  .\scripts\start-all.ps1
+  ```
+
+- Avviare tutto senza inizializzare Citus:
+
+  ```powershell
+  .\scripts\start-all.ps1 -SkipCitusInit
+  ```
+
 - Aprire i log di Jupyter:
 
   ```bash
