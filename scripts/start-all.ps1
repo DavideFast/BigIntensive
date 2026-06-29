@@ -29,6 +29,10 @@ catch {
 Write-Host "Starting full platform (Spark, Jupyter, Citus, Kafka)..."
 docker compose up -d
 
+if ($LASTEXITCODE -ne 0) {
+  throw "docker compose up -d failed; stopping before Citus initialization."
+}
+
 if (-not $SkipCitusInit) {
   Write-Host "Initializing Citus cluster..."
   & (Join-Path $scriptDir "init-citus.ps1")
