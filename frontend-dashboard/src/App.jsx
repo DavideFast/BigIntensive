@@ -14,6 +14,17 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("Nessuna API collegata: visualizzo dati mock locali.");
 
+  // Force plate simulator state
+  const [forcePlateConfig, setForcePlateConfig] = useState({
+    athlete_id: "athlete-001",
+    exercise: "squat",
+    duration_ms: 3000,
+    repeat: 3,
+    interval_s: 2,
+  });
+  const [forcePlateLoading, setForcePlateLoading] = useState(false);
+  const [forcePlateMessage, setForcePlateMessage] = useState("");
+
   async function refreshEvents() {
     setLoading(true);
     setError("");
@@ -40,6 +51,32 @@ export default function App() {
       setEvents(mockEvents);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function startForcePlate() {
+    setForcePlateLoading(true);
+    setForcePlateMessage("");
+
+    try {
+      const response = await fetch(`${API_BASE}/force-plate/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(forcePlateConfig),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      setForcePlateMessage(
+        `✓ Simulatore avviato: ${data.athlete_id} / ${data.exercise} (${data.repeat} rep)`,
+      );
+    } catch (err) {
+      setForcePlateMessage(`✗ Errore: ${err.message}`);
+    } finally {
+      setForcePlateLoading(false);
     }
   }
 
@@ -73,6 +110,103 @@ export default function App() {
           <span className="api-target">Endpoint: {`${API_BASE}${EVENTS_PATH}`}</span>
         </div>
       </header>
+
+      {error ? <div className="notice">{error}</div> : null}
+
+      <section className="force-plate-section" aria-label="Simulatore pedana di forza">
+        <h2>Pedana di Forza (Dual Foot)</h2>
+        <div className="force-plate-form">
+          <div className="form-group">
+            <label htmlFor="athlete-id">Atleta:</label>
+            <input
+              id="athlete-id"
+              type="text"
+              value={forcePlateConfig.athlete_id}
+              onChange={(e) =>
+                setForcePlateConfig({ ...forcePlateConfig, athlete_id: e.target.value })
+              }
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="exercise">Esercizio:</label>
+            <select
+              id="exercise"
+              value={forcePlateConfig.exercise}
+              onChange={(e) =>
+                setForcePlateConfig({ ...forcePlateConfig, exercise: e.target.value })
+              }
+            >
+              <option value="squat">Squat</option>
+              <option value="jump">Jump</option>
+              <option value="leg_press">Leg Press</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="duration">Durata (ms):</label>
+            <input
+              id="duration"
+              type="number"
+              value={forcePlateConfig.duration_ms}
+              onChange={(e) =>
+                setForcePlateConfig({
+                  ...forcePlateConfig,
+                  duration_ms: parseInt(e.target.value, 10),
+                })
+              }
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="repeat">Ripetizioni:</label>
+            <input
+              id="repeat"
+              type="number"
+              value={forcePlateConfig.repeat}
+              onChange={(e) =>
+                setForcePlateConfig({
+                  ...forcePlateConfig,
+                  repeat: parseInt(e.target.value, 10),
+                })
+              }
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="interval">Intervallo (s):</label>
+            <input
+              id="interval"
+              type="number"
+              step="0.5"
+              value={forcePlateConfig.interval_s}
+              onChange={(e) =>
+                setForcePlateConfig({
+                  ...forcePlateConfig,
+                  interval_s: parseFloat(e.target.value),
+                })
+              }
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={startForcePlate}
+            disabled={forcePlateLoading}
+            className="btn-primary"
+          >
+            {forcePlateLoading ? "Avvio..." : "Avvia Simulatore"}
+          </button>
+        </div>
+
+        {forcePlateMessage && (
+          <div
+            className={`force-plate-message ${forcePlateMessage.startsWith("✓") ? "success" : "error"}`}
+          >
+            {forcePlateMessage}
+          </div>
+        )}
+      </section>
 
       {error ? <div className="notice">{error}</div> : null}
 

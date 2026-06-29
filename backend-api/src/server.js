@@ -1,8 +1,14 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { spawn } from "child_process";
+import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
@@ -76,6 +82,77 @@ app.post("/events", (req, res) => {
 app.delete("/events", (req, res) => {
   events.length = 0;
   res.status(204).send();
+});
+
+app.post("/force-plate/start", (req, res) => {
+  const { athlete_id, exercise, duration_ms, repeat, interval_s } = req.body || {};
+
+  // Validation
+  if (!athlete_id || !exercise) {
+    return res.status(400).json({
+      error: "Missing required fields",
+      required: ["athlete_id", "exercise"],
+    });
+  }
+
+  const validExercises = ["squat", "jump", "leg_press"];
+  if (!validExercises.includes(exercise)) {
+    return res.status(400).json({
+      error: "Invalid exercise",
+      valid: validExercises,
+    });
+  }
+
+  // Build command
+  const pythonScript = path.join(__dirname, "../../../scripts/python/force_plate_producer.py");
+  const args = [
+    pythonScript,
+    "--athlete-id",
+    athlete_id,
+    "--exercise",
+    exercise,
+    "--duration-ms",
+    String(duration_ms || 3000),
+    "--repeat",
+    String(repeat || 1),
+    "--interval-s",
+    String(interval_s || 2),
+    "--topic",
+    "force-plate-events",
+  ];
+
+  // Spawn process
+  const child = spawn("python", args, {
+    stdio: "pipe",
+    detached: false,
+  });
+
+  let output = "";
+  let errorOutput = "";
+
+  child.stdout.on("data", (data) => {
+    output += data.toString();
+    console.log(`[force-plate] ${data}`);
+  });
+
+  child.stderr.on("data", (data) => {
+    errorOutput += data.toString();
+    console.error(`[force-plate error] ${data}`);
+  });
+
+  child.on("close", (code) => {
+    console.log(`[force-plate] Process exited with code ${code}`);
+  });
+
+  res.json({
+    status: "started",
+    athlete_id,
+    exercise,
+    duration_ms: duration_ms || 3000,
+    repeat: repeat || 1,
+    interval_s: interval_s || 2,
+    message: "Force plate simulation started in background",
+  });
 });
 
 app.listen(port, () => {
