@@ -11,22 +11,21 @@ CREATE TABLE IF NOT EXISTS athletes (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Force plate samples table (distributed table for time-series data)
-CREATE TABLE IF NOT EXISTS force_plate_samples (
-  sample_id BIGSERIAL,
+-- Exercise metrics table
+CREATE TABLE IF NOT EXISTS exercise_metrics (
+  metric_id BIGSERIAL,
   athlete_id INT NOT NULL REFERENCES athletes(athlete_id),
-  exercise VARCHAR(50) NOT NULL,
-  left_foot_force_newtons DECIMAL(10, 2),
-  right_foot_force_newtons DECIMAL(10, 2),
-  total_force_newtons DECIMAL(10, 2),
-  timestamp TIMESTAMP NOT NULL,
-  sample_index INT,
+  esercizio VARCHAR(50) NOT NULL,
+  valore_salto DECIMAL(10, 2) NOT NULL,
+  rsi DECIMAL(10, 4) NOT NULL,
+  differenza_bilaterale DECIMAL(10, 2) NOT NULL,
+  potenza_sviluppata DECIMAL(12, 2) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (athlete_id, timestamp, sample_id)
-) PARTITION BY RANGE (timestamp);
+  PRIMARY KEY (athlete_id, metric_id)
+);
 
--- Set force_plate_samples as distributed table with athlete_id as distribution column
-SELECT create_distributed_table('force_plate_samples', 'athlete_id');
+-- Set exercise_metrics as distributed table with athlete_id as distribution column
+SELECT create_distributed_table('exercise_metrics', 'athlete_id');
 
 -- Create sample data
 INSERT INTO athletes (nome, cognome, eta, sesso, altezza_cm, peso_kg)
