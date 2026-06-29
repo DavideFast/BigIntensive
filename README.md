@@ -74,10 +74,16 @@ Apri in Jupyter il notebook:
 
 ## Comandi utili
 
-- Avviare tutta la piattaforma (Spark + Jupyter + Citus + Kafka):
+- Avviare tutta la piattaforma (Spark + Jupyter + Citus + Kafka). Se manca, crea anche `.env` dalla `.env.example`:
 
   ```powershell
   .\scripts\start-all.ps1
+  ```
+
+- Avviare anche backend e dashboard insieme alla piattaforma:
+
+  ```powershell
+  .\scripts\start-all.ps1 -IncludeApp
   ```
 
 - Avviare tutto senza inizializzare Citus:
