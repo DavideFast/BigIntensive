@@ -1,0 +1,3 @@
+Spark is fast.
+Spark is distributed.
+Distributed systems are fun.
