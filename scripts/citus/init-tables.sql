@@ -27,6 +27,22 @@ CREATE TABLE IF NOT EXISTS exercise_metrics (
 -- Set exercise_metrics as distributed table with athlete_id as distribution column
 SELECT create_distributed_table('exercise_metrics', 'athlete_id');
 
+-- Endurance running cardio samples
+CREATE TABLE IF NOT EXISTS cardio_endurance_samples (
+  sample_id BIGSERIAL,
+  athlete_id INT NOT NULL REFERENCES athletes(athlete_id),
+  heart_rate_bpm DECIMAL(5, 1) NOT NULL,
+  cadence_spm DECIMAL(5, 1) NOT NULL,
+  speed_kmh DECIMAL(5, 2) NOT NULL,
+  altitude_m DECIMAL(7, 2) NOT NULL,
+  timestamp TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (athlete_id, sample_id)
+);
+
+-- Set cardio_endurance_samples as distributed table with athlete_id as distribution column
+SELECT create_distributed_table('cardio_endurance_samples', 'athlete_id');
+
 -- Create sample data
 INSERT INTO athletes (nome, cognome, eta, sesso, altezza_cm, peso_kg)
 VALUES 

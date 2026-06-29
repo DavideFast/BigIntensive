@@ -26,6 +26,37 @@ class HeartRateSimulator:
         sensor_noise = random.uniform(-1.5, 1.5)
         return max(70.0, bpm + breathing_wave + sensor_noise)
 
+    def _cadence_profile(self, t_norm: float) -> float:
+        # Steps per minute trend during endurance run.
+        if t_norm < 0.15:
+            cadence = 150 + (168 - 150) * (t_norm / 0.15)
+        elif t_norm < 0.85:
+            cadence = 168 + 4 * (t_norm - 0.15) / 0.70
+        else:
+            cadence = 172 - 10 * (t_norm - 0.85) / 0.15
+
+        return max(130.0, cadence + random.uniform(-2.0, 2.0))
+
+    def _speed_profile(self, t_norm: float) -> float:
+        # Speed in km/h for progressive endurance pacing.
+        if t_norm < 0.20:
+            speed = 8.5 + (11.2 - 8.5) * (t_norm / 0.20)
+        elif t_norm < 0.80:
+            speed = 11.2 + 0.8 * (t_norm - 0.20) / 0.60
+        else:
+            speed = 12.0 - 1.8 * (t_norm - 0.80) / 0.20
+
+        return max(5.0, speed + random.uniform(-0.25, 0.25))
+
+    def _altitude_profile(self, t_norm: float) -> float:
+        # Rolling route with mild climb then descent.
+        if t_norm < 0.50:
+            altitude = 120 + 24 * (t_norm / 0.50)
+        else:
+            altitude = 144 - 20 * (t_norm - 0.50) / 0.50
+
+        return max(0.0, altitude + random.uniform(-1.2, 1.2))
+
     def _zone(self, bpm: float) -> str:
         if bpm < 120:
             return "z1_recovery"
@@ -44,12 +75,18 @@ class HeartRateSimulator:
         for i in range(num_samples):
             t_norm = i / max(1, num_samples - 1)
             bpm = round(self._heart_rate_profile(t_norm), 1)
+            cadence_spm = round(self._cadence_profile(t_norm), 1)
+            speed_kmh = round(self._speed_profile(t_norm), 2)
+            altitude_m = round(self._altitude_profile(t_norm), 1)
 
             sample = {
                 "athlete_id": self.athlete_id,
                 "sport": "running_endurance",
                 "heart_rate_bpm": bpm,
                 "heart_rate_zone": self._zone(bpm),
+                "cadence_spm": cadence_spm,
+                "speed_kmh": speed_kmh,
+                "altitude_m": altitude_m,
                 "timestamp": datetime.utcnow().isoformat() + "Z",
                 "sample_index": i,
             }
