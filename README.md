@@ -11,6 +11,7 @@ Questa cartella contiene una infrastruttura locale Spark + Citus + Kafka basata 
 - 2 Citus Worker
 - 1 Kafka broker (KRaft)
 - 1 Kafka UI
+- 1 Backend Express leggero (API eventi)
 - Notebook iniziale: `spark/notebooks/quickstart.ipynb`
 - Esempio PySpark (`spark/apps/wordcount.py`)
 - Dataset di test (`spark/data/input.txt`)
@@ -51,6 +52,7 @@ Questa cartella contiene una infrastruttura locale Spark + Citus + Kafka basata 
 - Citus worker 2: localhost:5434
 - Kafka broker (host): localhost:9094
 - Kafka UI: http://localhost:8088
+- Backend API: http://localhost:3001
 
 Apri in Jupyter il notebook:
 
@@ -82,6 +84,18 @@ Apri in Jupyter il notebook:
 
   ```powershell
   .\scripts\start-all.ps1 -SkipCitusInit
+  ```
+
+- Avviare il dashboard React dati:
+
+  ```powershell
+  .\scripts\start-dashboard.ps1
+  ```
+
+- Avviare backend Express API:
+
+  ```powershell
+  .\scripts\start-backend.ps1
   ```
 
 - Aprire i log di Jupyter:
@@ -216,6 +230,32 @@ Nota: se esegui il codice Python dentro un container nella rete Docker, usa `kaf
 - Puoi aggiungere nuovi job PySpark in `spark/apps` e lanciarli con `spark-submit`.
 - I dati PostgreSQL/Citus restano persistenti nelle cartelle `postgres/*-data`.
 - I dati Kafka restano persistenti nella cartella `kafka/data`.
+
+## Dashboard React
+
+- Path progetto: `frontend-dashboard`
+- URL sviluppo: `http://localhost:5173`
+- Endpoint API configurabili in `frontend-dashboard/.env.example`:
+  - `VITE_API_BASE_URL`
+  - `VITE_EVENTS_PATH`
+
+Se l'API non e' ancora disponibile, il dashboard mostra automaticamente dati mock locali per facilitare lo sviluppo UI.
+
+## Backend Express
+
+- Path progetto: `backend-api`
+- URL sviluppo: `http://localhost:3001`
+- Endpoint principali:
+  - `GET /health`
+  - `GET /events`
+  - `POST /events`
+  - `DELETE /events`
+
+Esempio richiesta POST:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri http://localhost:3001/events -ContentType "application/json" -Body '{"topic":"demo-events","source":"manual-test","status":"queued","payload":"ciao"}'
+```
 
 ## Usare Spark da Notebook
 
