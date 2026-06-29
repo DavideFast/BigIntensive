@@ -1,7 +1,8 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import pg from "pg";
@@ -10,6 +11,38 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, "../..");
+const pythonScriptsDir = path.join(projectRoot, "scripts", "python");
+
+function resolvePythonExecutable() {
+  if (process.env.PYTHON_BIN) {
+    return { command: process.env.PYTHON_BIN, preArgs: [] };
+  }
+
+  const pythonCheck = spawnSync("python", ["--version"], { stdio: "ignore" });
+  if (pythonCheck.status === 0) {
+    return { command: "python", preArgs: [] };
+  }
+
+  const pyCheck = spawnSync("py", ["-3", "--version"], { stdio: "ignore" });
+  if (pyCheck.status === 0) {
+    return { command: "py", preArgs: ["-3"] };
+  }
+
+  return { command: "python", preArgs: [] };
+}
+
+const pythonRuntime = resolvePythonExecutable();
+
+function resolvePythonScript(scriptName) {
+  const scriptPath = path.join(pythonScriptsDir, scriptName);
+
+  if (!fs.existsSync(scriptPath)) {
+    throw new Error(`Script non trovato: ${scriptPath}`);
+  }
+
+  return scriptPath;
+}
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
@@ -67,6 +100,7 @@ app.get("/events", (req, res) => {
 });
 
 app.post("/events", (req, res) => {
+  console.log("Received event:", req.body);
   const { topic, source, status, payload } = req.body || {};
 
   if (!topic || !source || !status || !payload) {
@@ -114,25 +148,18 @@ app.post("/force-plate/start", (req, res) => {
   }
 
   // Build command
-  const pythonScript = path.join(__dirname, "../../../scripts/python/force_plate_producer.py");
-  const args = [
-    pythonScript,
-    "--athlete-id",
-    athlete_id,
-    "--exercise",
-    exercise,
-    "--duration-ms",
-    String(duration_ms || 3000),
-    "--repeat",
-    String(repeat || 1),
-    "--interval-s",
-    String(interval_s || 2),
-    "--topic",
-    "force-plate-events",
-  ];
+  let pythonScript;
+
+  try {
+    pythonScript = resolvePythonScript("force_plate_producer.py");
+  } catch (err) {
+    return res.status(500).json({ error: "Python script path error", details: err.message });
+  }
+
+  const args = [...pythonRuntime.preArgs, pythonScript, "--athlete-id", athlete_id, "--exercise", exercise, "--duration-ms", String(duration_ms || 3000), "--repeat", String(repeat || 1), "--interval-s", String(interval_s || 2), "--topic", "force-plate-events"];
 
   // Spawn process
-  const child = spawn("python", args, {
+  const child = spawn(pythonRuntime.command, args, {
     stdio: "pipe",
     detached: false,
   });
@@ -148,6 +175,10 @@ app.post("/force-plate/start", (req, res) => {
   child.stderr.on("data", (data) => {
     errorOutput += data.toString();
     console.error(`[force-plate error] ${data}`);
+  });
+
+  child.on("error", (err) => {
+    console.error(`[force-plate spawn error] ${err.message}`);
   });
 
   child.on("close", (code) => {
@@ -175,22 +206,17 @@ app.post("/heart-rate/start", (req, res) => {
     });
   }
 
-  const pythonScript = path.join(__dirname, "../../../scripts/python/heart_rate_producer.py");
-  const args = [
-    pythonScript,
-    "--athlete-id",
-    athlete_id,
-    "--duration-ms",
-    String(duration_ms || 30000),
-    "--repeat",
-    String(repeat || 1),
-    "--interval-s",
-    String(interval_s || 10),
-    "--topic",
-    "heart-rate-events",
-  ];
+  let pythonScript;
 
-  const child = spawn("python", args, {
+  try {
+    pythonScript = resolvePythonScript("heart_rate_producer.py");
+  } catch (err) {
+    return res.status(500).json({ error: "Python script path error", details: err.message });
+  }
+
+  const args = [...pythonRuntime.preArgs, pythonScript, "--athlete-id", athlete_id, "--duration-ms", String(duration_ms || 30000), "--repeat", String(repeat || 1), "--interval-s", String(interval_s || 10), "--topic", "heart-rate-events"];
+
+  const child = spawn(pythonRuntime.command, args, {
     stdio: "pipe",
     detached: false,
   });
@@ -201,6 +227,10 @@ app.post("/heart-rate/start", (req, res) => {
 
   child.stderr.on("data", (data) => {
     console.error(`[heart-rate error] ${data}`);
+  });
+
+  child.on("error", (err) => {
+    console.error(`[heart-rate spawn error] ${err.message}`);
   });
 
   child.on("close", (code) => {
@@ -220,9 +250,7 @@ app.post("/heart-rate/start", (req, res) => {
 // Athletes endpoints
 app.get("/athletes", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT athlete_id, nome, cognome, eta, sesso, altezza_cm, peso_kg, created_at FROM athletes ORDER BY created_at DESC",
-    );
+    const result = await pool.query("SELECT athlete_id, nome, cognome, eta, sesso, altezza_cm, peso_kg, created_at FROM athletes ORDER BY created_at DESC");
     res.json({ items: result.rows, total: result.rows.length });
   } catch (err) {
     console.error("Database error:", err.message);
@@ -233,10 +261,7 @@ app.get("/athletes", async (req, res) => {
 app.get("/athletes/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query(
-      "SELECT athlete_id, nome, cognome, eta, sesso, altezza_cm, peso_kg, created_at FROM athletes WHERE athlete_id = $1",
-      [id],
-    );
+    const result = await pool.query("SELECT athlete_id, nome, cognome, eta, sesso, altezza_cm, peso_kg, created_at FROM athletes WHERE athlete_id = $1", [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Athlete not found" });
@@ -260,10 +285,7 @@ app.post("/athletes", async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      "INSERT INTO athletes (nome, cognome, eta, sesso, altezza_cm, peso_kg) VALUES ($1, $2, $3, $4, $5, $6) RETURNING athlete_id, nome, cognome, eta, sesso, altezza_cm, peso_kg, created_at",
-      [nome, cognome, eta, sesso, altezza_cm, peso_kg],
-    );
+    const result = await pool.query("INSERT INTO athletes (nome, cognome, eta, sesso, altezza_cm, peso_kg) VALUES ($1, $2, $3, $4, $5, $6) RETURNING athlete_id, nome, cognome, eta, sesso, altezza_cm, peso_kg, created_at", [nome, cognome, eta, sesso, altezza_cm, peso_kg]);
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error("Database error:", err.message);
