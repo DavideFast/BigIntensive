@@ -1,13 +1,22 @@
-$ErrorActionPreference = 'Stop'
-
 param(
-  [switch]$SkipCitusInit
+  [switch]$SkipCitusInit,
+  [switch]$IncludeApp
 )
+
+$ErrorActionPreference = 'Stop'
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectRoot = Resolve-Path (Join-Path $scriptDir "..")
 
 Set-Location $projectRoot
+
+$rootEnvFile = Join-Path $projectRoot '.env'
+$rootEnvExample = Join-Path $projectRoot '.env.example'
+
+if (-not (Test-Path $rootEnvFile) -and (Test-Path $rootEnvExample)) {
+  Write-Host 'Creating root .env from .env.example...'
+  Copy-Item $rootEnvExample $rootEnvFile
+}
 
 try {
   docker info | Out-Null
@@ -28,7 +37,31 @@ else {
   Write-Host "Skipping Citus initialization as requested."
 }
 
+if ($IncludeApp) {
+  Write-Host "Starting backend API and dashboard in background..."
+
+  Start-Process powershell -ArgumentList @(
+    '-NoProfile',
+    '-ExecutionPolicy',
+    'Bypass',
+    '-File',
+    (Join-Path $scriptDir 'start-backend.ps1')
+  ) -WorkingDirectory $scriptDir | Out-Null
+
+  Start-Process powershell -ArgumentList @(
+    '-NoProfile',
+    '-ExecutionPolicy',
+    'Bypass',
+    '-File',
+    (Join-Path $scriptDir 'start-dashboard.ps1')
+  ) -WorkingDirectory $scriptDir | Out-Null
+}
+
 Write-Host "Services status:"
 docker compose ps
 
 Write-Host "Platform startup completed."
+
+if ($IncludeApp) {
+  Write-Host "Backend and dashboard were launched in separate PowerShell windows."
+}
