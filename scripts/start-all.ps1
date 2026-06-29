@@ -18,6 +18,19 @@ if (-not (Test-Path $rootEnvFile) -and (Test-Path $rootEnvExample)) {
   Copy-Item $rootEnvExample $rootEnvFile
 }
 
+$citusCoordinatorPort = if ($env:CITUS_COORDINATOR_PORT) { $env:CITUS_COORDINATOR_PORT } else { '5432' }
+
+if ($citusCoordinatorPort -eq '5432') {
+  $portInUse = Get-NetTCPConnection -LocalPort 5432 -State Listen -ErrorAction SilentlyContinue
+
+  if ($null -ne $portInUse) {
+    $citusCoordinatorPort = '55432'
+    Write-Host 'Port 5432 is already in use; using 55432 for the Citus coordinator.'
+  }
+}
+
+$env:CITUS_COORDINATOR_PORT = $citusCoordinatorPort
+
 try {
   docker info | Out-Null
 }

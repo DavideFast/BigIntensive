@@ -47,7 +47,7 @@ Questa cartella contiene una infrastruttura locale Spark + Citus + Kafka basata 
 - Worker 1 UI: http://localhost:8081
 - Worker 2 UI: http://localhost:8082
 - Jupyter: http://localhost:8888 (token in `.env`)
-- Citus coordinator: localhost:5432
+- Citus coordinator: localhost:55432 (oppure la porta impostata in `CITUS_COORDINATOR_PORT`)
 - Citus worker 1: localhost:5433
 - Citus worker 2: localhost:5434
 - Kafka broker (host): localhost:9094
