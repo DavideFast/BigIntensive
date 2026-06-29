@@ -13,5 +13,8 @@ docker compose exec -T citus-worker-2 psql -U $dbUser -d $dbName -f /citus-init/
 Write-Host 'Initializing coordinator and registering workers...'
 docker compose exec -T citus-coordinator psql -U $dbUser -d $dbName -f /citus-init/init-coordinator.sql
 
+Write-Host 'Creating database tables...'
+docker compose exec -T citus-coordinator psql -U $dbUser -d $dbName -f /citus-init/init-tables.sql
+
 Write-Host 'Done. Current Citus nodes:'
 docker compose exec -T citus-coordinator psql -U $dbUser -d $dbName -c "SELECT nodename, nodeport, noderole FROM pg_dist_node ORDER BY nodename;"
