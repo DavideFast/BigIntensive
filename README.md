@@ -180,6 +180,35 @@ docker compose exec kafka /opt/bitnami/kafka/bin/kafka-console-consumer.sh --top
 
 - http://localhost:8088
 
+## Integrare Kafka nell'app (Python)
+
+1. Installa dipendenze Python:
+
+```powershell
+python -m pip install -r .\scripts\python\requirements.txt
+```
+
+2. Configura endpoint Kafka per app host:
+
+```powershell
+$env:KAFKA_BOOTSTRAP_SERVERS = "localhost:9094"
+$env:KAFKA_TOPIC = "demo-events"
+```
+
+3. Invia un evento (producer):
+
+```powershell
+python .\scripts\python\producer.py --topic demo-events --message "utente registrato" --as-json
+```
+
+4. Leggi eventi (consumer):
+
+```powershell
+python .\scripts\python\consumer.py --topic demo-events --group-id app-consumer --from-beginning --max-messages 10
+```
+
+Nota: se esegui il codice Python dentro un container nella rete Docker, usa `kafka:9092` come bootstrap server invece di `localhost:9094`.
+
 ## Note
 
 - I file locali in `spark/apps` e `spark/data` sono montati dentro i container.
