@@ -6,6 +6,9 @@ $dbName = if ($env:CITUS_POSTGRES_DB) { $env:CITUS_POSTGRES_DB } else { 'biginte
 Write-Host 'Starting Citus services...'
 docker compose up -d citus-coordinator citus-worker-1 citus-worker-2
 
+Write-Host 'Waiting for Citus services to become ready...'
+docker compose up -d --wait --wait-timeout 120 citus-coordinator citus-worker-1 citus-worker-2
+
 Write-Host 'Initializing workers...'
 docker compose exec -T citus-worker-1 psql -U $dbUser -d $dbName -f /citus-init/init-worker.sql
 docker compose exec -T citus-worker-2 psql -U $dbUser -d $dbName -f /citus-init/init-worker.sql

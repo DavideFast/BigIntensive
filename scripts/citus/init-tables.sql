@@ -11,6 +11,9 @@ CREATE TABLE IF NOT EXISTS athletes (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Keep athletes replicated on all nodes so other distributed tables can reference it
+SELECT create_reference_table('athletes');
+
 -- Exercise metrics table
 CREATE TABLE IF NOT EXISTS exercise_metrics (
   metric_id BIGSERIAL,
