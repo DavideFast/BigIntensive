@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { mockEvents } from "./mockData";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
@@ -57,10 +57,11 @@ function getChartPath(points, width, height, padding) {
 
 export default function App() {
   const chartAnimationFrameRef = useRef(null);
+  const initialFetchDoneRef = useRef(false);
   const [activePage, setActivePage] = useState("generator");
   const [events, setEvents] = useState(mockEvents);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("Nessuna API collegata: visualizzo dati mock locali.");
+  const [error, setError] = useState("");
 
   // Force plate simulator state
   const [forcePlateConfig, setForcePlateConfig] = useState(INITIAL_FORCE_CONFIG);
@@ -98,6 +99,15 @@ export default function App() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (initialFetchDoneRef.current) {
+      return;
+    }
+
+    initialFetchDoneRef.current = true;
+    refreshEvents();
+  }, []);
 
   async function startForcePlate() {
     setForcePlateLoading(true);
