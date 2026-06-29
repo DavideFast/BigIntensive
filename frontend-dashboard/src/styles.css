@@ -381,6 +381,13 @@ th {
   height: 340px;
 }
 
+.chart-progress {
+  margin: 0.7rem 0 0;
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
 .chart-summary {
   margin-top: 1rem;
   display: grid;

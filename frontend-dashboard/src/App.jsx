@@ -1,8 +1,15 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { mockEvents } from "./mockData";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 const EVENTS_PATH = import.meta.env.VITE_EVENTS_PATH || "/events";
+const INITIAL_FORCE_CONFIG = {
+  athlete_id: "athlete-001",
+  exercise: "squat",
+  duration_ms: 3000,
+  repeat: 3,
+  interval_s: 2,
+};
 
 function formatDate(value) {
   const date = new Date(value);
@@ -49,30 +56,19 @@ function getChartPath(points, width, height, padding) {
 }
 
 export default function App() {
+  const chartAnimationFrameRef = useRef(null);
   const [activePage, setActivePage] = useState("generator");
   const [events, setEvents] = useState(mockEvents);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("Nessuna API collegata: visualizzo dati mock locali.");
 
   // Force plate simulator state
-  const [forcePlateConfig, setForcePlateConfig] = useState({
-    athlete_id: "athlete-001",
-    exercise: "squat",
-    duration_ms: 3000,
-    repeat: 3,
-    interval_s: 2,
-  });
+  const [forcePlateConfig, setForcePlateConfig] = useState(INITIAL_FORCE_CONFIG);
   const [forcePlateLoading, setForcePlateLoading] = useState(false);
   const [forcePlateMessage, setForcePlateMessage] = useState("");
-  const [chartData, setChartData] = useState(() =>
-    createForceSeries({
-      athlete_id: "athlete-001",
-      exercise: "squat",
-      duration_ms: 3000,
-      repeat: 3,
-      interval_s: 2,
-    }),
-  );
+  const [chartData, setChartData] = useState(() => createForceSeries(INITIAL_FORCE_CONFIG));
+  const [visiblePoints, setVisiblePoints] = useState(() => createForceSeries(INITIAL_FORCE_CONFIG).length);
+  const [isChartAnimating, setIsChartAnimating] = useState(false);
 
   async function refreshEvents() {
     setLoading(true);
@@ -127,8 +123,39 @@ export default function App() {
     }
   }
 
+  function animateChart(nextData) {
+    if (chartAnimationFrameRef.current) {
+      cancelAnimationFrame(chartAnimationFrameRef.current);
+    }
+
+    const durationMs = Math.min(3600, Math.max(1000, Number(forcePlateConfig.duration_ms) || 2200));
+    const totalPoints = nextData.length;
+    const startTime = performance.now();
+
+    setChartData(nextData);
+    setVisiblePoints(2);
+    setIsChartAnimating(true);
+
+    const step = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / durationMs);
+      const nextVisible = Math.max(2, Math.round(progress * totalPoints));
+      setVisiblePoints(nextVisible);
+
+      if (progress < 1) {
+        chartAnimationFrameRef.current = requestAnimationFrame(step);
+      } else {
+        setVisiblePoints(totalPoints);
+        setIsChartAnimating(false);
+        chartAnimationFrameRef.current = null;
+      }
+    };
+
+    chartAnimationFrameRef.current = requestAnimationFrame(step);
+  }
+
   function generateChart() {
-    setChartData(createForceSeries(forcePlateConfig));
+    animateChart(createForceSeries(forcePlateConfig));
     setForcePlateMessage("✓ Grafico rigenerato con i parametri correnti.");
   }
 
@@ -156,7 +183,17 @@ export default function App() {
     return { min, max, avg };
   }, [chartData]);
 
-  const chartPath = useMemo(() => getChartPath(chartData, 920, 340, 28), [chartData]);
+  const visibleChartData = useMemo(() => chartData.slice(0, Math.min(chartData.length, Math.max(2, visiblePoints))), [chartData, visiblePoints]);
+
+  const chartProgress = useMemo(() => {
+    if (!chartData.length) {
+      return 0;
+    }
+
+    return Math.min(100, Math.round((visibleChartData.length / chartData.length) * 100));
+  }, [chartData, visibleChartData]);
+
+  const chartPath = useMemo(() => getChartPath(visibleChartData, 920, 340, 28), [visibleChartData]);
 
   return (
     <div className="page">
@@ -271,6 +308,8 @@ export default function App() {
                 <path d={chartPath} fill="none" stroke="url(#forceLine)" strokeWidth="4" strokeLinecap="round" />
               </svg>
             </div>
+
+            <p className="chart-progress">{isChartAnimating ? `Generazione in corso: ${chartProgress}%` : "Grafico completato"}</p>
 
             <div className="chart-summary">
               <article className="summary-card">
