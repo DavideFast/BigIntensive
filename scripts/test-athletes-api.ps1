@@ -9,12 +9,12 @@ Write-Host ""
 Write-Host "1. Fetching all athletes..."
 try {
   $response = Invoke-RestMethod -Method Get -Uri "$apiBase/athletes"
-  Write-Host "✓ Found $($response.total) athletes"
+  Write-Host "[OK] Found $($response.total) athletes"
   $response.items | ForEach-Object {
-    Write-Host "  - ID $($_.athlete_id): $($_.nome) $($_.cognome) (eta: $($_.eta), sesso: $($_.sesso), altezza: $($_.altezza_cm)cm, peso: $($_.peso_kg)kg)"
+    Write-Host "  - ID $($_.athlete_id): $($_.nome) $($_.cognome) (age: $($_.eta), sex: $($_.sesso), height: $($_.altezza_cm)cm, weight: $($_.peso_kg)kg)"
   }
 } catch {
-  Write-Host "✗ Error: $($_.Exception.Message)"
+  Write-Host "[ERROR] $($_.Exception.Message)"
 }
 
 Write-Host ""
@@ -32,10 +32,10 @@ $newAthlete = @{
 
 try {
   $response = Invoke-RestMethod -Method Post -Uri "$apiBase/athletes" -ContentType "application/json" -Body $newAthlete
-  Write-Host "✓ Created athlete with ID $($response.athlete_id)"
+  Write-Host "[OK] Created athlete with ID $($response.athlete_id)"
   Write-Host "  $($response.nome) $($response.cognome)"
 } catch {
-  Write-Host "✗ Error: $($_.Exception.Message)"
+  Write-Host "[ERROR] $($_.Exception.Message)"
 }
 
 Write-Host ""
@@ -44,12 +44,12 @@ Write-Host ""
 Write-Host "3. Fetching athlete by ID..."
 try {
   $response = Invoke-RestMethod -Method Get -Uri "$apiBase/athletes/1"
-  Write-Host "✓ Found athlete:"
+  Write-Host "[OK] Found athlete:"
   Write-Host "  - $($response.nome) $($response.cognome) (ID: $($response.athlete_id))"
-  Write-Host "  - Età: $($response.eta), Sesso: $($response.sesso)"
-  Write-Host "  - Altezza: $($response.altezza_cm)cm, Peso: $($response.peso_kg)kg"
+  Write-Host "  - Age: $($response.eta), Sex: $($response.sesso)"
+  Write-Host "  - Height: $($response.altezza_cm)cm, Weight: $($response.peso_kg)kg"
 } catch {
-  Write-Host "✗ Error: $($_.Exception.Message)"
+  Write-Host "[ERROR] $($_.Exception.Message)"
 }
 
 Write-Host ""
