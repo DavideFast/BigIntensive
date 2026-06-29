@@ -74,13 +74,13 @@ Apri in Jupyter il notebook:
 
 ## Comandi utili
 
-- Avviare tutta la piattaforma (Spark + Jupyter + Citus + Kafka). Se manca, crea anche `.env` dalla `.env.example`:
+- Avviare tutta la piattaforma (Spark + Jupyter + Citus + Kafka + Backend + Dashboard). Se manca, crea anche `.env` dalla `.env.example`:
 
   ```powershell
   .\scripts\start-all.ps1
   ```
 
-- Avviare anche backend e dashboard insieme alla piattaforma:
+- Compatibilita: il flag sotto e' mantenuto ma non e' piu necessario, perche backend e dashboard partono gia con `docker compose`:
 
   ```powershell
   .\scripts\start-all.ps1 -IncludeApp
@@ -103,6 +103,8 @@ Apri in Jupyter il notebook:
   ```powershell
   .\scripts\start-backend.ps1
   ```
+
+Nota: i due script sopra restano utili per sviluppo locale senza Docker, ma nello startup standard ora sono inclusi nel compose.
 
 - Aprire i log di Jupyter:
 

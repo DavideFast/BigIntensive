@@ -39,7 +39,7 @@ catch {
   exit 1
 }
 
-Write-Host "Starting full platform (Spark, Jupyter, Citus, Kafka)..."
+Write-Host "Starting full platform (Spark, Jupyter, Citus, Kafka, Backend, Dashboard)..."
 docker compose up -d
 
 if ($LASTEXITCODE -ne 0) {
@@ -55,23 +55,7 @@ else {
 }
 
 if ($IncludeApp) {
-  Write-Host "Starting backend API and dashboard in background..."
-
-  Start-Process powershell -ArgumentList @(
-    '-NoProfile',
-    '-ExecutionPolicy',
-    'Bypass',
-    '-File',
-    (Join-Path $scriptDir 'start-backend.ps1')
-  ) -WorkingDirectory $scriptDir | Out-Null
-
-  Start-Process powershell -ArgumentList @(
-    '-NoProfile',
-    '-ExecutionPolicy',
-    'Bypass',
-    '-File',
-    (Join-Path $scriptDir 'start-dashboard.ps1')
-  ) -WorkingDirectory $scriptDir | Out-Null
+  Write-Host "-IncludeApp is now implicit: backend and dashboard are managed by docker compose."
 }
 
 Write-Host "Services status:"
@@ -79,6 +63,7 @@ docker compose ps
 
 Write-Host "Platform startup completed."
 
-if ($IncludeApp) {
-  Write-Host "Backend and dashboard were launched in separate PowerShell windows."
-}
+$backendPort = if ($env:BACKEND_PORT) { $env:BACKEND_PORT } else { '3001' }
+$frontendPort = if ($env:FRONTEND_PORT) { $env:FRONTEND_PORT } else { '5173' }
+Write-Host "Backend API URL: http://localhost:$backendPort"
+Write-Host "Dashboard URL: http://localhost:$frontendPort"

@@ -29,7 +29,7 @@ function resolvePythonExecutable() {
     return { command: "py", preArgs: ["-3"] };
   }
 
-  return { command: "python", preArgs: [] };
+  return null;
 }
 
 const pythonRuntime = resolvePythonExecutable();
@@ -148,6 +148,13 @@ app.post("/force-plate/start", (req, res) => {
   }
 
   // Build command
+  if (!pythonRuntime) {
+    return res.status(500).json({
+      error: "Python runtime not found",
+      details: "Install Python and ensure python/py is in PATH, or set PYTHON_BIN in backend-api/.env",
+    });
+  }
+
   let pythonScript;
 
   try {
@@ -207,6 +214,13 @@ app.post("/heart-rate/start", (req, res) => {
   }
 
   let pythonScript;
+
+  if (!pythonRuntime) {
+    return res.status(500).json({
+      error: "Python runtime not found",
+      details: "Install Python and ensure python/py is in PATH, or set PYTHON_BIN in backend-api/.env",
+    });
+  }
 
   try {
     pythonScript = resolvePythonScript("heart_rate_producer.py");
