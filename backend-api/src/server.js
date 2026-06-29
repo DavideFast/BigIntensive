@@ -165,6 +165,58 @@ app.post("/force-plate/start", (req, res) => {
   });
 });
 
+app.post("/heart-rate/start", (req, res) => {
+  const { athlete_id, duration_ms, repeat, interval_s } = req.body || {};
+
+  if (!athlete_id) {
+    return res.status(400).json({
+      error: "Missing required fields",
+      required: ["athlete_id"],
+    });
+  }
+
+  const pythonScript = path.join(__dirname, "../../../scripts/python/heart_rate_producer.py");
+  const args = [
+    pythonScript,
+    "--athlete-id",
+    athlete_id,
+    "--duration-ms",
+    String(duration_ms || 30000),
+    "--repeat",
+    String(repeat || 1),
+    "--interval-s",
+    String(interval_s || 10),
+    "--topic",
+    "heart-rate-events",
+  ];
+
+  const child = spawn("python", args, {
+    stdio: "pipe",
+    detached: false,
+  });
+
+  child.stdout.on("data", (data) => {
+    console.log(`[heart-rate] ${data}`);
+  });
+
+  child.stderr.on("data", (data) => {
+    console.error(`[heart-rate error] ${data}`);
+  });
+
+  child.on("close", (code) => {
+    console.log(`[heart-rate] Process exited with code ${code}`);
+  });
+
+  res.json({
+    status: "started",
+    athlete_id,
+    duration_ms: duration_ms || 30000,
+    repeat: repeat || 1,
+    interval_s: interval_s || 10,
+    message: "Heart-rate simulation started in background",
+  });
+});
+
 // Athletes endpoints
 app.get("/athletes", async (req, res) => {
   try {
