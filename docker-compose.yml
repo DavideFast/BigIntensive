@@ -171,7 +171,7 @@ services:
       - kafka
     environment:
       - PORT=3001
-      - CORS_ORIGIN=http://localhost:5173
+      - CORS_ORIGIN=http://localhost:${FRONTEND_PORT:-5173}
       - CITUS_POSTGRES_USER=${CITUS_POSTGRES_USER:-postgres}
       - CITUS_POSTGRES_PASSWORD=${CITUS_POSTGRES_PASSWORD:-postgres}
       - CITUS_POSTGRES_DB=${CITUS_POSTGRES_DB:-bigintensive}

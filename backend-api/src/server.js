@@ -46,7 +46,28 @@ function resolvePythonScript(scriptName) {
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
-const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:5173";
+const corsOriginRaw = process.env.CORS_ORIGIN || "http://localhost:5173";
+const explicitAllowedOrigins = corsOriginRaw
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+function isAllowedOrigin(origin) {
+  if (!origin) {
+    return true;
+  }
+
+  if (explicitAllowedOrigins.includes(origin)) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(origin);
+    return parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+  } catch {
+    return false;
+  }
+}
 
 // Citus Database connection
 const pool = new pg.Pool({
@@ -57,7 +78,17 @@ const pool = new pg.Pool({
   database: process.env.CITUS_POSTGRES_DB || "bigintensive",
 });
 
-app.use(cors({ origin: corsOrigin }));
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+  }),
+);
 app.use(express.json());
 
 const events = [
