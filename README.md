@@ -110,6 +110,18 @@ Apri in Jupyter il notebook:
   .\scripts\stress-backend.ps1 -TotalRequests 1000 -Concurrency 100
   ```
 
+- Simulare tanti frontend concorrenti con k6 in Docker (scenario piu realistico):
+
+  ```powershell
+  .\scripts\run-loadtest.ps1 -Mode events -Vus 120 -Duration 90s
+  ```
+
+- Simulare traffico concorrente verso l'endpoint simulatore pedana:
+
+  ```powershell
+  .\scripts\run-loadtest.ps1 -Mode force-plate -Vus 40 -Duration 60s
+  ```
+
 Nota: i due script sopra restano utili per sviluppo locale senza Docker, ma nello startup standard ora sono inclusi nel compose.
 
 - Aprire i log di Jupyter:
