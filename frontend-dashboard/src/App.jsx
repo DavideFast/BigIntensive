@@ -252,6 +252,7 @@ export default function App() {
         </div>
         <div className="actions">
           <span className="api-target">Endpoint: {`${API_BASE}${EVENTS_PATH}`}</span>
+          <span className={`mode-pill ${stressMode === "k6" ? "mode-pill-k6" : "mode-pill-browser"}`}>Modalita attiva: {stressMode === "k6" ? "k6" : "Browser"}</span>
         </div>
       </header>
 
@@ -282,6 +283,7 @@ export default function App() {
                   <option value="browser">Browser (diretto)</option>
                   <option value="k6">k6 (runner esterno)</option>
                 </select>
+                <small className="form-help">{stressMode === "k6" ? "Modalita k6: viene preparato il comando da lanciare nel terminale." : "Modalita Browser: i client simulati inviano richieste direttamente dal frontend."}</small>
               </div>
 
               <div className="form-group">

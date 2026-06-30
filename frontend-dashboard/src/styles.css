@@ -145,6 +145,29 @@ button:focus-visible {
   font-size: 0.9rem;
 }
 
+.mode-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+
+.mode-pill-browser {
+  background: rgba(45, 127, 120, 0.15);
+  color: #0f4f4a;
+  border-color: rgba(45, 127, 120, 0.35);
+}
+
+.mode-pill-k6 {
+  background: rgba(208, 100, 42, 0.18);
+  color: #7e3417;
+  border-color: rgba(208, 100, 42, 0.38);
+}
+
 .notice {
   margin-top: 1rem;
   padding: 0.8rem 1rem;
@@ -305,6 +328,13 @@ th {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--ring);
+}
+
+.form-help {
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
 }
 
 .btn-primary {
