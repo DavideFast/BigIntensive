@@ -12,6 +12,7 @@ RUN npm ci
 
 COPY backend-api /app/backend-api
 COPY scripts/python /app/scripts/python
+COPY scripts/load /app/scripts/load
 
 RUN pip3 install --no-cache-dir --break-system-packages -r /app/scripts/python/requirements.txt
 

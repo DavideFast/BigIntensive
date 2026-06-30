@@ -180,10 +180,12 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:19092
       - PYTHON_BIN=python3
       - K6_DOCKER_NETWORK=bigintensive-spark_spark-net
+      - K6_DOCKER_VOLUME=bigintensive-spark_k6-shared
     ports:
       - "${BACKEND_PORT:-3001}:3001"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - k6-shared:/k6-shared
     networks:
       - spark-net
 
@@ -219,3 +221,6 @@ services:
 networks:
   spark-net:
     driver: bridge
+
+volumes:
+  k6-shared:

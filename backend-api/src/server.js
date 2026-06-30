@@ -14,6 +14,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "../..");
 const pythonScriptsDir = path.join(projectRoot, "scripts", "python");
+const k6ScriptPath = path.join(projectRoot, "scripts", "load", "k6-backend.js");
+const k6SharedScriptPath = "/k6-shared/k6-backend.js";
 
 function resolvePythonExecutable() {
   if (process.env.PYTHON_BIN) {
@@ -35,6 +37,7 @@ function resolvePythonExecutable() {
 
 const pythonRuntime = resolvePythonExecutable();
 const k6DockerNetwork = process.env.K6_DOCKER_NETWORK || "bigintensive-spark_spark-net";
+const k6DockerVolume = process.env.K6_DOCKER_VOLUME || "bigintensive-spark_k6-shared";
 const loadtestJobs = new Map();
 
 function resolveDockerExecutable() {
@@ -330,8 +333,28 @@ app.post("/loadtest/start", (req, res) => {
     });
   }
 
+  let k6ScriptContent = "";
+
+  try {
+    k6ScriptContent = fs.readFileSync(k6ScriptPath, "utf8");
+  } catch (err) {
+    return res.status(500).json({
+      error: "k6 script not available",
+      details: err.message,
+    });
+  }
+
+  try {
+    fs.writeFileSync(k6SharedScriptPath, k6ScriptContent, "utf8");
+  } catch (err) {
+    return res.status(500).json({
+      error: "Cannot prepare shared k6 script",
+      details: err.message,
+    });
+  }
+
   const jobId = randomUUID();
-  const args = ["run", "--rm", "--network", k6DockerNetwork, "-e", `BASE_URL=${baseUrl}`, "-e", `ENDPOINT_MODE=${endpointMode}`, "grafana/k6:0.53.0", "run", "--vus", String(parsedVus), "--duration", parsedDuration, "/scripts/load/k6-backend.js"];
+  const args = ["run", "--rm", "--network", k6DockerNetwork, "-v", `${k6DockerVolume}:/scripts/load:ro`, "-e", `BASE_URL=${baseUrl}`, "-e", `ENDPOINT_MODE=${endpointMode}`, "grafana/k6:0.53.0", "run", "--vus", String(parsedVus), "--duration", parsedDuration, "/scripts/load/k6-backend.js"];
 
   loadtestJobs.set(jobId, {
     id: jobId,
