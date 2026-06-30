@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { spawn, spawnSync } from "child_process";
+import { randomUUID } from "crypto";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -33,6 +34,15 @@ function resolvePythonExecutable() {
 }
 
 const pythonRuntime = resolvePythonExecutable();
+const k6DockerNetwork = process.env.K6_DOCKER_NETWORK || "bigintensive-spark_spark-net";
+const loadtestJobs = new Map();
+
+function resolveDockerExecutable() {
+  const dockerCheck = spawnSync("docker", ["--version"], { stdio: "ignore" });
+  return dockerCheck.status === 0 ? "docker" : null;
+}
+
+const dockerRuntime = resolveDockerExecutable();
 
 function resolvePythonScript(scriptName) {
   const scriptPath = path.join(pythonScriptsDir, scriptName);
@@ -290,6 +300,127 @@ app.post("/heart-rate/start", (req, res) => {
     interval_s: interval_s || 10,
     message: "Heart-rate simulation started in background",
   });
+});
+
+app.post("/loadtest/start", (req, res) => {
+  const { mode, vus, duration, base_url } = req.body || {};
+  const endpointMode = String(mode || "events").toLowerCase();
+  const parsedVus = Math.max(1, Number(vus) || 1);
+  const parsedDuration = String(duration || "60s").trim();
+  const baseUrl = String(base_url || "http://backend-api:3001").trim();
+
+  if (!["events", "force-plate"].includes(endpointMode)) {
+    return res.status(400).json({
+      error: "Invalid mode",
+      valid: ["events", "force-plate"],
+    });
+  }
+
+  if (!/^\d+[smh]$/.test(parsedDuration)) {
+    return res.status(400).json({
+      error: "Invalid duration format",
+      expected: "Examples: 30s, 2m, 1h",
+    });
+  }
+
+  if (!dockerRuntime) {
+    return res.status(500).json({
+      error: "Docker CLI not available in backend container",
+      details: "Install docker CLI in backend image and mount Docker socket.",
+    });
+  }
+
+  const jobId = randomUUID();
+  const args = ["run", "--rm", "--network", k6DockerNetwork, "-e", `BASE_URL=${baseUrl}`, "-e", `ENDPOINT_MODE=${endpointMode}`, "grafana/k6:0.53.0", "run", "--vus", String(parsedVus), "--duration", parsedDuration, "/scripts/load/k6-backend.js"];
+
+  loadtestJobs.set(jobId, {
+    id: jobId,
+    status: "starting",
+    mode: endpointMode,
+    vus: parsedVus,
+    duration: parsedDuration,
+    baseUrl,
+    network: k6DockerNetwork,
+    startedAt: new Date().toISOString(),
+    finishedAt: null,
+    exitCode: null,
+    outputTail: "",
+  });
+
+  const child = spawn(dockerRuntime, args, {
+    stdio: ["ignore", "pipe", "pipe"],
+    detached: false,
+  });
+
+  child.stdout.on("data", (data) => {
+    const chunk = data.toString();
+    const job = loadtestJobs.get(jobId);
+    if (!job) {
+      return;
+    }
+
+    const nextTail = `${job.outputTail}${chunk}`;
+    job.outputTail = nextTail.slice(-8000);
+    if (job.status === "starting") {
+      job.status = "running";
+    }
+  });
+
+  child.stderr.on("data", (data) => {
+    const chunk = data.toString();
+    const job = loadtestJobs.get(jobId);
+    if (!job) {
+      return;
+    }
+
+    const nextTail = `${job.outputTail}${chunk}`;
+    job.outputTail = nextTail.slice(-8000);
+    if (job.status === "starting") {
+      job.status = "running";
+    }
+  });
+
+  child.on("error", (err) => {
+    const job = loadtestJobs.get(jobId);
+    if (!job) {
+      return;
+    }
+
+    job.status = "failed";
+    job.finishedAt = new Date().toISOString();
+    job.exitCode = -1;
+    job.outputTail = `${job.outputTail}\n[spawn error] ${err.message}`.slice(-8000);
+  });
+
+  child.on("close", (code) => {
+    const job = loadtestJobs.get(jobId);
+    if (!job) {
+      return;
+    }
+
+    job.status = code === 0 ? "completed" : "failed";
+    job.finishedAt = new Date().toISOString();
+    job.exitCode = code;
+  });
+
+  return res.status(202).json({
+    status: "started",
+    jobId,
+    mode: endpointMode,
+    vus: parsedVus,
+    duration: parsedDuration,
+    baseUrl,
+  });
+});
+
+app.get("/loadtest/jobs/:id", (req, res) => {
+  const job = loadtestJobs.get(req.params.id);
+
+  if (!job) {
+    return res.status(404).json({ error: "Load test job not found" });
+  }
+
+  return res.json(job);
 });
 
 // Athletes endpoints

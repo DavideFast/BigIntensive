@@ -70,6 +70,7 @@ export default function App() {
   const [forcePlateMessage, setForcePlateMessage] = useState("");
   const [stressMode, setStressMode] = useState("browser");
   const [k6Duration, setK6Duration] = useState("60s");
+  const [k6JobId, setK6JobId] = useState("");
   const [chartData, setChartData] = useState(() => createForceSeries(INITIAL_FORCE_CONFIG));
   const [visiblePoints, setVisiblePoints] = useState(() => createForceSeries(INITIAL_FORCE_CONFIG).length);
   const [isChartAnimating, setIsChartAnimating] = useState(false);
@@ -112,15 +113,75 @@ export default function App() {
     refreshEvents();
   }, []);
 
+  useEffect(() => {
+    if (!k6JobId) {
+      return;
+    }
+
+    const poll = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/loadtest/jobs/${k6JobId}`, {
+          headers: { Accept: "application/json" },
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const job = await response.json();
+
+        if (job.status === "completed") {
+          setForcePlateMessage(`✓ Stress test k6 completato (job ${job.id}, exit ${job.exitCode}).`);
+          setK6JobId("");
+        } else if (job.status === "failed") {
+          const tail = job.outputTail ? ` Output: ${job.outputTail}` : "";
+          setForcePlateMessage(`✗ Stress test k6 fallito (job ${job.id}, exit ${job.exitCode}).${tail}`);
+          setK6JobId("");
+        } else {
+          setForcePlateMessage(`ⓘ Stress test k6 in esecuzione... job ${job.id} (${job.status}).`);
+        }
+      } catch {
+        // Ignore transient polling errors.
+      }
+    };
+
+    const timer = setInterval(poll, 1500);
+    poll();
+
+    return () => clearInterval(timer);
+  }, [k6JobId]);
+
   async function startForcePlate() {
     setForcePlateLoading(true);
     setForcePlateMessage("");
 
     if (stressMode === "k6") {
-      const vus = Math.max(1, Number(forcePlateConfig.simulated_clients) || 1);
-      const cmd = `.\\scripts\\run-loadtest.ps1 -Mode force-plate -Vus ${vus} -Duration ${k6Duration}`;
-      setForcePlateMessage(`ⓘ Modalita k6 selezionata. Esegui nel terminale: ${cmd}`);
-      setForcePlateLoading(false);
+      try {
+        const vus = Math.max(1, Number(forcePlateConfig.simulated_clients) || 1);
+        const response = await fetch(`${API_BASE}/loadtest/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: "force-plate",
+            vus,
+            duration: k6Duration,
+            base_url: "http://backend-api:3001",
+          }),
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.error || `HTTP ${response.status}`);
+        }
+
+        setK6JobId(payload.jobId || "");
+        setForcePlateMessage(`✓ Stress test k6 avviato (job ${payload.jobId}).`);
+      } catch (err) {
+        setForcePlateMessage(`✗ Errore avvio k6: ${err.message}`);
+      } finally {
+        setForcePlateLoading(false);
+      }
       return;
     }
 
@@ -283,7 +344,7 @@ export default function App() {
                   <option value="browser">Browser (diretto)</option>
                   <option value="k6">k6 (runner esterno)</option>
                 </select>
-                <small className="form-help">{stressMode === "k6" ? "Modalita k6: viene preparato il comando da lanciare nel terminale." : "Modalita Browser: i client simulati inviano richieste direttamente dal frontend."}</small>
+                <small className="form-help">{stressMode === "k6" ? "Modalita k6: il frontend chiede al backend di avviare un job k6 reale in background." : "Modalita Browser: i client simulati inviano richieste direttamente dal frontend."}</small>
               </div>
 
               <div className="form-group">

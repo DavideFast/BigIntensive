@@ -3,7 +3,7 @@ FROM node:20-bookworm-slim
 WORKDIR /app
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 python3-pip \
+  && apt-get install -y --no-install-recommends python3 python3-pip docker.io \
   && rm -rf /var/lib/apt/lists/*
 
 COPY backend-api/package*.json /app/backend-api/

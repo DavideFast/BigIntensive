@@ -179,8 +179,11 @@ services:
       - CITUS_PORT=5432
       - KAFKA_BOOTSTRAP_SERVERS=kafka:19092
       - PYTHON_BIN=python3
+      - K6_DOCKER_NETWORK=bigintensive-spark_spark-net
     ports:
       - "${BACKEND_PORT:-3001}:3001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - spark-net
 
