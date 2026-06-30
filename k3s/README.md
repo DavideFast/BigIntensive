@@ -39,6 +39,15 @@ Se il cluster e' locale e usa lo stesso motore container, le immagini devono com
 - caricarle in un registry raggiungibile dal cluster;
 - importarle nel runtime del nodo k3s.
 
+In alternativa, dalla root della repo puoi usare lo script automatico:
+
+```bash
+chmod +x scripts/deploy-k3s-local.sh
+./scripts/deploy-k3s-local.sh
+```
+
+Lo script applica i manifest, builda backend/frontend, importa le immagini in k3s e riavvia i deployment app.
+
 ## Passo 3: applica i manifest
 
 ```powershell
