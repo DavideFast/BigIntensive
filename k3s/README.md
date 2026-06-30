@@ -1,6 +1,8 @@
 # BigIntensive su k3s
 
-Questa cartella contiene la base Kubernetes per portare su k3s la parte core di BigIntensive:
+Questa cartella contiene la base Kubernetes per avviare BigIntensive su k3s senza passare da Docker Compose.
+
+Il cluster gestisce:
 
 - `backend-api`
 - `frontend-dashboard`
@@ -12,18 +14,32 @@ Questa cartella contiene la base Kubernetes per portare su k3s la parte core di 
 
 Spark e Jupyter restano fuori da questa prima iterazione perché dipendono dal mount del workspace locale e conviene trattarli come estensione separata.
 
-## Passo 1: prepara le immagini
+## Passo 1: verifica il cluster
 
-Dal root del repository builda le immagini locali del backend e del frontend:
+Assicurati che k3s sia avviato e che `kubectl` punti al suo contesto:
+
+```powershell
+kubectl config current-context
+kubectl get nodes
+```
+
+Se il contesto non e' quello giusto, selezionalo prima di continuare.
+
+## Passo 2: prepara le immagini
+
+Dal root del repository builda le immagini del backend e del frontend:
 
 ```powershell
 docker build -f backend-api/Dockerfile -t bigintensive/backend-api:local .
 docker build -f frontend-dashboard/Dockerfile -t bigintensive/frontend-dashboard:local .
 ```
 
-Se il tuo k3s gira su una macchina diversa, devi poi pubblicare queste immagini in un registry accessibile dal cluster, oppure importarle nel containerd del nodo k3s.
+Se il cluster e' locale e usa lo stesso motore container, le immagini devono comunque essere visibili ai nodi k3s. Hai due opzioni:
 
-## Passo 2: applica i manifest
+- caricarle in un registry raggiungibile dal cluster;
+- importarle nel runtime del nodo k3s.
+
+## Passo 3: applica i manifest
 
 ```powershell
 kubectl apply -f k3s/bigintensive-k3s.yaml
@@ -31,7 +47,7 @@ kubectl apply -f k3s/bigintensive-k3s.yaml
 
 Questo crea il namespace, i secret, i servizi, i deployment/statefulset e il job di bootstrap Citus.
 
-## Passo 3: controlla che i pod salgano
+## Passo 4: controlla che i pod salgano
 
 ```powershell
 kubectl get pods -n bigintensive -w
@@ -39,7 +55,7 @@ kubectl get pods -n bigintensive -w
 
 Aspettati inizialmente `ContainerCreating` sui servizi stateful, poi `Running` per i pod applicativi.
 
-## Passo 4: inizializza Citus
+## Passo 5: inizializza Citus
 
 Il job `citus-bootstrap` applica gli script SQL che il progetto già usa in locale.
 
@@ -56,7 +72,7 @@ kubectl delete job citus-bootstrap -n bigintensive
 kubectl apply -f k3s/bigintensive-k3s.yaml
 ```
 
-## Passo 5: esponi i servizi nel browser
+## Passo 6: esponi i servizi nel browser
 
 Il manifest usa `traefik` come ingress class e questi host:
 
@@ -66,7 +82,7 @@ Il manifest usa `traefik` come ingress class e questi host:
 
 Devi far puntare questi nomi all'IP del nodo k3s nel file hosts della macchina da cui navighi.
 
-## Passo 6: verifica l'app
+## Passo 7: verifica l'app
 
 Controlla prima la health del backend:
 
@@ -80,6 +96,6 @@ Poi apri:
 - `http://bigintensive.local`
 - `http://api.bigintensive.local/events`
 
-## Step successivo opzionale
+## Cosa non e' ancora incluso
 
-Se vuoi, nel prossimo passaggio aggiungo anche la parte Spark/Jupyter in k3s con un approccio separato, così non mescoliamo il runtime Kubernetes con il mount del workspace locale.
+Spark e Jupyter non sono ancora nel manifest. Si possono aggiungere in un secondo passaggio, ma conviene farlo separatamente dal resto del cluster.

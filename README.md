@@ -1,6 +1,8 @@
-# BigIntensive Spark Infrastructure
+# BigIntensive
 
-Questa cartella contiene una infrastruttura locale Spark + Citus + Kafka basata su Docker Compose.
+Questo repository contiene l'applicazione BigIntensive e la sua infrastruttura Kubernetes-first.
+
+La strada consigliata e' il cluster k3s in [k3s/README.md](k3s/README.md). La vecchia orchestrazione Docker Compose resta nel repository solo come riferimento storico.
 
 ## Cosa include
 
@@ -16,163 +18,48 @@ Questa cartella contiene una infrastruttura locale Spark + Citus + Kafka basata 
 - Esempio PySpark (`spark/apps/wordcount.py`)
 - Dataset di test (`spark/data/input.txt`)
 
-## Prerequisiti
+## Avvio consigliato
 
-- Docker Desktop installato
-- Docker Compose v2 (comando `docker compose`)
+Per partire con il cluster, segui la guida in [k3s/README.md](k3s/README.md).
 
-## Avvio rapido
-
-1. Copia il file ambiente:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-   Su Windows PowerShell:
-
-   ```powershell
-   Copy-Item .env.example .env
-   ```
-
-2. Avvia il cluster:
-
-   ```bash
-   docker compose up -d
-   ```
-
-3. Verifica le UI:
-
-- Master UI: http://localhost:8080
-- Worker 1 UI: http://localhost:8081
-- Worker 2 UI: http://localhost:8082
-- Jupyter: http://localhost:8888 (token in `.env`)
-- Citus coordinator: localhost:55432 (oppure la porta impostata in `CITUS_COORDINATOR_PORT`)
-- Citus worker 1: localhost:5433
-- Citus worker 2: localhost:5434
-- Kafka broker (host): localhost:9094
-- Kafka UI: http://localhost:8088
-- Backend API: http://localhost:3001
-
-Apri in Jupyter il notebook:
-
-- `work/notebooks/quickstart.ipynb`
-
-4. Esegui il job di esempio:
-
-   ```bash
-   docker compose exec spark-master spark-submit \
-     --master spark://spark-master:7077 \
-     /opt/spark-apps/wordcount.py
-   ```
-
-   Su Windows PowerShell (senza backslash):
-
-   ```powershell
-   docker compose exec spark-master spark-submit --master spark://spark-master:7077 /opt/spark-apps/wordcount.py
-   ```
+Se vuoi solo provare l'app rapidamente senza Kubernetes, la vecchia strada Compose e' ancora presente, ma non e' piu il percorso raccomandato.
 
 ## Comandi utili
 
-- Avviare tutta la piattaforma (Spark + Jupyter + Citus + Kafka + Backend + Dashboard). Se manca, crea anche `.env` dalla `.env.example`:
+- Aprire il cluster k3s da terminale:
 
   ```powershell
-  .\scripts\start-all.ps1
+  kubectl get nodes
+  kubectl get pods -A
   ```
 
-- Compatibilita: il flag sotto e' mantenuto ma non e' piu necessario, perche backend e dashboard partono gia con `docker compose`:
+- Vedere i workload del progetto:
 
   ```powershell
-  .\scripts\start-all.ps1 -IncludeApp
+  kubectl get all -n bigintensive
   ```
 
-- Avviare tutto senza inizializzare Citus:
+- Vedere i log del bootstrap Citus:
 
   ```powershell
-  .\scripts\start-all.ps1 -SkipCitusInit
+  kubectl logs job/citus-bootstrap -n bigintensive
   ```
 
-- Avviare il dashboard React dati:
+- Aprire il backend in locale senza Ingress:
 
   ```powershell
-  .\scripts\start-dashboard.ps1
+  kubectl port-forward -n bigintensive svc/backend-api 3001:3001
   ```
 
-- Avviare backend Express API:
+- Aprire il frontend in locale senza Ingress:
 
   ```powershell
-  .\scripts\start-backend.ps1
-  ```
-
-- Simulare una valanga di richieste concorrenti al backend (load test esterno):
-
-  ```powershell
-  .\scripts\stress-backend.ps1 -TotalRequests 1000 -Concurrency 100
-  ```
-
-- Simulare tanti frontend concorrenti con k6 in Docker (scenario piu realistico):
-
-  ```powershell
-  .\scripts\run-loadtest.ps1 -Mode events -Vus 120 -Duration 90s
-  ```
-
-- Simulare traffico concorrente verso l'endpoint simulatore pedana:
-
-  ```powershell
-  .\scripts\run-loadtest.ps1 -Mode force-plate -Vus 40 -Duration 60s
-  ```
-
-Nota: i due script sopra restano utili per sviluppo locale senza Docker, ma nello startup standard ora sono inclusi nel compose.
-
-- Aprire i log di Jupyter:
-
-  ```bash
-  docker compose logs -f jupyter
-  ```
-
-- Aprire una shell nel container Jupyter:
-
-  ```bash
-  docker compose exec jupyter bash
-  ```
-
-- Fermare il cluster:
-
-  ```bash
-  docker compose down
-  ```
-
-- Vedere i log:
-
-  ```bash
-  docker compose logs -f
-  ```
-
-- Scalare i worker (esempio a 3):
-
-  ```bash
-  docker compose up -d --scale spark-worker-1=2 --scale spark-worker-2=1
+  kubectl port-forward -n bigintensive svc/frontend-dashboard 5173:5173
   ```
 
 ## Inizializzare Citus
 
-1. Avvia solo i servizi database (opzionale, se non hai gia fatto `docker compose up -d`):
-
-```bash
-docker compose up -d citus-coordinator citus-worker-1 citus-worker-2
-```
-
-2. Inizializza extension e registrazione nodi worker:
-
-```powershell
-.\scripts\init-citus.ps1
-```
-
-3. Verifica i nodi dal coordinator:
-
-```bash
-docker compose exec citus-coordinator psql -U postgres -d bigintensive -c "SELECT nodename, nodeport, noderole FROM pg_dist_node;"
-```
+Nel cluster k3s questa parte e' automatizzata dal job `citus-bootstrap` definito in [k3s/bigintensive-k3s.yaml](k3s/bigintensive-k3s.yaml).
 
 ## Collegare Spark a Citus via JDBC
 
@@ -192,31 +79,9 @@ df = spark.read.jdbc(url=jdbc_url, table="public.my_table", properties=propertie
 
 ## Usare Kafka
 
-1. Avvia Kafka e UI (opzionale, se non hai gia fatto `docker compose up -d`):
+Nel cluster Kafka e Kafka UI sono gestiti dai manifest k3s e risultano disponibili tramite i relativi servizi interni e Ingress.
 
-```bash
-docker compose up -d kafka kafka-ui
-```
-
-2. Crea un topic di test:
-
-```bash
-docker compose exec kafka /opt/bitnami/kafka/bin/kafka-topics.sh --create --if-not-exists --topic demo-events --bootstrap-server kafka:9092 --partitions 3 --replication-factor 1
-```
-
-3. Produci un messaggio:
-
-```bash
-echo "hello from bigintensive" | docker compose exec -T kafka /opt/bitnami/kafka/bin/kafka-console-producer.sh --topic demo-events --bootstrap-server kafka:9092
-```
-
-4. Consuma un messaggio:
-
-```bash
-docker compose exec kafka /opt/bitnami/kafka/bin/kafka-console-consumer.sh --topic demo-events --bootstrap-server kafka:9092 --from-beginning --max-messages 1
-```
-
-5. Apri Kafka UI:
+Se vuoi, puoi usare `kubectl exec` nel pod Kafka per creare topic e produrre messaggi.
 
 - http://localhost:8088
 
