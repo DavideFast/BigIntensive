@@ -13,7 +13,7 @@ RUN npm ci
 COPY backend-api /app/backend-api
 COPY scripts/python /app/scripts/python
 
-RUN pip3 install --no-cache-dir -r /app/scripts/python/requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r /app/scripts/python/requirements.txt
 
 ENV PYTHON_BIN=python3
 
