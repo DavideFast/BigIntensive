@@ -9,6 +9,7 @@ const INITIAL_FORCE_CONFIG = {
   duration_ms: 3000,
   repeat: 3,
   interval_s: 2,
+  simulated_clients: 1,
 };
 
 function formatDate(value) {
@@ -114,18 +115,35 @@ export default function App() {
     setForcePlateMessage("");
 
     try {
-      const response = await fetch(`${API_BASE}/force-plate/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(forcePlateConfig),
+      const simulatedClients = Math.max(1, Number(forcePlateConfig.simulated_clients) || 1);
+
+      const requests = Array.from({ length: simulatedClients }, (_, index) => {
+        const clientAthleteId = simulatedClients > 1 ? `${forcePlateConfig.athlete_id}-c${index + 1}` : forcePlateConfig.athlete_id;
+
+        const payload = {
+          athlete_id: clientAthleteId,
+          exercise: forcePlateConfig.exercise,
+          duration_ms: forcePlateConfig.duration_ms,
+          repeat: forcePlateConfig.repeat,
+          interval_s: forcePlateConfig.interval_s,
+        };
+
+        return fetch(`${API_BASE}/force-plate/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
+      const results = await Promise.allSettled(requests);
+      const successful = results.filter((result) => result.status === "fulfilled" && result.value.ok).length;
+      const failed = simulatedClients - successful;
 
-      const data = await response.json();
-      setForcePlateMessage(`✓ Simulatore avviato: ${data.athlete_id} / ${data.exercise} (${data.repeat} rep)`);
+      if (failed > 0) {
+        setForcePlateMessage(`✓ Avvio completato parzialmente: ${successful}/${simulatedClients} client avviati, ${failed} falliti.`);
+      } else {
+        setForcePlateMessage(`✓ Simulazione avviata: ${simulatedClients} client su ${forcePlateConfig.exercise} (${forcePlateConfig.repeat} rep/client).`);
+      }
     } catch (err) {
       setForcePlateMessage(`✗ Errore: ${err.message}`);
     } finally {
@@ -273,6 +291,22 @@ export default function App() {
                     setForcePlateConfig({
                       ...forcePlateConfig,
                       repeat: parseInt(e.target.value, 10),
+                    })
+                  }
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="simulated-clients">Clienti simulati:</label>
+                <input
+                  id="simulated-clients"
+                  type="number"
+                  min="1"
+                  value={forcePlateConfig.simulated_clients}
+                  onChange={(e) =>
+                    setForcePlateConfig({
+                      ...forcePlateConfig,
+                      simulated_clients: parseInt(e.target.value, 10),
                     })
                   }
                 />

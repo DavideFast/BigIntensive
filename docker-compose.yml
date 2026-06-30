@@ -199,6 +199,20 @@ services:
     networks:
       - spark-net
 
+  k6:
+    image: grafana/k6:0.53.0
+    container_name: bigintensive-k6
+    profiles:
+      - loadtest
+    depends_on:
+      - backend-api
+    working_dir: /scripts/load
+    volumes:
+      - ./scripts/load:/scripts/load
+    networks:
+      - spark-net
+    entrypoint: ["k6"]
+
 networks:
   spark-net:
     driver: bridge
