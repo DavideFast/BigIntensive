@@ -28,11 +28,36 @@ fi
 echo "Avvio Docker..."
 sudo systemctl enable --now docker >/dev/null 2>&1 || true
 
-CURRENT_NODE_NAME="$(hostname)"
+detect_current_node_name() {
+  local candidate
+  local internal_ip
 
-if ! sudo k3s kubectl get node "$CURRENT_NODE_NAME" >/dev/null 2>&1; then
-  echo "Nodo k3s corrente non trovato: $CURRENT_NODE_NAME"
-  echo "Verifica che la VM server sia registrata nel cluster con lo stesso hostname."
+  for candidate in "$(hostname)" "$(hostname -s)"; do
+    if [[ -n "$candidate" ]] && sudo k3s kubectl get node "$candidate" >/dev/null 2>&1; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+
+  internal_ip="$(hostname -I | awk '{print $1}')"
+
+  if [[ -n "$internal_ip" ]]; then
+    candidate="$(sudo k3s kubectl get nodes -o wide --no-headers | awk -v ip="$internal_ip" '$6 == ip { print $1; exit }')"
+
+    if [[ -n "$candidate" ]]; then
+      echo "$candidate"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+CURRENT_NODE_NAME="$(detect_current_node_name || true)"
+
+if [[ -z "$CURRENT_NODE_NAME" ]]; then
+  echo "Nodo k3s corrente non trovato automaticamente."
+  echo "Controlla 'sudo k3s kubectl get nodes -o wide' e verifica nome nodo e IP registrati."
   exit 1
 fi
 
