@@ -104,6 +104,12 @@ Apri in Jupyter il notebook:
   .\scripts\start-backend.ps1
   ```
 
+- Simulare una valanga di richieste concorrenti al backend (load test esterno):
+
+  ```powershell
+  .\scripts\stress-backend.ps1 -TotalRequests 1000 -Concurrency 100
+  ```
+
 Nota: i due script sopra restano utili per sviluppo locale senza Docker, ma nello startup standard ora sono inclusi nel compose.
 
 - Aprire i log di Jupyter:
