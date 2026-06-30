@@ -68,6 +68,8 @@ export default function App() {
   const [forcePlateConfig, setForcePlateConfig] = useState(INITIAL_FORCE_CONFIG);
   const [forcePlateLoading, setForcePlateLoading] = useState(false);
   const [forcePlateMessage, setForcePlateMessage] = useState("");
+  const [stressMode, setStressMode] = useState("browser");
+  const [k6Duration, setK6Duration] = useState("60s");
   const [chartData, setChartData] = useState(() => createForceSeries(INITIAL_FORCE_CONFIG));
   const [visiblePoints, setVisiblePoints] = useState(() => createForceSeries(INITIAL_FORCE_CONFIG).length);
   const [isChartAnimating, setIsChartAnimating] = useState(false);
@@ -113,6 +115,14 @@ export default function App() {
   async function startForcePlate() {
     setForcePlateLoading(true);
     setForcePlateMessage("");
+
+    if (stressMode === "k6") {
+      const vus = Math.max(1, Number(forcePlateConfig.simulated_clients) || 1);
+      const cmd = `.\\scripts\\run-loadtest.ps1 -Mode force-plate -Vus ${vus} -Duration ${k6Duration}`;
+      setForcePlateMessage(`ⓘ Modalita k6 selezionata. Esegui nel terminale: ${cmd}`);
+      setForcePlateLoading(false);
+      return;
+    }
 
     try {
       const simulatedClients = Math.max(1, Number(forcePlateConfig.simulated_clients) || 1);
@@ -267,6 +277,14 @@ export default function App() {
               </div>
 
               <div className="form-group">
+                <label htmlFor="stress-mode">Stress test:</label>
+                <select id="stress-mode" value={stressMode} onChange={(e) => setStressMode(e.target.value)}>
+                  <option value="browser">Browser (diretto)</option>
+                  <option value="k6">k6 (runner esterno)</option>
+                </select>
+              </div>
+
+              <div className="form-group">
                 <label htmlFor="duration">Durata (ms):</label>
                 <input
                   id="duration"
@@ -312,6 +330,13 @@ export default function App() {
                 />
               </div>
 
+              {stressMode === "k6" ? (
+                <div className="form-group">
+                  <label htmlFor="k6-duration">Durata k6:</label>
+                  <input id="k6-duration" type="text" value={k6Duration} onChange={(e) => setK6Duration(e.target.value)} placeholder="es. 60s" />
+                </div>
+              ) : null}
+
               <div className="form-group">
                 <label htmlFor="interval">Intervallo (s):</label>
                 <input
@@ -330,7 +355,7 @@ export default function App() {
 
               <div className="form-actions">
                 <button type="button" onClick={startForcePlate} disabled={forcePlateLoading} className="btn-primary">
-                  {forcePlateLoading ? "Avvio..." : "Avvia Simulatore"}
+                  {forcePlateLoading ? "Avvio..." : stressMode === "k6" ? "Prepara comando k6" : "Avvia Simulatore"}
                 </button>
                 <button type="button" onClick={generateChart} className="btn-secondary">
                   Rigenera Grafico
