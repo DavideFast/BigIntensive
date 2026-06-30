@@ -40,8 +40,14 @@ echo "Build immagine frontend..."
 sudo docker build -f frontend-dashboard/Dockerfile -t "$FRONTEND_IMAGE" .
 
 echo "Import immagini in containerd di k3s..."
-sudo docker save "$BACKEND_IMAGE" | sudo k3s ctr images import -
-sudo docker save "$FRONTEND_IMAGE" | sudo k3s ctr images import -
+sudo docker save "$BACKEND_IMAGE" | sudo k3s ctr -n k8s.io images import -
+sudo docker save "$FRONTEND_IMAGE" | sudo k3s ctr -n k8s.io images import -
+
+echo "Verifica immagini importate (namespace k8s.io)..."
+sudo k3s ctr -n k8s.io images ls | grep -E 'bigintensive/(backend-api|frontend-dashboard).*local' || {
+  echo "Immagini non trovate nel namespace containerd k8s.io."
+  exit 1
+}
 
 echo "Riavvio deployment applicativi..."
 sudo k3s kubectl rollout restart deployment/backend-api -n "$NAMESPACE"
