@@ -6,6 +6,7 @@ NAMESPACE="bigintensive"
 MANIFEST_PATH="k3s/bigintensive-k3s.yaml"
 BACKEND_IMAGE="bigintensive/backend-api:local"
 FRONTEND_IMAGE="bigintensive/frontend-dashboard:local"
+LOCAL_IMAGES_LABEL="bigintensive.io/local-images=true"
 
 if [[ ! -f "$MANIFEST_PATH" ]]; then
   echo "Manifest non trovato: $MANIFEST_PATH"
@@ -26,6 +27,17 @@ fi
 
 echo "Avvio Docker..."
 sudo systemctl enable --now docker >/dev/null 2>&1 || true
+
+CURRENT_NODE_NAME="$(hostname)"
+
+if ! sudo k3s kubectl get node "$CURRENT_NODE_NAME" >/dev/null 2>&1; then
+  echo "Nodo k3s corrente non trovato: $CURRENT_NODE_NAME"
+  echo "Verifica che la VM server sia registrata nel cluster con lo stesso hostname."
+  exit 1
+fi
+
+echo "Etichetto il nodo $CURRENT_NODE_NAME come host per immagini locali..."
+sudo k3s kubectl label node "$CURRENT_NODE_NAME" "$LOCAL_IMAGES_LABEL" --overwrite
 
 echo "Verifica nodo k3s..."
 sudo k3s kubectl get nodes

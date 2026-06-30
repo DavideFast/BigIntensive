@@ -25,6 +25,31 @@ kubectl get nodes
 
 Se il contesto non e' quello giusto, selezionalo prima di continuare.
 
+## Passo 1b: aggiungi la seconda VM come agent
+
+Se stai usando due VM Ubuntu in bridge, installa `k3s server` solo sulla VM principale e collega la seconda VM come `k3s agent`.
+
+Sulla VM principale recupera token e IP del server:
+
+```bash
+sudo cat /var/lib/rancher/k3s/server/node-token
+hostname -I
+```
+
+Sulla seconda VM installa l'agent sostituendo `<SERVER_IP>` e `<TOKEN>`:
+
+```bash
+curl -sfL https://get.k3s.io | K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN=<TOKEN> sh -
+```
+
+Poi verifica dal server che entrambi i nodi siano presenti:
+
+```bash
+sudo kubectl get nodes -o wide
+```
+
+Nota pratica: nel setup attuale backend e frontend usano immagini locali (`bigintensive/...:local`). Lo script `scripts/deploy-k3s-local.sh` etichetta automaticamente il nodo server e forza quei due deployment a restare li'. Questo evita errori `ImagePullBackOff` sul nodo agent finche' non configuri un registry condiviso.
+
 ## Passo 2: prepara le immagini
 
 Dal root del repository builda le immagini del backend e del frontend:
@@ -53,6 +78,8 @@ bash scripts/deploy-k3s-local.sh
 ```
 
 Lo script applica i manifest, builda backend/frontend, importa le immagini in k3s e riavvia i deployment app.
+
+Nel caso a due VM, esegui questo script sulla VM server, non sull'agent.
 
 ## Passo 3: applica i manifest
 
@@ -96,6 +123,8 @@ Il manifest usa `traefik` come ingress class e questi host:
 - `http://kafka-ui.bigintensive.local` per Kafka UI
 
 Devi far puntare questi nomi all'IP del nodo k3s nel file hosts della macchina da cui navighi.
+
+Se navighi da entrambe le macchine host, aggiorna il file hosts su entrambe con l'IP della VM server.
 
 ## Passo 7: verifica l'app
 

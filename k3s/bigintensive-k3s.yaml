@@ -562,6 +562,8 @@ spec:
       labels:
         app: backend-api
     spec:
+      nodeSelector:
+        bigintensive.io/local-images: "true"
       containers:
         - name: backend-api
           image: bigintensive/backend-api:local
@@ -661,6 +663,8 @@ spec:
       labels:
         app: frontend-dashboard
     spec:
+      nodeSelector:
+        bigintensive.io/local-images: "true"
       containers:
         - name: frontend-dashboard
           image: bigintensive/frontend-dashboard:local
