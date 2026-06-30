@@ -46,6 +46,12 @@ chmod +x scripts/deploy-k3s-local.sh
 ./scripts/deploy-k3s-local.sh
 ```
 
+`chmod +x` serve solo a rendere eseguibile il file `.sh` su Linux. In alternativa puoi lanciarlo senza cambiare permessi:
+
+```bash
+bash scripts/deploy-k3s-local.sh
+```
+
 Lo script applica i manifest, builda backend/frontend, importa le immagini in k3s e riavvia i deployment app.
 
 ## Passo 3: applica i manifest
