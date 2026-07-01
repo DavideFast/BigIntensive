@@ -29,8 +29,8 @@ spec:
     spec:
       containers:
         - name: backend-api
-          image: bigintensive/backend-api:local
-          imagePullPolicy: IfNotPresent
+          image: davidefast/backend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 3001
           envFrom:

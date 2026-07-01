@@ -29,8 +29,8 @@ spec:
     spec:
       containers:
         - name: frontend-dashboard
-          image: bigintensive/frontend-dashboard:local
-          imagePullPolicy: IfNotPresent
+          image: davidefast/frontend-esame_big_intensive:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 5173
           env:
