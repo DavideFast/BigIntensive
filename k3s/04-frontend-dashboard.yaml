@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-dashboard
+  namespace: bigintensive
+spec:
+  type: ClusterIP
+  selector:
+    app: frontend-dashboard
+  ports:
+    - name: http
+      port: 5173
+      targetPort: 5173
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-dashboard
+  namespace: bigintensive
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-dashboard
+  template:
+    metadata:
+      labels:
+        app: frontend-dashboard
+    spec:
+      nodeSelector:
+        bigintensive.io/local-images: "true"
+      containers:
+        - name: frontend-dashboard
+          image: bigintensive/frontend-dashboard:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5173
+          env:
+            - name: VITE_API_BASE_URL
+              value: http://api.bigintensive.local
+            - name: VITE_EVENTS_PATH
+              value: /events
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5173
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5173
+            initialDelaySeconds: 20
+            periodSeconds: 20

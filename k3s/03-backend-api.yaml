@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-api
+  namespace: bigintensive
+spec:
+  type: ClusterIP
+  selector:
+    app: backend-api
+  ports:
+    - name: http
+      port: 3001
+      targetPort: 3001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-api
+  namespace: bigintensive
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-api
+  template:
+    metadata:
+      labels:
+        app: backend-api
+    spec:
+      nodeSelector:
+        bigintensive.io/local-images: "true"
+      containers:
+        - name: backend-api
+          image: bigintensive/backend-api:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - secretRef:
+                name: bigintensive-secrets
+            - configMapRef:
+                name: bigintensive-config
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: bigintensive-config
+                  key: BACKEND_PORT
+            - name: CORS_ORIGIN
+              valueFrom:
+                configMapKeyRef:
+                  name: bigintensive-config
+                  key: CORS_ORIGIN
+            - name: CITUS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: bigintensive-config
+                  key: CITUS_HOST
+            - name: CITUS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: bigintensive-config
+                  key: CITUS_PORT
+            - name: CITUS_POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: bigintensive-secrets
+                  key: CITUS_POSTGRES_USER
+            - name: CITUS_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bigintensive-secrets
+                  key: CITUS_POSTGRES_PASSWORD
+            - name: CITUS_POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: bigintensive-config
+                  key: CITUS_POSTGRES_DB
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: bigintensive-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            - name: PYTHON_BIN
+              valueFrom:
+                configMapKeyRef:
+                  name: bigintensive-config
+                  key: PYTHON_BIN
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 20
+            periodSeconds: 20

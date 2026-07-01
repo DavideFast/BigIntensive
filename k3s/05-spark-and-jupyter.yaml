@@ -1,0 +1,164 @@
+# Spark ServiceAccount and RBAC for native Kubernetes
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spark
+  namespace: bigintensive
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: spark-driver
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: spark-driver-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: spark-driver
+subjects:
+  - kind: ServiceAccount
+    name: spark
+    namespace: bigintensive
+---
+# Spark Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spark-config
+  namespace: bigintensive
+data:
+  spark-defaults.conf: |
+    spark.master                                  k8s://https://kubernetes.default:443
+    spark.kubernetes.namespace                    bigintensive
+    spark.kubernetes.authenticate.driver.mounted  true
+    spark.kubernetes.authenticate.executor.mounted true
+    spark.kubernetes.container.image              python:3.11-slim
+    spark.kubernetes.container.image.pullPolicy   IfNotPresent
+    spark.kubernetes.driver.pod.name              spark-driver
+    spark.kubernetes.driver.label.version         3.5.0
+    spark.kubernetes.executor.label.version       3.5.0
+    spark.executor.cores                          2
+    spark.executor.memory                         2g
+    spark.executor.instances                      2
+    spark.sql.shuffle.partitions                  10
+    spark.driver.memory                           2g
+    spark.driver.cores                            2
+  spark-env.sh: |
+    #!/bin/bash
+    export SPARK_LOCAL_IP=$(hostname -I | awk '{print $1}')
+    export PYTHONUNBUFFERED=1
+---
+# Jupyter Notebook Server
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jupyter
+  namespace: bigintensive
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jupyter
+  template:
+    metadata:
+      labels:
+        app: jupyter
+    spec:
+      serviceAccountName: spark
+      containers:
+        - name: jupyter
+          image: jupyter/pyspark-notebook:latest
+          ports:
+            - containerPort: 8888
+              name: jupyter
+          env:
+            - name: JUPYTER_ENABLE_LAB
+              value: "yes"
+            - name: JUPYTER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: bigintensive-secrets
+                  key: JUPYTER_TOKEN
+            - name: CITUS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: bigintensive-config
+                  key: CITUS_HOST
+            - name: CITUS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: bigintensive-config
+                  key: CITUS_PORT
+            - name: CITUS_USER
+              valueFrom:
+                secretKeyRef:
+                  name: bigintensive-secrets
+                  key: CITUS_POSTGRES_USER
+            - name: CITUS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bigintensive-secrets
+                  key: CITUS_POSTGRES_PASSWORD
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: bigintensive-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
+          volumeMounts:
+            - name: spark-config
+              mountPath: /opt/spark/conf
+            - name: notebooks
+              mountPath: /home/jovyan/work
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1000m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+          livenessProbe:
+            httpGet:
+              path: /api
+              port: 8888
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api
+              port: 8888
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: spark-config
+          configMap:
+            name: spark-config
+            defaultMode: 0755
+        - name: notebooks
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jupyter
+  namespace: bigintensive
+spec:
+  selector:
+    app: jupyter
+  type: ClusterIP
+  ports:
+    - port: 8888
+      targetPort: 8888
+      name: jupyter
