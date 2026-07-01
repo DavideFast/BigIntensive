@@ -115,7 +115,9 @@ spec:
             - sh
             - -c
             - |
-              pip install --quiet jupyter jupyterlab pyspark psycopg2-binary kafka-python pandas numpy && \
+              echo "Installing Jupyter and dependencies..."
+              pip install jupyter jupyterlab pyspark psycopg2-binary kafka-python pandas numpy
+              echo "Starting Jupyter Lab..."
               jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=changeme
           volumeMounts:
             - name: notebooks
@@ -128,21 +130,17 @@ spec:
               memory: "2Gi"
               cpu: "1000m"
           livenessProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - curl -f http://localhost:8888/lab || exit 1
-            initialDelaySeconds: 40
-            periodSeconds: 10
+            tcpSocket:
+              port: 8888
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            failureThreshold: 3
           readinessProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - curl -f http://localhost:8888/lab || exit 1
-            initialDelaySeconds: 20
-            periodSeconds: 5
+            tcpSocket:
+              port: 8888
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            failureThreshold: 5
       volumes:
         - name: notebooks
           emptyDir: {}
