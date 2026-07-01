@@ -1,0 +1,405 @@
+# ClickHouse Distributed Database (Replica mode)
+# 2 replica per HA: VM1 (replica-1) + VM2 (replica-2)
+# Zookeeper coordina la replication
+# Tables: workout_metrics, sensor_data
+
+---
+# Zookeeper StatefulSet (per coordinazione replica ClickHouse)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zookeeper-config
+  namespace: bigintensive
+data:
+  zoo.cfg: |
+    tickTime=2000
+    dataDir=/var/lib/zookeeper/data
+    clientPort=2181
+    initLimit=5
+    syncLimit=2
+    server.1=zookeeper-0.zookeeper.bigintensive.svc.cluster.local:2888:3888
+    server.2=zookeeper-1.zookeeper.bigintensive.svc.cluster.local:2888:3888
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zookeeper
+  namespace: bigintensive
+spec:
+  serviceName: zookeeper
+  replicas: 2
+  selector:
+    matchLabels:
+      app: zookeeper
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:
+      containers:
+        - name: zookeeper
+          image: zookeeper:3.9
+          ports:
+            - containerPort: 2181
+              name: client
+            - containerPort: 2888
+              name: server
+            - containerPort: 3888
+              name: election
+          env:
+            - name: ZOO_CFG_EXTRA
+              value: "server.1=zookeeper-0.zookeeper.bigintensive.svc.cluster.local:2888:3888 server.2=zookeeper-1.zookeeper.bigintensive.svc.cluster.local:2888:3888"
+            - name: ZOO_MY_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+                  # Extract ordinal from Pod name (zookeeper-0 -> 0, zookeeper-1 -> 1)
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/zookeeper/data
+            - name: datalog
+              mountPath: /var/lib/zookeeper/datalog
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 1Gi
+    - metadata:
+        name: datalog
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 1Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+  namespace: bigintensive
+spec:
+  clusterIP: None
+  selector:
+    app: zookeeper
+  ports:
+    - port: 2181
+      name: client
+    - port: 2888
+      name: server
+    - port: 3888
+      name: election
+
+---
+# ClickHouse ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clickhouse-config
+  namespace: bigintensive
+data:
+  config.xml: |
+    <clickhouse>
+      <logger>
+        <level>information</level>
+        <log>/var/log/clickhouse-server/clickhouse-server.log</log>
+        <errorlog>/var/log/clickhouse-server/clickhouse-server.err.log</errorlog>
+        <size>1000M</size>
+        <count>10</count>
+      </logger>
+
+      <http_port>8123</http_port>
+      <tcp_port>9000</tcp_port>
+      <mysql_port>3306</mysql_port>
+      <postgresql_port>5432</postgresql_port>
+
+      <interserver_http_port>9009</interserver_http_port>
+
+      <listen_host>0.0.0.0</listen_host>
+
+      <max_connections>4096</max_connections>
+      <keep_alive_timeout>3</keep_alive_timeout>
+
+      <max_concurrent_queries>100</max_concurrent_queries>
+
+      <uncompressed_cache_size>0</uncompressed_cache_size>
+      <mark_cache_size>5368709120</mark_cache_size>
+
+      <path>/var/lib/clickhouse/</path>
+      <tmp_path>/var/lib/clickhouse/tmp/</tmp_path>
+
+      <users_config>users.xml</users_config>
+
+      <default_profile>default</default_profile>
+      <default_database>default</default_database>
+
+      <mlock_executable>/usr/bin/clickhouse-server</mlock_executable>
+
+      <timezone>UTC</timezone>
+
+      <remote_servers>
+        <bigintensive_cluster>
+          <shard>
+            <replica>
+              <host>clickhouse-0.clickhouse.bigintensive.svc.cluster.local</host>
+              <port>9000</port>
+            </replica>
+          </shard>
+          <shard>
+            <replica>
+              <host>clickhouse-1.clickhouse.bigintensive.svc.cluster.local</host>
+              <port>9000</port>
+            </replica>
+          </shard>
+        </bigintensive_cluster>
+      </remote_servers>
+
+      <zookeeper>
+        <node index="1">
+          <host>zookeeper-0.zookeeper.bigintensive.svc.cluster.local</host>
+          <port>2181</port>
+        </node>
+        <node index="2">
+          <host>zookeeper-1.zookeeper.bigintensive.svc.cluster.local</host>
+          <port>2181</port>
+        </node>
+      </zookeeper>
+
+      <asynchronous_metrics_update_period_s>60</asynchronous_metrics_update_period_s>
+      <asynchronous_heavy_metrics_update_period_s>120</asynchronous_heavy_metrics_update_period_s>
+    </clickhouse>
+
+  users.xml: |
+    <?xml version="1.0"?>
+    <clickhouse>
+      <profiles>
+        <default>
+          <max_memory_usage>10000000000</max_memory_usage>
+          <use_uncompressed_cache>0</use_uncompressed_cache>
+          <load_balancing>random</load_balancing>
+        </default>
+        <readonly>
+          <readonly>1</readonly>
+        </readonly>
+      </profiles>
+
+      <quotas>
+        <default>
+          <interval>
+            <duration>3600</duration>
+            <queries>0</queries>
+            <errors>0</errors>
+            <result_rows>0</result_rows>
+            <read_rows>0</read_rows>
+            <execution_time>0</execution_time>
+          </interval>
+        </default>
+      </quotas>
+
+      <users>
+        <default>
+          <password></password>
+          <networks>
+            <ip>127.0.0.1</ip>
+            <ip>::1</ip>
+            <ip>0.0.0.0/0</ip>
+          </networks>
+          <profile>default</profile>
+          <quota>default</quota>
+        </default>
+        <readonly>
+          <password></password>
+          <networks>
+            <ip>::1</ip>
+            <ip>127.0.0.1</ip>
+          </networks>
+          <profile>readonly</profile>
+          <quota>default</quota>
+        </readonly>
+      </users>
+    </clickhouse>
+
+---
+# ClickHouse StatefulSet (2 replica)
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: clickhouse
+  namespace: bigintensive
+spec:
+  serviceName: clickhouse
+  replicas: 2
+  selector:
+    matchLabels:
+      app: clickhouse
+  template:
+    metadata:
+      labels:
+        app: clickhouse
+    spec:
+      containers:
+        - name: clickhouse
+          image: clickhouse/clickhouse-server:24.1
+          ports:
+            - containerPort: 8123
+              name: http
+            - containerPort: 9000
+              name: native
+            - containerPort: 9009
+              name: interserver
+          env:
+            - name: CLICKHOUSE_DB
+              value: bigintensive
+            - name: CLICKHOUSE_USER
+              value: default
+            - name: CLICKHOUSE_PASSWORD
+              value: ""
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/clickhouse
+            - name: logs
+              mountPath: /var/log/clickhouse-server
+            - name: config
+              mountPath: /etc/clickhouse-server
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 8123
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 8123
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: clickhouse-config
+        - name: logs
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 10Gi
+
+---
+# ClickHouse Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: clickhouse
+  namespace: bigintensive
+spec:
+  clusterIP: None
+  selector:
+    app: clickhouse
+  ports:
+    - port: 8123
+      name: http
+    - port: 9000
+      name: native
+    - port: 9009
+      name: interserver
+
+---
+# ClickHouse Client Service (per accesso esterno)
+apiVersion: v1
+kind: Service
+metadata:
+  name: clickhouse-client
+  namespace: bigintensive
+spec:
+  type: ClusterIP
+  selector:
+    app: clickhouse
+  ports:
+    - port: 8123
+      targetPort: 8123
+      name: http
+    - port: 9000
+      targetPort: 9000
+      name: native
+
+---
+# ClickHouse Init Job (crea tabelle)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: clickhouse-init
+  namespace: bigintensive
+spec:
+  template:
+    spec:
+      serviceAccountName: default
+      restartPolicy: Never
+      containers:
+        - name: clickhouse-init
+          image: clickhouse/clickhouse-server:24.1
+          command:
+            - /bin/sh
+            - -c
+            - |
+              # Wait for ClickHouse to be ready
+              for i in {1..30}; do
+                clickhouse-client --host clickhouse-0.clickhouse.bigintensive.svc.cluster.local --port 9000 --query "SELECT 1" 2>/dev/null && break
+                echo "Waiting for ClickHouse... ($i/30)"
+                sleep 2
+              done
+
+              # Create database
+              clickhouse-client --host clickhouse-0.clickhouse.bigintensive.svc.cluster.local --port 9000 --query "CREATE DATABASE IF NOT EXISTS bigintensive"
+
+              # Create workout_metrics table (replicated)
+              clickhouse-client --host clickhouse-0.clickhouse.bigintensive.svc.cluster.local --port 9000 --query "
+                CREATE TABLE IF NOT EXISTS bigintensive.workout_metrics ON CLUSTER bigintensive_cluster (
+                  athlete_id UInt32,
+                  workout_id UInt32,
+                  timestamp DateTime,
+                  power Float32,
+                  heart_rate UInt16,
+                  cadence UInt16,
+                  speed Float32,
+                  distance Float32
+                ) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{database}/{table}', '{replica}')
+                ORDER BY (timestamp, athlete_id)
+                PARTITION BY toYYYYMM(timestamp)
+                TTL timestamp + INTERVAL 1 YEAR DELETE
+              "
+
+              # Create sensor_data table (replicated)
+              clickhouse-client --host clickhouse-0.clickhouse.bigintensive.svc.cluster.local --port 9000 --query "
+                CREATE TABLE IF NOT EXISTS bigintensive.sensor_data ON CLUSTER bigintensive_cluster (
+                  sensor_id UInt32,
+                  timestamp DateTime,
+                  value Float32,
+                  sensor_type String
+                ) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{database}/{table}', '{replica}')
+                ORDER BY (timestamp, sensor_id)
+                PARTITION BY toYYYYMM(timestamp)
+                TTL timestamp + INTERVAL 1 YEAR DELETE
+              "
+
+              echo "ClickHouse initialization completed!"
+          env:
+            - name: CLICKHOUSE_HOST
+              value: clickhouse-0.clickhouse.bigintensive.svc.cluster.local
