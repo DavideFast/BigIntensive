@@ -1,76 +1,97 @@
-# ClickHouse Distributed Database (Replica mode)
+# ClickHouse Distributed Database (Replica mode with ClickHouse Keeper)
 # 2 replica per HA: VM1 (replica-1) + VM2 (replica-2)
-# Zookeeper coordina la replication
+# ClickHouse Keeper (nativo, moderno, sostituisce Zookeeper)
 # Tables: workout_metrics, sensor_data
 
 ---
-# Zookeeper StatefulSet (per coordinazione replica ClickHouse)
+# ClickHouse Keeper ConfigMap
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: zookeeper-config
+  name: clickhouse-keeper-config
   namespace: bigintensive
 data:
-  zoo.cfg: |
-    tickTime=2000
-    dataDir=/var/lib/zookeeper/data
-    clientPort=2181
-    initLimit=5
-    syncLimit=2
-    server.1=zookeeper-0.zookeeper.bigintensive.svc.cluster.local:2888:3888
-    server.2=zookeeper-1.zookeeper.bigintensive.svc.cluster.local:2888:3888
+  keeper_config.xml: |
+    <keeper_server>
+      <listen_host>0.0.0.0</listen_host>
+      <port>2181</port>
+      <data_dir>/var/lib/clickhouse-keeper</data_dir>
+      <snapshot_storage_path>/var/lib/clickhouse-keeper/snapshots</snapshot_storage_path>
+      <log_storage_path>/var/lib/clickhouse-keeper/logs</log_storage_path>
+      <coordination_settings>
+        <operation_timeout_ms>10000</operation_timeout_ms>
+        <session_timeout_ms>30000</session_timeout_ms>
+        <min_election_timeout_ms>1000</min_election_timeout_ms>
+        <max_election_timeout_ms>2000</max_election_timeout_ms>
+      </coordination_settings>
+      <raft_configuration>
+        <server>
+          <id>1</id>
+          <hostname>clickhouse-keeper-0.clickhouse-keeper.bigintensive.svc.cluster.local</hostname>
+          <port>9444</port>
+        </server>
+        <server>
+          <id>2</id>
+          <hostname>clickhouse-keeper-1.clickhouse-keeper.bigintensive.svc.cluster.local</hostname>
+          <port>9444</port>
+        </server>
+      </raft_configuration>
+    </keeper_server>
 
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: zookeeper
+  name: clickhouse-keeper
   namespace: bigintensive
 spec:
-  serviceName: zookeeper
+  serviceName: clickhouse-keeper
   replicas: 2
   selector:
     matchLabels:
-      app: zookeeper
+      app: clickhouse-keeper
   template:
     metadata:
       labels:
-        app: zookeeper
+        app: clickhouse-keeper
     spec:
       containers:
-        - name: zookeeper
-          image: zookeeper:3.9
+        - name: clickhouse-keeper
+          image: clickhouse/clickhouse-keeper:24.1
           ports:
             - containerPort: 2181
               name: client
-            - containerPort: 2888
-              name: server
-            - containerPort: 3888
-              name: election
-          env:
-            - name: ZOO_CFG_EXTRA
-              value: "server.1=zookeeper-0.zookeeper.bigintensive.svc.cluster.local:2888:3888 server.2=zookeeper-1.zookeeper.bigintensive.svc.cluster.local:2888:3888"
-            - name: ZOO_MY_ID
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-                  # Extract ordinal from Pod name (zookeeper-0 -> 0, zookeeper-1 -> 1)
+            - containerPort: 9444
+              name: raft
           volumeMounts:
             - name: data
-              mountPath: /var/lib/zookeeper/data
-            - name: datalog
-              mountPath: /var/lib/zookeeper/datalog
+              mountPath: /var/lib/clickhouse-keeper
+            - name: config
+              mountPath: /etc/clickhouse-keeper
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            tcpSocket:
+              port: 2181
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 2181
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: clickhouse-keeper-config
   volumeClaimTemplates:
     - metadata:
         name: data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        storageClassName: local-path
-        resources:
-          requests:
-            storage: 1Gi
-    - metadata:
-        name: datalog
       spec:
         accessModes: ["ReadWriteOnce"]
         storageClassName: local-path
@@ -82,19 +103,17 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: zookeeper
+  name: clickhouse-keeper
   namespace: bigintensive
 spec:
   clusterIP: None
   selector:
-    app: zookeeper
+    app: clickhouse-keeper
   ports:
     - port: 2181
       name: client
-    - port: 2888
-      name: server
-    - port: 3888
-      name: election
+    - port: 9444
+      name: raft
 
 ---
 # ClickHouse ConfigMap
@@ -160,16 +179,9 @@ data:
         </bigintensive_cluster>
       </remote_servers>
 
-      <zookeeper>
-        <node index="1">
-          <host>zookeeper-0.zookeeper.bigintensive.svc.cluster.local</host>
-          <port>2181</port>
-        </node>
-        <node index="2">
-          <host>zookeeper-1.zookeeper.bigintensive.svc.cluster.local</host>
-          <port>2181</port>
-        </node>
-      </zookeeper>
+      <keeper_server>
+        <enabled>false</enabled>
+      </keeper_server>
 
       <asynchronous_metrics_update_period_s>60</asynchronous_metrics_update_period_s>
       <asynchronous_heavy_metrics_update_period_s>120</asynchronous_heavy_metrics_update_period_s>
@@ -303,7 +315,6 @@ spec:
             storage: 10Gi
 
 ---
-# ClickHouse Service
 apiVersion: v1
 kind: Service
 metadata:
