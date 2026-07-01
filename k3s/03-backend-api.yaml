@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: backend-api
-          image: davidefast/backend:latest
+          image: davidefast/backend-esame_big_intensive:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3001
