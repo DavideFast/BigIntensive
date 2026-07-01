@@ -80,7 +80,7 @@ spec:
       serviceAccountName: spark
       containers:
         - name: jupyter
-          image: jupyter/scipy-notebook:python-3.11.8
+          image: python:3.11-slim
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8888
@@ -112,16 +112,14 @@ spec:
                   name: bigintensive-config
                   key: KAFKA_BOOTSTRAP_SERVERS
           command:
-            - jupyter
-            - lab
-            - --ip=0.0.0.0
-            - --port=8888
-            - --no-browser
-            - --allow-root
-            - --NotebookApp.token=changeme
+            - sh
+            - -c
+            - |
+              pip install --quiet jupyter jupyterlab pyspark psycopg2-binary kafka-python pandas numpy && \
+              jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=changeme
           volumeMounts:
             - name: notebooks
-              mountPath: /home/jovyan/work
+              mountPath: /root/work
           resources:
             requests:
               memory: "1Gi"
@@ -130,16 +128,20 @@ spec:
               memory: "2Gi"
               cpu: "1000m"
           livenessProbe:
-            httpGet:
-              path: /lab
-              port: 8888
-            initialDelaySeconds: 30
+            exec:
+              command:
+                - sh
+                - -c
+                - curl -f http://localhost:8888/lab || exit 1
+            initialDelaySeconds: 40
             periodSeconds: 10
           readinessProbe:
-            httpGet:
-              path: /lab
-              port: 8888
-            initialDelaySeconds: 15
+            exec:
+              command:
+                - sh
+                - -c
+                - curl -f http://localhost:8888/lab || exit 1
+            initialDelaySeconds: 20
             periodSeconds: 5
       volumes:
         - name: notebooks
