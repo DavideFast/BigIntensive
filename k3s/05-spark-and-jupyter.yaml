@@ -80,19 +80,12 @@ spec:
       serviceAccountName: spark
       containers:
         - name: jupyter
-          image: jupyter/pyspark-notebook:python-3.11.8
+          image: jupyter/scipy-notebook:python-3.11.8
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8888
               name: jupyter
           env:
-            - name: JUPYTER_ENABLE_LAB
-              value: "yes"
-            - name: JUPYTER_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: bigintensive-secrets
-                  key: JUPYTER_TOKEN
             - name: CITUS_HOST
               valueFrom:
                 configMapKeyRef:
@@ -118,9 +111,15 @@ spec:
                 configMapKeyRef:
                   name: bigintensive-config
                   key: KAFKA_BOOTSTRAP_SERVERS
+          command:
+            - jupyter
+            - lab
+            - --ip=0.0.0.0
+            - --port=8888
+            - --no-browser
+            - --allow-root
+            - --NotebookApp.token=changeme
           volumeMounts:
-            - name: spark-config
-              mountPath: /opt/spark/conf
             - name: notebooks
               mountPath: /home/jovyan/work
           resources:
@@ -132,21 +131,17 @@ spec:
               cpu: "1000m"
           livenessProbe:
             httpGet:
-              path: /api
+              path: /lab
               port: 8888
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /api
+              path: /lab
               port: 8888
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 5
       volumes:
-        - name: spark-config
-          configMap:
-            name: spark-config
-            defaultMode: 0755
         - name: notebooks
           emptyDir: {}
 ---
