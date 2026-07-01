@@ -18,7 +18,7 @@ metadata:
   name: frontend-dashboard
   namespace: bigintensive
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: frontend-dashboard
@@ -27,8 +27,6 @@ spec:
       labels:
         app: frontend-dashboard
     spec:
-      nodeSelector:
-        bigintensive.io/local-images: "true"
       containers:
         - name: frontend-dashboard
           image: bigintensive/frontend-dashboard:local

@@ -18,7 +18,7 @@ metadata:
   name: backend-api
   namespace: bigintensive
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: backend-api
@@ -27,8 +27,6 @@ spec:
       labels:
         app: backend-api
     spec:
-      nodeSelector:
-        bigintensive.io/local-images: "true"
       containers:
         - name: backend-api
           image: bigintensive/backend-api:local
