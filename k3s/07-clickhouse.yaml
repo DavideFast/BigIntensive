@@ -228,9 +228,9 @@ spec:
       labels:
         app: clickhouse
     spec:
-      containers:
-        - name: clickhouse
-          image: clickhouse/clickhouse-server:24.1
+      initContainers:
+        - name: init-clickhouse-macros
+          image: busybox:1.36
           command:
             - /bin/sh
             - -c
@@ -238,7 +238,7 @@ spec:
               ordinal="${POD_NAME##*-}"
               shard="$((ordinal + 1))"
               replica="replica_${shard}"
-              cat > /etc/clickhouse-server/config.d/macros.xml <<EOF
+              cat > /dynamic-config/macros.xml <<EOF
               <clickhouse>
                 <macros>
                   <shard>${shard}</shard>
@@ -246,7 +246,17 @@ spec:
                 </macros>
               </clickhouse>
               EOF
-              exec clickhouse-server --config-file=/etc/clickhouse-server/config.xml
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: dynamic-config
+              mountPath: /dynamic-config
+      containers:
+        - name: clickhouse
+          image: clickhouse/clickhouse-server:24.1
           ports:
             - containerPort: 8123
               name: http
@@ -255,10 +265,6 @@ spec:
             - containerPort: 9009
               name: interserver
           env:
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
             - name: CLICKHOUSE_DB
               value: bigintensive
             - name: CLICKHOUSE_USER
@@ -276,6 +282,9 @@ spec:
             - name: config
               mountPath: /etc/clickhouse-server/users.d/bigintensive-users.xml
               subPath: bigintensive-users.xml
+            - name: dynamic-config
+              mountPath: /etc/clickhouse-server/config.d/zz-macros.xml
+              subPath: macros.xml
           resources:
             requests:
               memory: "1Gi"
@@ -299,6 +308,8 @@ spec:
         - name: config
           configMap:
             name: clickhouse-config
+        - name: dynamic-config
+          emptyDir: {}
         - name: logs
           emptyDir: {}
   volumeClaimTemplates:
