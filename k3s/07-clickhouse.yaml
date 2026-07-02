@@ -384,15 +384,26 @@ spec:
             - /bin/sh
             - -c
             - |
+              set -eu
+
               # Wait for ClickHouse to be ready
-              for i in {1..30}; do
-                clickhouse-client --host clickhouse-0.clickhouse.bigintensive.svc.cluster.local --port 9000 --query "SELECT 1" 2>/dev/null && break
-                echo "Waiting for ClickHouse... ($i/30)"
+              ready=0
+              for i in $(seq 1 60); do
+                if clickhouse-client --host clickhouse-0.clickhouse.bigintensive.svc.cluster.local --port 9000 --query "SELECT 1" >/dev/null 2>&1; then
+                  ready=1
+                  break
+                fi
+                echo "Waiting for ClickHouse... ($i/60)"
                 sleep 2
               done
 
+              if [ "$ready" -ne 1 ]; then
+                echo "ClickHouse is not ready after timeout"
+                exit 1
+              fi
+
               # Create database
-              clickhouse-client --host clickhouse-0.clickhouse.bigintensive.svc.cluster.local --port 9000 --query "CREATE DATABASE IF NOT EXISTS bigintensive"
+              clickhouse-client --host clickhouse-0.clickhouse.bigintensive.svc.cluster.local --port 9000 --query "CREATE DATABASE IF NOT EXISTS bigintensive ON CLUSTER bigintensive_cluster"
 
               # Create workout_metrics table (replicated)
               clickhouse-client --host clickhouse-0.clickhouse.bigintensive.svc.cluster.local --port 9000 --query "
