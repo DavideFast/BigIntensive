@@ -18,7 +18,7 @@ schema_json = StructType ([
     StructField("Durata", StringType(), True)
 ])
 
-df_raggruppato = df_kafka.groupBy("id","data")
+df_raggruppato = df_kafka.groupBy("id","data").agg(max("durata"),avg("velocità"),avg("frequenza cardiaca"),max("distanza"),avg("temperatura"))
 
 word_counts = (
     df.select(explode(split(lower(col("value")), r"\\s+")).alias("word"))
