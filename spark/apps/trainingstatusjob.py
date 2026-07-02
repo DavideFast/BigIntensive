@@ -10,14 +10,15 @@ df = spark.read.text(input_path)
 df_kafka = spark.readStream.format("kafka").option("kafka.bootstrap.servers", "localhost:9092").option("subscribe", "training-status").option("startingOffsets", "latest").load()
 
 schema_json = StructType ([
-    StructField("Atleta", StringType(), True)],
+    StructField("Atleta", StringType(), True),
     StructField("Data", DateType(), True),
     StructField("Frequenza cardiaca", StringType(), True),
     StructField("Velocità", StringType(), True),
     StructField("Distanza", StringType(), True),
     StructField("Durata", StringType(), True)
-
 ])
+
+df_raggruppato = df_kafka.groupBy("id","data")
 
 word_counts = (
     df.select(explode(split(lower(col("value")), r"\\s+")).alias("word"))
