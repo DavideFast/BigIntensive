@@ -228,6 +228,9 @@ spec:
       labels:
         app: clickhouse
     spec:
+      securityContext:
+        fsGroup: 101
+        fsGroupChangePolicy: OnRootMismatch
       initContainers:
         - name: init-clickhouse-macros
           image: busybox:1.36
@@ -257,6 +260,9 @@ spec:
       containers:
         - name: clickhouse
           image: clickhouse/clickhouse-server:24.1
+          securityContext:
+            runAsUser: 101
+            runAsGroup: 101
           ports:
             - containerPort: 8123
               name: http
