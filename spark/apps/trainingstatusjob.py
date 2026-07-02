@@ -7,6 +7,7 @@ input_path = "/opt/spark-data/input.txt"
 
 df = spark.read.text(input_path)
 
+df_kafka = spark.readStream.format("kafka").option("kafka.bootstrap.servers", "localhost:9092").option("subscribe", "training-status").option("startingOffsets", "latest").load()
 word_counts = (
     df.select(explode(split(lower(col("value")), r"\\s+")).alias("word"))
       .where(col("word") != "")
