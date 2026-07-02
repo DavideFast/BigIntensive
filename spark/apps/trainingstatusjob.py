@@ -19,16 +19,12 @@ schema_json = StructType ([
 ])
 df_kafka_schema = df_kafka.withColumn("value", from_json(col("value").cast("string"), schema_json)).select(col("value.*"))
 
-df_raggruppato = df_kafka_schema.groupBy("id","data").agg(max("durata"),avg("velocità"),avg("frequenza cardiaca"),max("distanza"),avg("temperatura"))
-
-word_counts = (
-    df.select(explode(split(lower(col("value")), r"\\s+")).alias("word"))
-      .where(col("word") != "")
-      .groupBy("word")
-      .count()
-      .orderBy(col("count").desc(), col("word").asc())
+df_risultato = df_medie.withColumn(
+    "indice_allenamento",
+    col("media_freq_cardiaca") / col("max_durata") / col("media_velocita") / col("temperatura")  # <-- la tua formula
 )
 
-word_counts.show(20, truncate=False)
+df_raggruppato = df_kafka_schema.groupBy("id","data").agg(max("durata"),avg("velocità"),avg("frequenza cardiaca"),max("distanza"),avg("temperatura"))
+
 
 spark.stop()
