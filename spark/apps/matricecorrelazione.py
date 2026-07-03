@@ -13,7 +13,7 @@ spark = SparkSession.builder.appName("matrice-correlazione-job").config("spark.j
 #Prendo tutti gli id degli esercizi da citus e creo uno schema dinamico per il json
 citus_url = "jdbc:postgresql://localhost:5432/bigintensive"
 citus_properties = {"user": "postgres", "password": "postgres", "driver": "org.postgresql.Driver"}
-citus_tabella = spark.read.jdbc(url=citus_url, table = "esercizi", properties=citus_properties)
+citus_tabella = spark.read.jdbc(url=citus_url, table = "exercises", properties=citus_properties)
 citus_atleta = spark.read.jdbc(url=citus_url, table = "jobs-in-coda",properties=citus_properties).select("atleta").distinct()
 input_atleta = [r.atleta for r in citus_atleta.select("atleta").distinct().collect()]
 
@@ -25,29 +25,30 @@ schema_json = StructType(campi)
 #Prendo da clickhouse tutti i dati degli esercizi e li trasformo in un dataframe spark a parità di atleta
 clickhouse_url = "jdbc:clickhouse://localhost:8123/bigintensive"
 clickhouse_properties = {"user": "default", "password": "", "driver": "ru.yandex.clickhouse.ClickHouseDriver"}
-clickhouse_tabella = spark.read.jdbc(url=clickhouse_url, table = "allenamenti_dettaglio", properties=clickhouse_properties)
-
-campi_clickhouse = StructType([
-        StructField("atleta", StringType(), True),
-        StructField("giorno", DateType(), True),
-        StructField("esercizio", StringType(), True),
-        StructField("valore", DoubleType(), True),
-        StructField("tipo", StringType(), True)
-])
+clickhouse_tabella = spark.read.jdbc(url=clickhouse_url, table = "allenamento_dettagli", properties=clickhouse_properties)
 
 
-df_clickhouse = clickhouse_tabella.select(from_json(col("dati").cast("string"), campi_clickhouse).alias("data")).select("data.*").filter(col("atleta").isin(input_atleta))
+df_clickhouse = clickhouse_tabella.selectExpr(
+    "CAST(atleta_id AS STRING) AS atleta",
+    "CAST(ts AS DATE) AS giorno",
+    "CAST(esercizio_id AS STRING) AS esercizio",
+    "CAST(risultato AS DOUBLE) AS valore",
+    "'forza' AS tipo"
+).filter(col("atleta").isin(input_atleta))
 
-df_primo_round = df_clickhouse.groupBy("atleta","giorno","esercizio").agg(
+df_primo_round = df_clickhouse.withColumn("mese", col("giorno").cast("string").substr(0,7)).
+    groupBy("atleta","giorno","esercizio").
+    agg(
     max("valore").alias("max_valore"),
     avg("valore").alias("media_valore"),
     col("tipo"),
-    col("giorno").cast("string").substr(0,7).alias("mese")
+
 )
 
-df_secondo_round = df_primo_round.groupBy("atleta","mese","esercizio").agg(
-    avg("max_valore").alias("media_max_valore"),
-    col("tipo"))
+df_secondo_round = df_primo_round.groupBy("atleta","mese","esercizio","tipo").agg(
+    avg("max_valore").alias("media_max_valore")
+)
+
 
 w = Window.partitionBy("atleta", "esercizio").orderBy("mese")
 
