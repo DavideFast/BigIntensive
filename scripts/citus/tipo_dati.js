@@ -26,3 +26,9 @@ const struttura_allenamento = {
   risultato: [val1, val2, val3],
   utente: struttura_utente,
 };
+
+const struttura_training_status = {
+  atleta_id: 1,
+  giorno: "2024-06-01",
+  valore: 85,
+};
