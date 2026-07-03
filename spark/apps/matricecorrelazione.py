@@ -8,7 +8,8 @@ spark = sparkSession.builder.appName("matrice-correlazione-job").config("spark.j
 df_kafka = spark.readStream.format("kafka").option("kafka.bootstrap.servers", "localhost:9092").option("subscribe","matrice-correlazione").option("startingOffsets","latest").load()
 
 citus_url = "jdbc:postgresql://localhost:5432/bigintensive"
-properties = {"user": "postgres", "password": "postgres", "driver": "org.postgresql.Driver"}
+citus_properties = {"user": "postgres", "password": "postgres", "driver": "org.postgresql.Driver"}
+citus_tabella = spark.read.jdbc(url=citus_url, table = "esercizi", properties=citus_properties)
 
 campi = []
 for field in df_kafka.schema.fields:
