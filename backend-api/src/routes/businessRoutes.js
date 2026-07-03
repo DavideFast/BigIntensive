@@ -6,7 +6,7 @@ export function createBusinessRouter({ pool, correlationStore }) {
   const router = express.Router();
   const athletesRepository = createAthletesRepository(pool);
 
-  router.get("/athletes", async (req, res) => {
+  router.get("/smartwatch", async (req, res) => {
     try {
       const items = await athletesRepository.list();
       res.json({ items, total: items.length });
@@ -16,7 +16,7 @@ export function createBusinessRouter({ pool, correlationStore }) {
     }
   });
 
-  router.get("/athletes/:id", async (req, res) => {
+  router.get("/smartwatch/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const athlete = await athletesRepository.getById(id);
@@ -32,7 +32,7 @@ export function createBusinessRouter({ pool, correlationStore }) {
     }
   });
 
-  router.post("/athletes", async (req, res) => {
+  router.post("/smartwatch", async (req, res) => {
     const { nome, cognome, eta, sesso, altezza_cm, peso_kg } = req.body || {};
 
     if (!nome || !cognome || !eta || !sesso || !altezza_cm || !peso_kg) {
@@ -43,7 +43,14 @@ export function createBusinessRouter({ pool, correlationStore }) {
     }
 
     try {
-      const athlete = await athletesRepository.create({ nome, cognome, eta, sesso, altezza_cm, peso_kg });
+      const athlete = await athletesRepository.create({
+        nome,
+        cognome,
+        eta,
+        sesso,
+        altezza_cm,
+        peso_kg,
+      });
       res.status(201).json(athlete);
     } catch (err) {
       console.error("Database error:", err.message);
@@ -51,7 +58,7 @@ export function createBusinessRouter({ pool, correlationStore }) {
     }
   });
 
-  router.put("/athletes/:id", async (req, res) => {
+  router.put("/smartwatch/:id", async (req, res) => {
     const { id } = req.params;
     const { nome, cognome, eta, sesso, altezza_cm, peso_kg } = req.body || {};
 
