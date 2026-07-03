@@ -41,10 +41,10 @@ VALUES
   ('Alessandro', 'Verdi', 32, 'M', 175, 75.0)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO exercises (nome_esercizio, descrizione)
+INSERT INTO exercises (nome_esercizio, tipo_esercizio, descrizione)
 VALUES
-  ('Panca piana', 'Esercizio multiarticolare per il petto'),
-  ('Squat', 'Esercizio multiarticolare per gli arti inferiori')
+  ('Panca piana', 'forza', 'Esercizio multiarticolare per il petto'),
+  ('Squat', 'forza', 'Esercizio multiarticolare per gli arti inferiori')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO training_status (athlete_id, giorno, valore)

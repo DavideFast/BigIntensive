@@ -24,12 +24,12 @@ const firstNames = ["Marco", "Luca", "Giulia", "Sara", "Alessandro", "Francesca"
 const lastNames = ["Rossi", "Bianchi", "Verdi", "Russo", "Ferrari", "Esposito", "Romano", "Gallo", "Costa", "Fontana"];
 
 const exerciseCatalog = [
-  { nome_esercizio: "Panca piana", descrizione: "Spinta orizzontale bilanciere" },
-  { nome_esercizio: "Squat", descrizione: "Spinta arti inferiori" },
-  { nome_esercizio: "Stacco da terra", descrizione: "Catena posteriore" },
-  { nome_esercizio: "Military press", descrizione: "Spinta verticale" },
-  { nome_esercizio: "Rematore", descrizione: "Trazione orizzontale" },
-  { nome_esercizio: "Affondi", descrizione: "Lavoro unilaterale gambe" },
+  { nome_esercizio: "Panca piana", tipo_esercizio: "forza", descrizione: "Spinta orizzontale bilanciere" },
+  { nome_esercizio: "Squat", tipo_esercizio: "forza", descrizione: "Spinta arti inferiori" },
+  { nome_esercizio: "Stacco da terra", tipo_esercizio: "forza", descrizione: "Catena posteriore" },
+  { nome_esercizio: "Military press", tipo_esercizio: "forza", descrizione: "Spinta verticale" },
+  { nome_esercizio: "Rematore", tipo_esercizio: "forza", descrizione: "Trazione orizzontale" },
+  { nome_esercizio: "Affondi", tipo_esercizio: "mobilità", descrizione: "Lavoro unilaterale gambe" },
 ];
 
 function randInt(min, max) {
@@ -258,6 +258,7 @@ async function ensureCitusSchema(client) {
     CREATE TABLE IF NOT EXISTS exercises (
       exercise_id SERIAL PRIMARY KEY,
       nome_esercizio VARCHAR(150) NOT NULL,
+      tipo_esercizio VARCHAR(50) CHECK (tipo_esercizio IN ('forza', 'endurance', 'mobilità')),
       descrizione TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
@@ -271,6 +272,12 @@ async function ensureCitusSchema(client) {
       PRIMARY KEY (athlete_id, status_id),
       CONSTRAINT uq_training_status_day UNIQUE (athlete_id, giorno)
     );
+  `);
+
+  await client.query(`
+    ALTER TABLE exercises
+    ADD COLUMN IF NOT EXISTS tipo_esercizio VARCHAR(50)
+    CHECK (tipo_esercizio IN ('forza', 'endurance', 'mobilità'));
   `);
 }
 
@@ -304,10 +311,10 @@ async function seedCitus(client, athletesToCreate, days) {
   const insertedExercises = [];
   for (const ex of exerciseCatalog) {
     const result = await client.query(
-      `INSERT INTO exercises (nome_esercizio, descrizione)
-       VALUES ($1, $2)
+      `INSERT INTO exercises (nome_esercizio, tipo_esercizio, descrizione)
+       VALUES ($1, $2, $3)
        RETURNING exercise_id`,
-      [ex.nome_esercizio, ex.descrizione],
+      [ex.nome_esercizio, ex.tipo_esercizio, ex.descrizione],
     );
     insertedExercises.push(result.rows[0].exercise_id);
   }
