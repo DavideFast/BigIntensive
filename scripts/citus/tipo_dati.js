@@ -27,8 +27,19 @@ const struttura_allenamento = {
   utente: struttura_utente,
 };
 
+const corsa = {
+  corsa_id: 1,
+  distanza: [1, 1, 1, 2],
+  tempo: [10, 20, 30, 40],
+  velocita: [6, 5, 4, 3],
+  frequenza_cardiaca: [120, 130, 140, 150],
+  commento: "Buona corsa",
+};
+
 const struttura_training_status = {
   atleta_id: 1,
   giorno: "2024-06-01",
   valore: 85,
 };
+
+//Struttura allenamento e dati smartwatch andranno dentro clickhouse
