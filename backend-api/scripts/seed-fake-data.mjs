@@ -41,6 +41,19 @@ function randFloat(min, max, precision = 2) {
   return Number(value.toFixed(precision));
 }
 
+function randNormal(mean = 0, stdDev = 1) {
+  let u = 0;
+  let v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  return mean + z * stdDev;
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
 function randomFrom(arr) {
   return arr[randInt(0, arr.length - 1)];
 }
@@ -55,6 +68,13 @@ function generateAthletes(count) {
       sesso: randomFrom(["M", "F"]),
       altezza_cm: randInt(160, 195),
       peso_kg: randFloat(58, 98, 1),
+      profile: {
+        baselinePower: randFloat(170, 310, 2),
+        baselineHr: randFloat(132, 165, 2),
+        adaptability: randFloat(0.85, 1.2, 3),
+        fatigueSensitivity: randFloat(0.8, 1.2, 3),
+        recoveryQuality: randFloat(0.85, 1.15, 3),
+      },
     });
   }
   return athletes;
@@ -76,7 +96,44 @@ function toDateTime(date, secondsOffset = 0) {
   return t.toISOString().slice(0, 19).replace("T", " ");
 }
 
-function buildWorkoutData(athleteIds, exerciseIds, days) {
+function buildAthleteProfiles(athleteIds, athletesSeedData = []) {
+  const profiles = new Map();
+  athleteIds.forEach((athleteId, index) => {
+    const seedProfile = athletesSeedData[index]?.profile;
+    const profile = seedProfile || {
+      baselinePower: randFloat(170, 310, 2),
+      baselineHr: randFloat(132, 165, 2),
+      adaptability: randFloat(0.85, 1.2, 3),
+      fatigueSensitivity: randFloat(0.8, 1.2, 3),
+      recoveryQuality: randFloat(0.85, 1.15, 3),
+    };
+    profiles.set(athleteId, profile);
+  });
+  return profiles;
+}
+
+function computeDayState(day, totalDays, profile) {
+  const trainingProgress = totalDays > 1 ? (totalDays - day - 1) / (totalDays - 1) : 0;
+  const weeklyWave = Math.sin((day / 7) * 2 * Math.PI);
+  const blockWave = Math.sin((day / 21) * 2 * Math.PI);
+  const fatigue = clamp((1 - profile.recoveryQuality) * 16 + (1 - weeklyWave) * profile.fatigueSensitivity * 10, 0, 28);
+
+  const readinessRaw = 65
+    + trainingProgress * 22 * profile.adaptability
+    + weeklyWave * 6
+    + blockWave * 4
+    - fatigue
+    + randNormal(0, 3.2);
+
+  return {
+    trainingProgress,
+    fatigue,
+    readiness: clamp(readinessRaw, 38, 98),
+    deloadDay: day % 7 === 0,
+  };
+}
+
+function buildWorkoutData(athleteIds, exerciseIds, days, athletesSeedData = []) {
   const workouts = [];
   const workoutExercises = [];
   const trainingStatus = [];
@@ -84,25 +141,28 @@ function buildWorkoutData(athleteIds, exerciseIds, days) {
   const cardioSamples = [];
   const clickhouseWorkoutMetrics = [];
   const clickhouseSensorData = [];
+  const athleteProfiles = buildAthleteProfiles(athleteIds, athletesSeedData);
 
   let workoutIdCursor = 1;
 
   for (const athleteId of athleteIds) {
+    const profile = athleteProfiles.get(athleteId);
     for (let day = 0; day < days; day += 1) {
       const date = dateDaysAgo(day);
       const dateOnly = toDateOnly(date);
+      const dayState = computeDayState(day, days, profile);
 
       trainingStatus.push({
         athlete_id: athleteId,
         giorno: dateOnly,
-        valore: randInt(55, 95),
-        note: day % 7 === 0 ? "scarico" : null,
+        valore: Math.round(dayState.readiness),
+        note: dayState.deloadDay ? "scarico" : null,
       });
 
-      const workoutCount = day % 6 === 0 ? 0 : randInt(1, 2);
+      const workoutCount = day % 6 === 0 ? 0 : dayState.readiness < 52 ? 1 : randInt(1, 2);
       for (let w = 0; w < workoutCount; w += 1) {
         const workoutId = workoutIdCursor++;
-        const durata = randInt(35, 90);
+        const durata = Math.round(clamp(40 + dayState.readiness * 0.38 + randNormal(0, 8), 30, 100));
 
         workouts.push({
           athlete_id: athleteId,
@@ -116,9 +176,15 @@ function buildWorkoutData(athleteIds, exerciseIds, days) {
         const selectedExercises = [...exerciseIds].sort(() => Math.random() - 0.5).slice(0, randInt(3, 5));
 
         selectedExercises.forEach((exerciseId, index) => {
-          const risultato = randFloat(35, 140, 1);
+          const exerciseFactor = 0.9 + (exerciseId % 4) * 0.08;
+          const performance = profile.baselinePower * exerciseFactor * (0.72 + dayState.readiness / 155 + dayState.trainingProgress * 0.12);
+          const risultato = Number(clamp(performance + randNormal(0, 6), 30, 185).toFixed(1));
           const serie = randInt(3, 5);
           const rip = randInt(5, 12);
+          const jumpValue = clamp(20 + risultato * 0.2 + randNormal(0, 2.8), 18, 65);
+          const rsiValue = clamp(1.1 + jumpValue / 27 + randNormal(0, 0.14), 1.0, 3.8);
+          const bilateralDiff = clamp(13 - dayState.trainingProgress * 7 + randNormal(0, 1.4), 0.3, 16.0);
+          const generatedPower = clamp(750 + risultato * 16 + randNormal(0, 120), 700, 3600);
 
           workoutExercises.push({
             athlete_id: athleteId,
@@ -134,53 +200,67 @@ function buildWorkoutData(athleteIds, exerciseIds, days) {
           exerciseMetrics.push({
             athlete_id: athleteId,
             esercizio: `exercise_${exerciseId}`,
-            valore_salto: randFloat(22, 58, 2),
-            rsi: randFloat(1.4, 3.2, 4),
-            differenza_bilaterale: randFloat(0.5, 14.0, 2),
-            potenza_sviluppata: randFloat(900, 3100, 2),
+            valore_salto: Number(jumpValue.toFixed(2)),
+            rsi: Number(rsiValue.toFixed(4)),
+            differenza_bilaterale: Number(bilateralDiff.toFixed(2)),
+            potenza_sviluppata: Number(generatedPower.toFixed(2)),
             created_at: toDateTime(date, randInt(0, 3600)),
           });
+
+          const chPower = clamp(generatedPower / 10 + randNormal(0, 9), 90, 480);
+          const chHr = clamp(profile.baselineHr + (100 - dayState.readiness) * 0.55 + randNormal(0, 4), 95, 195);
+          const chCadence = clamp(64 + dayState.readiness * 0.33 + randNormal(0, 2), 58, 112);
+          const chSpeed = clamp(7.0 + chPower / 42 + randNormal(0, 0.7), 6.5, 22.0);
+          const chDistance = clamp(0.2 + chSpeed * (durata / 60) * 0.38 + randNormal(0, 0.2), 0.1, 12.0);
 
           clickhouseWorkoutMetrics.push({
             athlete_id: athleteId,
             workout_id: workoutId,
             timestamp: toDateTime(date, randInt(0, 3000)),
-            power: randFloat(120, 420, 2),
-            heart_rate: randInt(110, 186),
-            cadence: randInt(68, 102),
-            speed: randFloat(8.5, 17.5, 2),
-            distance: randFloat(0.2, 4.0, 2),
+            power: Number(chPower.toFixed(2)),
+            heart_rate: Math.round(chHr),
+            cadence: Math.round(chCadence),
+            speed: Number(chSpeed.toFixed(2)),
+            distance: Number(chDistance.toFixed(2)),
           });
 
           clickhouseSensorData.push({
             sensor_id: exerciseId,
             timestamp: toDateTime(date, randInt(0, 3600)),
-            value: randFloat(0.5, 100.0, 3),
+            value: Number(clamp(risultato * 0.7 + randNormal(0, 4), 0.5, 130.0).toFixed(3)),
             sensor_type: randomFrom(["force_plate", "imu", "heart_rate", "cadence"]),
           });
         });
 
         const sampleEverySec = 30;
         for (let second = 0; second <= 10 * 60; second += sampleEverySec) {
+          const effortRatio = second / (10 * 60);
+          const instantHr = clamp(profile.baselineHr + effortRatio * 22 + (100 - dayState.readiness) * 0.35 + randNormal(0, 2), 98, 196);
+          const instantCadence = clamp(148 + effortRatio * 12 + dayState.readiness * 0.1 + randNormal(0, 1.5), 140, 192);
+          const instantSpeed = clamp(8.0 + effortRatio * 3.8 + dayState.readiness * 0.03 + randNormal(0, 0.25), 7.0, 18.5);
           cardioSamples.push({
             athlete_id: athleteId,
-            heart_rate_bpm: randFloat(110, 182, 1),
-            cadence_spm: randFloat(150, 186, 1),
-            speed_kmh: randFloat(8.5, 16.5, 2),
-            altitude_m: randFloat(95, 160, 2),
+            heart_rate_bpm: Number(instantHr.toFixed(1)),
+            cadence_spm: Number(instantCadence.toFixed(1)),
+            speed_kmh: Number(instantSpeed.toFixed(2)),
+            altitude_m: Number(clamp(102 + randNormal(0, 4), 90, 180).toFixed(2)),
             timestamp: toDateTime(date, second),
           });
         }
+
+        const recapPower = clamp(profile.baselinePower + dayState.trainingProgress * 45 + randNormal(0, 10), 100, 460);
+        const recapHr = clamp(profile.baselineHr + (100 - dayState.readiness) * 0.45 + randNormal(0, 3), 95, 188);
+        const recapSpeed = clamp(7.5 + recapPower / 48 + randNormal(0, 0.5), 7, 20);
 
         clickhouseWorkoutMetrics.push({
           athlete_id: athleteId,
           workout_id: workoutId,
           timestamp: toDateTime(date, 0),
-          power: randFloat(110, 350, 2),
-          heart_rate: randInt(105, 176),
-          cadence: randInt(65, 96),
-          speed: randFloat(8.0, 16.0, 2),
-          distance: randFloat(1.0, 6.0, 2),
+          power: Number(recapPower.toFixed(2)),
+          heart_rate: Math.round(recapHr),
+          cadence: Math.round(clamp(66 + dayState.readiness * 0.28 + randNormal(0, 1.8), 60, 106)),
+          speed: Number(recapSpeed.toFixed(2)),
+          distance: Number(clamp(recapSpeed * (durata / 60) * 0.42 + randNormal(0, 0.25), 0.8, 14).toFixed(2)),
         });
       }
     }
@@ -315,7 +395,7 @@ async function seedCitus(client, athletesToCreate, days) {
     insertedExercises.push(result.rows[0].exercise_id);
   }
 
-  const data = buildWorkoutData(insertedAthletes, insertedExercises, days);
+  const data = buildWorkoutData(insertedAthletes, insertedExercises, days, athletesToCreate);
 
   for (const w of data.workouts) {
     await client.query(
