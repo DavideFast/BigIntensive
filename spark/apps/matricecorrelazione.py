@@ -1,6 +1,8 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, from_json, max, avg, datediff, current, StructType, StructField, StringType, DateType, DoubleType
 from pyspark.sql.types import StructType, StructField, StringType, DateType, DoubleType
+from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.stat import Correlation
 from datetime import datetime
 from pyspark.sql.window import Window
 from pyspark.sql.functions import lag, when
@@ -68,4 +70,26 @@ df_variazione = (
     )
     .orderBy("atleta", "mese", "esercizio")
 )
+
+# Creare matrice di correlazione per ogni atleta con mLib
+pivot_df = (
+    df_variazione
+    .groupBy("atleta", "mese")
+    .pivot("esercizio")
+    .agg(avg("variazione_percentuale"))
+    .fillna(0)
+)
+
+feature_columns = [c for c in pivot_df.columns if c not in ["atleta", "mese"]]
+
+if len(feature_columns) < 2:
+    print("Dati insufficienti: servono almeno 2 esercizi per calcolare la correlazione")
+else:
+    assembler = VectorAssembler(inputCols=feature_columns, outputCol="features")
+    df_features = assembler.transform(pivot_df).select("features")
+    correlation_matrix = Correlation.corr(df_features, "features", "pearson").head()[0]
+
+    print("=== Matrice di correlazione (Pearson) tra esercizi ===")
+    print("Colonne:", feature_columns)
+    print(correlation_matrix)
 
