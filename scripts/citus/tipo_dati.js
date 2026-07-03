@@ -2,9 +2,6 @@ const struttura_esercizio = {
   esercizio_id: 1,
   nome_esercizio: "Panca piana",
   descrizione: "Esercizio per il petto",
-  serie: 3,
-  ripetizioni: 10,
-  tempo_riposo: "60s",
 };
 
 const struttura_utente = {
@@ -15,4 +12,17 @@ const struttura_utente = {
   sesso: "M",
   altezza_cm: 180,
   peso_kg: 75,
+};
+
+const struttura_allenamento = {
+  allenamento_id: 1,
+  nome_allenamento: "Allenamento Petto",
+  descrizione: "Allenamento per il petto",
+  durata: "60min",
+  esercizi: [1, 2, 3],
+  tempo_riposo: [2, 3, 4],
+  serie: [3, 4, 5],
+  ripetizioni: [10, 12, 15],
+  risultato: [val1, val2, val3],
+  utente: struttura_utente,
 };
