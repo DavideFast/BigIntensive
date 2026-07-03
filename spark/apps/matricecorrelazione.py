@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, from_json, max, avg, datediff, current, StructType, StructField, StringType, DateType, DoubleType
+from pyspark.sql.functions import col, from_json, max, avg, datediff, current
 from pyspark.sql.types import StructType, StructField, StringType, DateType, DoubleType
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.stat import Correlation
@@ -13,12 +13,12 @@ spark = SparkSession.builder.appName("matrice-correlazione-job").config("spark.j
 #Prendo tutti gli id degli esercizi da citus e creo uno schema dinamico per il json
 citus_url = "jdbc:postgresql://localhost:5432/bigintensive"
 citus_properties = {"user": "postgres", "password": "postgres", "driver": "org.postgresql.Driver"}
-citus_tabella = spark.read.jdbc(url=citus_url, table = "exercises", properties=citus_properties)
+citus_esercizi = spark.read.jdbc(url=citus_url, table = "exercises", properties=citus_properties)
 citus_atleta = spark.read.jdbc(url=citus_url, table = "jobs-in-coda",properties=citus_properties).select("atleta").distinct()
 input_atleta = [r.atleta for r in citus_atleta.select("atleta").distinct().collect()]
 
 campi = []
-for field in citus_tabella.schema.fields:
+for field in citus_esercizi.schema.fields:
         campi.append(StructField(field.name, StringType(),True))
 schema_json = StructType(campi)
 
@@ -36,13 +36,14 @@ df_clickhouse = clickhouse_tabella.selectExpr(
     "'forza' AS tipo"
 ).filter(col("atleta").isin(input_atleta))
 
-df_primo_round = df_clickhouse.withColumn("mese", col("giorno").cast("string").substr(0,7)).
-    groupBy("atleta","giorno","esercizio").
-    agg(
-    max("valore").alias("max_valore"),
-    avg("valore").alias("media_valore"),
-    col("tipo"),
-
+df_primo_round = (
+    df_clickhouse
+    .withColumn("mese", col("giorno").cast("string").substr(1,7))
+    .groupBy("atleta","giorno","esercizio","mese","tipo")
+    .agg(
+        max("valore").alias("max_valore"),
+        avg("valore").alias("media_valore"),
+    )
 )
 
 df_secondo_round = df_primo_round.groupBy("atleta","mese","esercizio","tipo").agg(

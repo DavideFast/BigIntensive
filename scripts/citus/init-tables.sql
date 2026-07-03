@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS athletes (
 CREATE TABLE IF NOT EXISTS exercises (
   exercise_id SERIAL PRIMARY KEY,
   nome_esercizio VARCHAR(150) NOT NULL,
+  tipo_esercizio VARCHAR(50) CHECK (tipo_esercizio IN ('forza', 'endurance', 'mobilità')),
   descrizione TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
