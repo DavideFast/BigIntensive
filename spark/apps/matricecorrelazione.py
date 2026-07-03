@@ -71,7 +71,7 @@ df_variazione = (
     .orderBy("atleta", "mese", "esercizio")
 )
 
-# Creare matrice di correlazione per ogni atleta con mLib
+# Creare matrici di correlazione separate per atleta con MLlib
 pivot_df = (
     df_variazione
     .groupBy("atleta", "mese")
@@ -81,15 +81,32 @@ pivot_df = (
 )
 
 feature_columns = [c for c in pivot_df.columns if c not in ["atleta", "mese"]]
+matrici_per_atleta = {}
 
 if len(feature_columns) < 2:
     print("Dati insufficienti: servono almeno 2 esercizi per calcolare la correlazione")
 else:
     assembler = VectorAssembler(inputCols=feature_columns, outputCol="features")
-    df_features = assembler.transform(pivot_df).select("features")
-    correlation_matrix = Correlation.corr(df_features, "features", "pearson").head()[0]
+    athlete_ids = [r["atleta"] for r in pivot_df.select("atleta").distinct().collect()]
 
-    print("=== Matrice di correlazione (Pearson) tra esercizi ===")
-    print("Colonne:", feature_columns)
-    print(correlation_matrix)
+    for atleta_id in athlete_ids:
+        athlete_df = pivot_df.filter(col("atleta") == atleta_id)
+        sample_count = athlete_df.count()
+
+        if sample_count < 2:
+            print(f"Atleta {atleta_id}: dati insufficienti per la correlazione (righe={sample_count})")
+            continue
+
+        df_features = assembler.transform(athlete_df).select("features")
+        correlation_matrix = Correlation.corr(df_features, "features", "pearson").head()[0]
+
+        matrici_per_atleta[atleta_id] = {
+            "columns": feature_columns,
+            "matrix": correlation_matrix.toArray().tolist(),
+            "rows": sample_count,
+        }
+
+        print(f"=== Matrice di correlazione (Pearson) atleta {atleta_id} ===")
+        print("Colonne:", feature_columns)
+        print(correlation_matrix)
 
