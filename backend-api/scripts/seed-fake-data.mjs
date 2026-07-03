@@ -480,32 +480,24 @@ async function clickhouseQuery(sql, body = "") {
   return response.text();
 }
 
-async function ensureClickhouseSchema() {
-  await clickhouseQuery(`CREATE DATABASE IF NOT EXISTS ${clickhouseConfig.database}`);
-  await clickhouseQuery(`
-    CREATE TABLE IF NOT EXISTS ${clickhouseConfig.database}.workout_metrics (
-      athlete_id UInt32,
-      workout_id UInt32,
-      timestamp DateTime,
-      power Float32,
-      heart_rate UInt16,
-      cadence UInt16,
-      speed Float32,
-      distance Float32
-    ) ENGINE = MergeTree
-    ORDER BY (timestamp, athlete_id)
-    PARTITION BY toYYYYMM(timestamp)
-  `);
-  await clickhouseQuery(`
-    CREATE TABLE IF NOT EXISTS ${clickhouseConfig.database}.sensor_data (
-      sensor_id UInt32,
-      timestamp DateTime,
-      value Float32,
-      sensor_type String
-    ) ENGINE = MergeTree
-    ORDER BY (timestamp, sensor_id)
-    PARTITION BY toYYYYMM(timestamp)
-  `);
+async function assertClickhouseSchemaExists() {
+  const dbExistsRaw = await clickhouseQuery(`EXISTS DATABASE ${clickhouseConfig.database}`);
+  const dbExists = dbExistsRaw.trim() === "1";
+  if (!dbExists) {
+    throw new Error(`ClickHouse schema mancante: database ${clickhouseConfig.database} non esiste`);
+  }
+
+  const workoutMetricsExistsRaw = await clickhouseQuery(`EXISTS TABLE ${clickhouseConfig.database}.workout_metrics`);
+  const workoutMetricsExists = workoutMetricsExistsRaw.trim() === "1";
+  if (!workoutMetricsExists) {
+    throw new Error(`ClickHouse schema mancante: tabella ${clickhouseConfig.database}.workout_metrics non esiste`);
+  }
+
+  const sensorDataExistsRaw = await clickhouseQuery(`EXISTS TABLE ${clickhouseConfig.database}.sensor_data`);
+  const sensorDataExists = sensorDataExistsRaw.trim() === "1";
+  if (!sensorDataExists) {
+    throw new Error(`ClickHouse schema mancante: tabella ${clickhouseConfig.database}.sensor_data non esiste`);
+  }
 }
 
 async function resetClickhouse() {
@@ -514,7 +506,7 @@ async function resetClickhouse() {
 }
 
 async function seedClickhouse(workoutMetricsRows, sensorRows) {
-  await ensureClickhouseSchema();
+  await assertClickhouseSchemaExists();
   if (RESET) {
     await resetClickhouse();
   }
