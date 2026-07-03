@@ -9,11 +9,11 @@ citus_url = "jdbc:postgresql://localhost:5432/bigintensive"
 citus_properties = {"user": "postgres", "password": "postgres", "driver": "org.postgresql.Driver"}
 citus_tabella = spark.read.jdbc(url=citus_url, table = "esercizi", properties=citus_properties)
 citus_atleta = spark.read.jdbc(url=citus_url, table = "jobs-in-coda",properties=citus_properties).select("atleta").distinct()
-
+input_atleta = [r.atleta for r in citus_atleta.select("atleta").distinct().collect()]
 
 campi = []
 for field in citus_tabella.schema.fields:
-        campi.append(StructField(field.id, StringType(),True))
+        campi.append(StructField(field.id_esercizio, StringType(),True))
 schema_json = StructType(campi)
 
 #Prendo da clickhouse tutti i dati degli esercizi e li trasformo in un dataframe spark a parità di atleta
@@ -29,4 +29,4 @@ campi_clickhouse = StructType([
 ])
 
 
-df_clickhouse = clickhouse_tabella.select(from_json(col("dati").cast("string"), campi_clickhouse).alias("data")).select("data.*").filter(col("atleta") == atleta_input)
+df_clickhouse = clickhouse_tabella.select(from_json(col("dati").cast("string"), campi_clickhouse).alias("data")).select("data.*").filter(col("atleta").isin(input_atleta))
