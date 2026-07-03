@@ -19,7 +19,7 @@ input_atleta = [r.atleta for r in citus_atleta.select("atleta").distinct().colle
 
 campi = []
 for field in citus_tabella.schema.fields:
-        campi.append(StructField(field.id_esercizio, StringType(),True))
+        campi.append(StructField(field.name, StringType(),True))
 schema_json = StructType(campi)
 
 #Prendo da clickhouse tutti i dati degli esercizi e li trasformo in un dataframe spark a parità di atleta
