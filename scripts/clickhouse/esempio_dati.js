@@ -1,6 +1,6 @@
 const allenamento = {
   allenamento_id: 1,
-  utente_id: 1,
+  atleta_id: 1,
   nome_allenamento: "Allenamento Petto",
   descrizione: "Sessione focalizzata sul petto",
   durata_min: 60,
