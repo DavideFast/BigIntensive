@@ -46,6 +46,7 @@ function resolveDockerExecutable() {
 }
 
 const dockerRuntime = resolveDockerExecutable();
+const correlationMatrices = new Map();
 
 function resolvePythonScript(scriptName) {
   const scriptPath = path.join(pythonScriptsDir, scriptName);
@@ -138,6 +139,7 @@ app.get("/health", (req, res) => {
   });
 });
 
+// ========================== SIMULATION ROUTES START =============================
 app.get("/events", (req, res) => {
   const ordered = [...events].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   res.json({ items: ordered, total: ordered.length });
@@ -304,7 +306,9 @@ app.post("/heart-rate/start", (req, res) => {
     message: "Heart-rate simulation started in background",
   });
 });
+// =========================== SIMULATION ROUTES END ==============================
 
+// ========================= DEPLOY/LOADTEST ROUTES START =========================
 app.post("/loadtest/start", (req, res) => {
   const { mode, vus, duration, base_url } = req.body || {};
   const endpointMode = String(mode || "events").toLowerCase();
@@ -445,7 +449,9 @@ app.get("/loadtest/jobs/:id", (req, res) => {
 
   return res.json(job);
 });
+// ========================== DEPLOY/LOADTEST ROUTES END ==========================
 
+// =========================== BUSINESS ROUTES START ==============================
 // Athletes endpoints
 app.get("/athletes", async (req, res) => {
   try {
@@ -547,6 +553,79 @@ app.put("/athletes/:id", async (req, res) => {
     res.status(500).json({ error: "Database error", details: err.message });
   }
 });
+
+// Correlation matrices endpoints (Spark integration-ready contract)
+app.get("/correlations", (req, res) => {
+  const items = [...correlationMatrices.values()].map((entry) => ({
+    atleta: entry.atleta,
+    rows: entry.rows,
+    columnsCount: entry.columns.length,
+    updatedAt: entry.updatedAt,
+  }));
+
+  res.json({ items, total: items.length });
+});
+
+app.get("/correlations/:atleta", (req, res) => {
+  const atleta = String(req.params.atleta);
+  const matrix = correlationMatrices.get(atleta);
+
+  if (!matrix) {
+    return res.status(404).json({ error: "Correlation matrix not found" });
+  }
+
+  return res.json(matrix);
+});
+
+app.post("/correlations/:atleta", (req, res) => {
+  const atleta = String(req.params.atleta);
+  const { columns, matrix, rows } = req.body || {};
+
+  if (!Array.isArray(columns) || columns.length < 2) {
+    return res.status(400).json({
+      error: "Invalid columns",
+      details: "columns must be an array with at least 2 items",
+    });
+  }
+
+  if (!Array.isArray(matrix) || matrix.length !== columns.length) {
+    return res.status(400).json({
+      error: "Invalid matrix",
+      details: "matrix must be a square array with the same size as columns",
+    });
+  }
+
+  const validSquare = matrix.every((row) => Array.isArray(row) && row.length === columns.length);
+  if (!validSquare) {
+    return res.status(400).json({
+      error: "Invalid matrix shape",
+      details: "each matrix row must have the same size as columns",
+    });
+  }
+
+  const payload = {
+    atleta,
+    columns,
+    matrix,
+    rows: Number(rows) || 0,
+    updatedAt: new Date().toISOString(),
+  };
+
+  correlationMatrices.set(atleta, payload);
+  return res.status(201).json(payload);
+});
+
+app.delete("/correlations/:atleta", (req, res) => {
+  const atleta = String(req.params.atleta);
+  const removed = correlationMatrices.delete(atleta);
+
+  if (!removed) {
+    return res.status(404).json({ error: "Correlation matrix not found" });
+  }
+
+  return res.status(204).send();
+});
+// ============================ BUSINESS ROUTES END ===============================
 
 app.listen(port, () => {
   console.log(`Backend API listening on http://localhost:${port}`);
