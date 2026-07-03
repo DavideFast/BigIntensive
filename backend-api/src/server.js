@@ -1,15 +1,16 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { spawn } from "child_process";
-import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import pg from "pg";
 import { createDeployLoadtestRouter } from "./routes/deployLoadtestRoutes.js";
 import { createSimulationRouter } from "./routes/simulationRoutes.js";
 import { createBusinessRouter } from "./routes/businessRoutes.js";
+import { createSystemRouter } from "./routes/systemRoutes.js";
+import { createDbPool } from "./db/pool.js";
+import { createOriginChecker } from "./middleware/corsOrigin.js";
 import { resolvePythonExecutable, resolveDockerExecutable } from "./utils/runtimeResolvers.js";
+import { createResolvePythonScript } from "./utils/pythonScriptResolver.js";
 
 dotenv.config();
 
@@ -26,50 +27,12 @@ const k6DockerVolume = process.env.K6_DOCKER_VOLUME || "bigintensive-spark_k6-sh
 
 const dockerRuntime = resolveDockerExecutable();
 const correlationMatrices = new Map();
-
-function resolvePythonScript(scriptName) {
-  const scriptPath = path.join(pythonScriptsDir, scriptName);
-
-  if (!fs.existsSync(scriptPath)) {
-    throw new Error(`Script non trovato: ${scriptPath}`);
-  }
-
-  return scriptPath;
-}
+const resolvePythonScript = createResolvePythonScript(pythonScriptsDir);
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
-const corsOriginRaw = process.env.CORS_ORIGIN || "http://localhost:5173";
-const explicitAllowedOrigins = corsOriginRaw
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
-function isAllowedOrigin(origin) {
-  if (!origin) {
-    return true;
-  }
-
-  if (explicitAllowedOrigins.includes(origin)) {
-    return true;
-  }
-
-  try {
-    const parsed = new URL(origin);
-    return parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
-  } catch {
-    return false;
-  }
-}
-
-// Citus Database connection
-const pool = new pg.Pool({
-  user: process.env.CITUS_POSTGRES_USER || "postgres",
-  password: process.env.CITUS_POSTGRES_PASSWORD || "postgres",
-  host: process.env.CITUS_HOST || "citus-coordinator",
-  port: process.env.CITUS_PORT || 5432,
-  database: process.env.CITUS_POSTGRES_DB || "bigintensive",
-});
+const isAllowedOrigin = createOriginChecker(process.env.CORS_ORIGIN || "http://localhost:5173");
+const pool = createDbPool();
 
 app.use(
   cors({
@@ -83,18 +46,10 @@ app.use(
   }),
 );
 app.use(express.json());
-
-app.get("/health", (req, res) => {
-  res.json({
-    status: "ok",
-    service: "bigintensive-backend-api",
-    timestamp: new Date().toISOString(),
-  });
-});
+app.use(createSystemRouter());
 
 // ========================== SIMULATION ROUTES START =============================
 app.use(createSimulationRouter({ pythonRuntime, resolvePythonScript }));
-// =========================== SIMULATION ROUTES END ==============================
 
 // ========================= DEPLOY/LOADTEST ROUTES START =========================
 app.use(
