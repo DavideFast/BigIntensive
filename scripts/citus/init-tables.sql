@@ -1,4 +1,5 @@
--- Citus tables aligned to scripts/citus/esempio_dati.js
+-- Single canonical Citus schema/bootstrap file.
+-- Aligned to scripts/citus/esempio_dati.js.
 CREATE TABLE IF NOT EXISTS athletes (
   athlete_id SERIAL PRIMARY KEY,
   nome VARCHAR(100) NOT NULL,
