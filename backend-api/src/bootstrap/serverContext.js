@@ -8,7 +8,7 @@ import { createResolvePythonScript } from "../utils/pythonScriptResolver.js";
 export function createServerContext(importMetaUrl) {
   const __filename = fileURLToPath(importMetaUrl);
   const __dirname = path.dirname(__filename);
-  const projectRoot = path.resolve(__dirname, "../..");
+  const projectRoot = path.resolve(__dirname, "../../..");
 
   const pythonScriptsDir = path.join(projectRoot, "scripts", "python");
   const k6ScriptPath = path.join(projectRoot, "scripts", "load", "k6-backend.js");
