@@ -156,7 +156,6 @@ function buildWorkoutData(athleteIds, exerciseIds, days, athletesSeedData = []) 
         athlete_id: athleteId,
         giorno: dateOnly,
         valore: Math.round(dayState.readiness),
-        note: dayState.deloadDay ? "scarico" : null,
       });
 
       const workoutCount = day % 6 === 0 ? 0 : dayState.readiness < 52 ? 1 : randInt(1, 2);
@@ -290,65 +289,14 @@ async function ensureCitusSchema(client) {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE TABLE IF NOT EXISTS workouts (
-      workout_id BIGINT NOT NULL,
-      athlete_id INT NOT NULL REFERENCES athletes(athlete_id),
-      nome_allenamento VARCHAR(150) NOT NULL,
-      descrizione TEXT,
-      durata_min INT NOT NULL CHECK (durata_min > 0 AND durata_min <= 600),
-      workout_date DATE NOT NULL DEFAULT CURRENT_DATE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (athlete_id, workout_id)
-    );
-
-    CREATE TABLE IF NOT EXISTS workout_exercises (
-      workout_exercise_id BIGSERIAL,
-      athlete_id INT NOT NULL,
-      workout_id BIGINT NOT NULL,
-      exercise_id INT NOT NULL REFERENCES exercises(exercise_id),
-      ordine SMALLINT NOT NULL CHECK (ordine > 0),
-      serie SMALLINT NOT NULL CHECK (serie > 0),
-      ripetizioni SMALLINT NOT NULL CHECK (ripetizioni > 0),
-      tempo_riposo_sec SMALLINT CHECK (tempo_riposo_sec >= 0),
-      risultato DECIMAL(10, 2),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (athlete_id, workout_exercise_id),
-      CONSTRAINT uq_workout_exercises_order UNIQUE (athlete_id, workout_id, ordine)
-    );
-
     CREATE TABLE IF NOT EXISTS training_status (
       status_id BIGSERIAL,
       athlete_id INT NOT NULL REFERENCES athletes(athlete_id),
       giorno DATE NOT NULL,
       valore SMALLINT NOT NULL CHECK (valore >= 0 AND valore <= 100),
-      note TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (athlete_id, status_id),
       CONSTRAINT uq_training_status_day UNIQUE (athlete_id, giorno)
-    );
-
-    CREATE TABLE IF NOT EXISTS exercise_metrics (
-      metric_id BIGSERIAL,
-      athlete_id INT NOT NULL REFERENCES athletes(athlete_id),
-      esercizio VARCHAR(50) NOT NULL,
-      valore_salto DECIMAL(10, 2) NOT NULL,
-      rsi DECIMAL(10, 4) NOT NULL,
-      differenza_bilaterale DECIMAL(10, 2) NOT NULL,
-      potenza_sviluppata DECIMAL(12, 2) NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (athlete_id, metric_id)
-    );
-
-    CREATE TABLE IF NOT EXISTS cardio_endurance_samples (
-      sample_id BIGSERIAL,
-      athlete_id INT NOT NULL REFERENCES athletes(athlete_id),
-      heart_rate_bpm DECIMAL(5, 1) NOT NULL,
-      cadence_spm DECIMAL(5, 1) NOT NULL,
-      speed_kmh DECIMAL(5, 2) NOT NULL,
-      altitude_m DECIMAL(7, 2) NOT NULL,
-      timestamp TIMESTAMP NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (athlete_id, sample_id)
     );
   `);
 }
@@ -356,10 +304,6 @@ async function ensureCitusSchema(client) {
 async function resetCitus(client) {
   await client.query(`
     TRUNCATE TABLE
-      cardio_endurance_samples,
-      exercise_metrics,
-      workout_exercises,
-      workouts,
       training_status,
       exercises,
       athletes
@@ -397,55 +341,19 @@ async function seedCitus(client, athletesToCreate, days) {
 
   const data = buildWorkoutData(insertedAthletes, insertedExercises, days, athletesToCreate);
 
-  for (const w of data.workouts) {
-    await client.query(
-      `INSERT INTO workouts (athlete_id, workout_id, nome_allenamento, descrizione, durata_min, workout_date)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [w.athlete_id, w.workout_id, w.nome_allenamento, w.descrizione, w.durata_min, w.workout_date],
-    );
-  }
-
-  for (const we of data.workoutExercises) {
-    await client.query(
-      `INSERT INTO workout_exercises (athlete_id, workout_id, exercise_id, ordine, serie, ripetizioni, tempo_riposo_sec, risultato)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [we.athlete_id, we.workout_id, we.exercise_id, we.ordine, we.serie, we.ripetizioni, we.tempo_riposo_sec, we.risultato],
-    );
-  }
-
   for (const ts of data.trainingStatus) {
     await client.query(
-      `INSERT INTO training_status (athlete_id, giorno, valore, note)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (athlete_id, giorno) DO UPDATE SET valore = EXCLUDED.valore, note = EXCLUDED.note`,
-      [ts.athlete_id, ts.giorno, ts.valore, ts.note],
-    );
-  }
-
-  for (const m of data.exerciseMetrics) {
-    await client.query(
-      `INSERT INTO exercise_metrics (athlete_id, esercizio, valore_salto, rsi, differenza_bilaterale, potenza_sviluppata, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [m.athlete_id, m.esercizio, m.valore_salto, m.rsi, m.differenza_bilaterale, m.potenza_sviluppata, m.created_at],
-    );
-  }
-
-  for (const c of data.cardioSamples) {
-    await client.query(
-      `INSERT INTO cardio_endurance_samples (athlete_id, heart_rate_bpm, cadence_spm, speed_kmh, altitude_m, timestamp)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [c.athlete_id, c.heart_rate_bpm, c.cadence_spm, c.speed_kmh, c.altitude_m, c.timestamp],
+      `INSERT INTO training_status (athlete_id, giorno, valore)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (athlete_id, giorno) DO UPDATE SET valore = EXCLUDED.valore`,
+      [ts.athlete_id, ts.giorno, ts.valore],
     );
   }
 
   return {
     athletes: insertedAthletes.length,
     exercises: insertedExercises.length,
-    workouts: data.workouts.length,
-    workoutExercises: data.workoutExercises.length,
     trainingStatus: data.trainingStatus.length,
-    exerciseMetrics: data.exerciseMetrics.length,
-    cardioSamples: data.cardioSamples.length,
     clickhouseWorkoutMetrics: data.clickhouseWorkoutMetrics,
     clickhouseSensorData: data.clickhouseSensorData,
   };
@@ -573,11 +481,7 @@ async function main() {
         citus: {
           athletes: summary.athletes,
           exercises: summary.exercises,
-          workouts: summary.workouts,
-          workoutExercises: summary.workoutExercises,
           trainingStatus: summary.trainingStatus,
-          exerciseMetrics: summary.exerciseMetrics,
-          cardioSamples: summary.cardioSamples,
         },
         clickhouse: {
           workoutMetricsRows: clickhouseInserted.workoutMetrics,
