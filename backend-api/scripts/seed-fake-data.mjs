@@ -118,12 +118,7 @@ function computeDayState(day, totalDays, profile) {
   const blockWave = Math.sin((day / 21) * 2 * Math.PI);
   const fatigue = clamp((1 - profile.recoveryQuality) * 16 + (1 - weeklyWave) * profile.fatigueSensitivity * 10, 0, 28);
 
-  const readinessRaw = 65
-    + trainingProgress * 22 * profile.adaptability
-    + weeklyWave * 6
-    + blockWave * 4
-    - fatigue
-    + randNormal(0, 3.2);
+  const readinessRaw = 65 + trainingProgress * 22 * profile.adaptability + weeklyWave * 6 + blockWave * 4 - fatigue + randNormal(0, 3.2);
 
   return {
     trainingProgress,
@@ -140,8 +135,6 @@ function buildWorkoutData(athleteIds, exerciseIds, days, athletesSeedData = []) 
   const exerciseMetrics = [];
   const cardioSamples = [];
   const clickhouseEnduranceSessions = [];
-  const clickhouseWorkoutMetrics = [];
-  const clickhouseSensorData = [];
   const athleteProfiles = buildAthleteProfiles(athleteIds, athletesSeedData);
 
   let workoutIdCursor = 1;
@@ -208,30 +201,6 @@ function buildWorkoutData(athleteIds, exerciseIds, days, athletesSeedData = []) 
             potenza_sviluppata: Number(generatedPower.toFixed(2)),
             created_at: toDateTime(date, randInt(0, 3600)),
           });
-
-          const chPower = clamp(generatedPower / 10 + randNormal(0, 9), 90, 480);
-          const chHr = clamp(profile.baselineHr + (100 - dayState.readiness) * 0.55 + randNormal(0, 4), 95, 195);
-          const chCadence = clamp(64 + dayState.readiness * 0.33 + randNormal(0, 2), 58, 112);
-          const chSpeed = clamp(7.0 + chPower / 42 + randNormal(0, 0.7), 6.5, 22.0);
-          const chDistance = clamp(0.2 + chSpeed * (durata / 60) * 0.38 + randNormal(0, 0.2), 0.1, 12.0);
-
-          clickhouseWorkoutMetrics.push({
-            athlete_id: athleteId,
-            workout_id: workoutId,
-            timestamp: toDateTime(date, randInt(0, 3000)),
-            power: Number(chPower.toFixed(2)),
-            heart_rate: Math.round(chHr),
-            cadence: Math.round(chCadence),
-            speed: Number(chSpeed.toFixed(2)),
-            distance: Number(chDistance.toFixed(2)),
-          });
-
-          clickhouseSensorData.push({
-            sensor_id: exerciseId,
-            timestamp: toDateTime(date, randInt(0, 3600)),
-            value: Number(clamp(risultato * 0.7 + randNormal(0, 4), 0.5, 130.0).toFixed(3)),
-            sensor_type: randomFrom(["force_plate", "imu", "heart_rate", "cadence"]),
-          });
         });
 
         const sampleEverySec = 30;
@@ -258,21 +227,6 @@ function buildWorkoutData(athleteIds, exerciseIds, days, athletesSeedData = []) 
           commento: dayState.readiness >= 70 ? "Progressione regolare" : "Sessione di recupero controllato",
           ts: toDateTime(date, 0),
         });
-
-        const recapPower = clamp(profile.baselinePower + dayState.trainingProgress * 45 + randNormal(0, 10), 100, 460);
-        const recapHr = clamp(profile.baselineHr + (100 - dayState.readiness) * 0.45 + randNormal(0, 3), 95, 188);
-        const recapSpeed = clamp(7.5 + recapPower / 48 + randNormal(0, 0.5), 7, 20);
-
-        clickhouseWorkoutMetrics.push({
-          athlete_id: athleteId,
-          workout_id: workoutId,
-          timestamp: toDateTime(date, 0),
-          power: Number(recapPower.toFixed(2)),
-          heart_rate: Math.round(recapHr),
-          cadence: Math.round(clamp(66 + dayState.readiness * 0.28 + randNormal(0, 1.8), 60, 106)),
-          speed: Number(recapSpeed.toFixed(2)),
-          distance: Number(clamp(recapSpeed * (durata / 60) * 0.42 + randNormal(0, 0.25), 0.8, 14).toFixed(2)),
-        });
       }
     }
   }
@@ -284,8 +238,6 @@ function buildWorkoutData(athleteIds, exerciseIds, days, athletesSeedData = []) 
     exerciseMetrics,
     cardioSamples,
     clickhouseEnduranceSessions,
-    clickhouseWorkoutMetrics,
-    clickhouseSensorData,
   };
 }
 
@@ -379,8 +331,6 @@ async function seedCitus(client, athletesToCreate, days) {
     clickhouseAllenamentoDettagli: data.workoutExercises,
     clickhouseEnduranceSessions: data.clickhouseEnduranceSessions,
     clickhouseEnduranceCampioni: data.cardioSamples,
-    clickhouseWorkoutMetrics: data.clickhouseWorkoutMetrics,
-    clickhouseSensorData: data.clickhouseSensorData,
   };
 }
 
@@ -420,18 +370,6 @@ async function assertClickhouseSchemaExists() {
     throw new Error(`ClickHouse schema mancante: database ${clickhouseConfig.database} non esiste`);
   }
 
-  const workoutMetricsExistsRaw = await clickhouseQuery(`EXISTS TABLE ${clickhouseConfig.database}.workout_metrics`);
-  const workoutMetricsExists = workoutMetricsExistsRaw.trim() === "1";
-  if (!workoutMetricsExists) {
-    throw new Error(`ClickHouse schema mancante: tabella ${clickhouseConfig.database}.workout_metrics non esiste`);
-  }
-
-  const sensorDataExistsRaw = await clickhouseQuery(`EXISTS TABLE ${clickhouseConfig.database}.sensor_data`);
-  const sensorDataExists = sensorDataExistsRaw.trim() === "1";
-  if (!sensorDataExists) {
-    throw new Error(`ClickHouse schema mancante: tabella ${clickhouseConfig.database}.sensor_data non esiste`);
-  }
-
   const allenamentiExistsRaw = await clickhouseQuery(`EXISTS TABLE ${clickhouseConfig.database}.allenamenti`);
   if (allenamentiExistsRaw.trim() !== "1") {
     throw new Error(`ClickHouse schema mancante: tabella ${clickhouseConfig.database}.allenamenti non esiste`);
@@ -458,11 +396,9 @@ async function resetClickhouse() {
   await clickhouseQuery(`TRUNCATE TABLE ${clickhouseConfig.database}.corsa_endurance_sessioni`);
   await clickhouseQuery(`TRUNCATE TABLE ${clickhouseConfig.database}.allenamento_dettagli`);
   await clickhouseQuery(`TRUNCATE TABLE ${clickhouseConfig.database}.allenamenti`);
-  await clickhouseQuery(`TRUNCATE TABLE ${clickhouseConfig.database}.workout_metrics`);
-  await clickhouseQuery(`TRUNCATE TABLE ${clickhouseConfig.database}.sensor_data`);
 }
 
-async function seedClickhouse(allenamentiRows, allenamentoDettagliRows, enduranceSessioniRows, enduranceCampioniRows, workoutMetricsRows, sensorRows) {
+async function seedClickhouse(allenamentiRows, allenamentoDettagliRows, enduranceSessioniRows, enduranceCampioniRows) {
   await assertClickhouseSchemaExists();
   if (RESET) {
     await resetClickhouse();
@@ -472,8 +408,6 @@ async function seedClickhouse(allenamentiRows, allenamentoDettagliRows, enduranc
   let insertedAllenamentoDettagli = 0;
   let insertedEnduranceSessioni = 0;
   let insertedEnduranceCampioni = 0;
-  let insertedWorkoutMetrics = 0;
-  let insertedSensorData = 0;
 
   if (allenamentiRows.length) {
     const allenamentiPayload = allenamentiRows
@@ -550,49 +484,11 @@ async function seedClickhouse(allenamentiRows, allenamentoDettagliRows, enduranc
     insertedEnduranceCampioni = enduranceCampioniRows.length;
   }
 
-  if (workoutMetricsRows.length) {
-    const workoutMetricsPayload = workoutMetricsRows
-      .map((r) =>
-        JSON.stringify({
-          athlete_id: r.athlete_id,
-          workout_id: r.workout_id,
-          timestamp: r.timestamp,
-          power: r.power,
-          heart_rate: r.heart_rate,
-          cadence: r.cadence,
-          speed: r.speed,
-          distance: r.distance,
-        }),
-      )
-      .join("\n");
-
-    await clickhouseQuery(`INSERT INTO ${clickhouseConfig.database}.workout_metrics FORMAT JSONEachRow`, workoutMetricsPayload);
-    insertedWorkoutMetrics = workoutMetricsRows.length;
-  }
-
-  if (sensorRows.length) {
-    const sensorPayload = sensorRows
-      .map((r) =>
-        JSON.stringify({
-          sensor_id: r.sensor_id,
-          timestamp: r.timestamp,
-          value: r.value,
-          sensor_type: r.sensor_type,
-        }),
-      )
-      .join("\n");
-
-    await clickhouseQuery(`INSERT INTO ${clickhouseConfig.database}.sensor_data FORMAT JSONEachRow`, sensorPayload);
-    insertedSensorData = sensorRows.length;
-  }
-
   return {
     allenamenti: insertedAllenamenti,
     allenamentoDettagli: insertedAllenamentoDettagli,
     corsaEnduranceSessioni: insertedEnduranceSessioni,
     corsaEnduranceCampioni: insertedEnduranceCampioni,
-    workoutMetrics: insertedWorkoutMetrics,
-    sensorData: insertedSensorData,
   };
 }
 
@@ -606,14 +502,7 @@ async function main() {
       const summary = await seedCitus(client, generateAthletes(DEFAULT_ATHLETES), DEFAULT_DAYS);
       await client.query("COMMIT");
 
-      const clickhouseInserted = await seedClickhouse(
-        summary.clickhouseAllenamenti,
-        summary.clickhouseAllenamentoDettagli,
-        summary.clickhouseEnduranceSessions,
-        summary.clickhouseEnduranceCampioni,
-        summary.clickhouseWorkoutMetrics,
-        summary.clickhouseSensorData,
-      );
+      const clickhouseInserted = await seedClickhouse(summary.clickhouseAllenamenti, summary.clickhouseAllenamentoDettagli, summary.clickhouseEnduranceSessions, summary.clickhouseEnduranceCampioni);
 
       console.log("Seed completato con successo");
       console.log({
@@ -627,8 +516,6 @@ async function main() {
           allenamentoDettagliRows: clickhouseInserted.allenamentoDettagli,
           corsaEnduranceSessioniRows: clickhouseInserted.corsaEnduranceSessioni,
           corsaEnduranceCampioniRows: clickhouseInserted.corsaEnduranceCampioni,
-          workoutMetricsRows: clickhouseInserted.workoutMetrics,
-          sensorDataRows: clickhouseInserted.sensorData,
         },
       });
     } catch (err) {
