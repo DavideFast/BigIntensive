@@ -25,7 +25,7 @@ schema_json = StructType(campi)
 #Prendo da clickhouse tutti i dati degli esercizi e li trasformo in un dataframe spark a parità di atleta
 clickhouse_url = "jdbc:clickhouse://localhost:8123/bigintensive"
 clickhouse_properties = {"user": "default", "password": "", "driver": "ru.yandex.clickhouse.ClickHouseDriver"}
-clickhouse_tabella = spark.read.jdbc(url=clickhouse_url, table = "allenamenti", properties=clickhouse_properties)
+clickhouse_tabella = spark.read.jdbc(url=clickhouse_url, table = "allenamenti_dettaglio", properties=clickhouse_properties)
 
 campi_clickhouse = StructType([
         StructField("atleta", StringType(), True),
