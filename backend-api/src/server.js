@@ -9,7 +9,6 @@ import { createServerContext } from "./bootstrap/serverContext.js";
 
 dotenv.config();
 const context = createServerContext(import.meta.url);
-
 const app = express();
 
 app.use(
@@ -49,7 +48,7 @@ app.use(
 app.use(
   createBusinessRouter({
     pool: context.pool,
-    correlationMatrices: context.correlationMatrices,
+    correlationStore: context.correlationStore,
   }),
 );
 

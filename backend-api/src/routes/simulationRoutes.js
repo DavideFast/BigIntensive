@@ -1,5 +1,10 @@
 import express from "express";
-import { spawn } from "child_process";
+import {
+  validateEventPayload,
+  validateForcePlatePayload,
+  validateHeartRatePayload,
+} from "../validators/simulationValidators.js";
+import { startPythonJob } from "../utils/pythonSpawn.js";
 
 export function createSimulationRouter({ pythonRuntime, resolvePythonScript }) {
   const router = express.Router();
@@ -37,14 +42,12 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript }) {
 
   router.post("/events", (req, res) => {
     console.log("Received event:", req.body);
-    const { topic, source, status, payload } = req.body || {};
-
-    if (!topic || !source || !status || !payload) {
-      return res.status(400).json({
-        error: "Missing fields",
-        required: ["topic", "source", "status", "payload"],
-      });
+    const validation = validateEventPayload(req.body);
+    if (!validation.ok) {
+      return res.status(validation.status).json(validation.payload);
     }
+
+    const { topic, source, status, payload } = req.body || {};
 
     const event = {
       id: newEventId(),
@@ -67,19 +70,9 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript }) {
   router.post("/force-plate/start", (req, res) => {
     const { athlete_id, exercise, duration_ms, repeat, interval_s } = req.body || {};
 
-    if (!athlete_id || !exercise) {
-      return res.status(400).json({
-        error: "Missing required fields",
-        required: ["athlete_id", "exercise"],
-      });
-    }
-
-    const validExercises = ["squat", "jump", "leg_press"];
-    if (!validExercises.includes(exercise)) {
-      return res.status(400).json({
-        error: "Invalid exercise",
-        valid: validExercises,
-      });
+    const validation = validateForcePlatePayload(req.body);
+    if (!validation.ok) {
+      return res.status(validation.status).json(validation.payload);
     }
 
     if (!pythonRuntime) {
@@ -114,25 +107,10 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript }) {
       "force-plate-events",
     ];
 
-    const child = spawn(pythonRuntime.command, args, {
-      stdio: "pipe",
-      detached: false,
-    });
-
-    child.stdout.on("data", (data) => {
-      console.log(`[force-plate] ${data}`);
-    });
-
-    child.stderr.on("data", (data) => {
-      console.error(`[force-plate error] ${data}`);
-    });
-
-    child.on("error", (err) => {
-      console.error(`[force-plate spawn error] ${err.message}`);
-    });
-
-    child.on("close", (code) => {
-      console.log(`[force-plate] Process exited with code ${code}`);
+    startPythonJob({
+      command: pythonRuntime.command,
+      args,
+      logTag: "force-plate",
     });
 
     return res.json({
@@ -149,11 +127,9 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript }) {
   router.post("/heart-rate/start", (req, res) => {
     const { athlete_id, duration_ms, repeat, interval_s } = req.body || {};
 
-    if (!athlete_id) {
-      return res.status(400).json({
-        error: "Missing required fields",
-        required: ["athlete_id"],
-      });
+    const validation = validateHeartRatePayload(req.body);
+    if (!validation.ok) {
+      return res.status(validation.status).json(validation.payload);
     }
 
     if (!pythonRuntime) {
@@ -186,25 +162,10 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript }) {
       "heart-rate-events",
     ];
 
-    const child = spawn(pythonRuntime.command, args, {
-      stdio: "pipe",
-      detached: false,
-    });
-
-    child.stdout.on("data", (data) => {
-      console.log(`[heart-rate] ${data}`);
-    });
-
-    child.stderr.on("data", (data) => {
-      console.error(`[heart-rate error] ${data}`);
-    });
-
-    child.on("error", (err) => {
-      console.error(`[heart-rate spawn error] ${err.message}`);
-    });
-
-    child.on("close", (code) => {
-      console.log(`[heart-rate] Process exited with code ${code}`);
+    startPythonJob({
+      command: pythonRuntime.command,
+      args,
+      logTag: "heart-rate",
     });
 
     return res.json({

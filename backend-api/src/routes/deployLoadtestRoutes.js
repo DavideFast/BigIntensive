@@ -2,37 +2,21 @@ import express from "express";
 import fs from "fs";
 import { spawn } from "child_process";
 import { randomUUID } from "crypto";
+import { validateLoadtestPayload } from "../validators/loadtestValidators.js";
 
-export function createDeployLoadtestRouter({
-  dockerRuntime,
-  k6ScriptPath,
-  k6SharedScriptPath,
-  k6DockerNetwork,
-  k6DockerVolume,
-}) {
+export function createDeployLoadtestRouter({ dockerRuntime, k6ScriptPath, k6SharedScriptPath, k6DockerNetwork, k6DockerVolume }) {
   const router = express.Router();
   const loadtestJobs = new Map();
 
   router.post("/loadtest/start", (req, res) => {
-    const { mode, vus, duration, base_url } = req.body || {};
-    const endpointMode = String(mode || "events").toLowerCase();
-    const parsedVus = Math.max(1, Number(vus) || 1);
-    const parsedDuration = String(duration || "60s").trim();
+    const { base_url } = req.body || {};
+    const validation = validateLoadtestPayload(req.body);
+    if (!validation.ok) {
+      return res.status(validation.status).json(validation.payload);
+    }
+
+    const { endpointMode, parsedVus, parsedDuration } = validation;
     const baseUrl = String(base_url || "http://backend-api:3001").trim();
-
-    if (!["events", "force-plate"].includes(endpointMode)) {
-      return res.status(400).json({
-        error: "Invalid mode",
-        valid: ["events", "force-plate"],
-      });
-    }
-
-    if (!/^\d+[smh]$/.test(parsedDuration)) {
-      return res.status(400).json({
-        error: "Invalid duration format",
-        expected: "Examples: 30s, 2m, 1h",
-      });
-    }
 
     if (!dockerRuntime) {
       return res.status(500).json({
@@ -62,25 +46,7 @@ export function createDeployLoadtestRouter({
     }
 
     const jobId = randomUUID();
-    const args = [
-      "run",
-      "--rm",
-      "--network",
-      k6DockerNetwork,
-      "-v",
-      `${k6DockerVolume}:/scripts/load:ro`,
-      "-e",
-      `BASE_URL=${baseUrl}`,
-      "-e",
-      `ENDPOINT_MODE=${endpointMode}`,
-      "grafana/k6:0.53.0",
-      "run",
-      "--vus",
-      String(parsedVus),
-      "--duration",
-      parsedDuration,
-      "/scripts/load/k6-backend.js",
-    ];
+    const args = ["run", "--rm", "--network", k6DockerNetwork, "-v", `${k6DockerVolume}:/scripts/load:ro`, "-e", `BASE_URL=${baseUrl}`, "-e", `ENDPOINT_MODE=${endpointMode}`, "grafana/k6:0.53.0", "run", "--vus", String(parsedVus), "--duration", parsedDuration, "/scripts/load/k6-backend.js"];
 
     loadtestJobs.set(jobId, {
       id: jobId,
