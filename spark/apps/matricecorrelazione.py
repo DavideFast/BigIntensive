@@ -1,4 +1,7 @@
-
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, from_json, max, avg, datediff, current
+from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.stat import Correlation
 
 spark = sparkSession.builder.appName("matrice-correlazione-job").config("spark.jar.packages", "org.apache.spark:spark-sql_2.12:5.3.0").getOrCreate()
 
