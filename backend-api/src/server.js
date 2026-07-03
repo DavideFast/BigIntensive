@@ -106,12 +106,11 @@ app.use(
     k6DockerVolume,
   }),
 );
-// ========================== DEPLOY/LOADTEST ROUTES END ==========================
 
 // =========================== BUSINESS ROUTES START ==============================
 app.use(createBusinessRouter({ pool, correlationMatrices }));
-// ============================ BUSINESS ROUTES END ===============================
 
+// ============================ AVVIO ===============================
 app.listen(port, () => {
   console.log(`Backend API listening on http://localhost:${port}`);
 });
