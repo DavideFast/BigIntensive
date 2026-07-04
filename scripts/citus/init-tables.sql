@@ -12,6 +12,11 @@ CREATE TABLE IF NOT EXISTS athletes (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS jobs_in_coda (
+  athlete_id INT PRIMARY KEY REFERENCES athletes(athlete_id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS exercises (
   exercise_id SERIAL PRIMARY KEY,
   nome_esercizio VARCHAR(150) NOT NULL,
@@ -32,6 +37,7 @@ CREATE TABLE IF NOT EXISTS training_status (
 
 SELECT create_reference_table('athletes');
 SELECT create_reference_table('exercises');
+SELECT create_reference_table('jobs_in_coda');
 SELECT create_distributed_table('training_status', 'athlete_id');
 
 INSERT INTO athletes (nome, cognome, eta, sesso, altezza_cm, peso_kg)
@@ -51,6 +57,12 @@ INSERT INTO training_status (athlete_id, giorno, valore)
 VALUES
   (1, '2024-06-01', 85)
 ON CONFLICT (athlete_id, giorno) DO UPDATE SET valore = EXCLUDED.valore;
+
+INSERT INTO jobs_in_coda (athlete_id)
+VALUES
+  (1),
+  (2)
+ON CONFLICT (athlete_id) DO NOTHING;
 
 -- Create view for latest athlete data
 CREATE OR REPLACE VIEW athletes_latest AS
