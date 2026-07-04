@@ -1,12 +1,13 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, max, avg, datediff, current_date, lit
+import os
 
 spark = SparkSession.builder.appName("training-status-job").config("spark.jars.packages", "com.clickhouse:clickhouse-jdbc:0.6.3").getOrCreate()
 
-clickhouse_url = "jdbc:clickhouse://localhost:8123/bigintensive"
+clickhouse_url = os.getenv("CLICKHOUSE_JDBC_URL", "jdbc:clickhouse://localhost:8123/bigintensive")
 clickhouse_properties = {
-    "user": "default",
-    "password": "",
+    "user": os.getenv("CLICKHOUSE_USER", "default"),
+    "password": os.getenv("CLICKHOUSE_PASSWORD", ""),
     "driver": "com.clickhouse.jdbc.ClickHouseDriver",
 }
 

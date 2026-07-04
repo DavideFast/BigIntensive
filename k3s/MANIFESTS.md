@@ -2,7 +2,7 @@
 
 ## Structure
 
-Il deployment è diviso in 7 file YAML per una migliore organizzazione:
+Il deployment è diviso in 8 file YAML per una migliore organizzazione:
 
 ```
 k3s/
@@ -13,6 +13,8 @@ k3s/
 ├── 04-frontend-dashboard.yaml       → Frontend React Dashboard
 ├── 05-spark-and-jupyter.yaml        → Spark Native k8s + Jupyter
 ├── 06-ingress.yaml                  → Traefik Ingress Routes
+├── 07-clickhouse.yaml               → ClickHouse + ClickHouse Keeper
+├── 08-trainingstatus-cronjob.yaml   → Nightly Spark CronJob (training status)
 ├── deploy-all.sh                    → Deploy script (applica tutto in ordine)
 ├── README.md                         → This file
 └── bigintensive-k3s.yaml (legacy)   → Old single-file manifest (deprecated)
@@ -36,6 +38,8 @@ Lo script applica i file nell'ordine corretto:
 5. Frontend Dashboard
 6. Spark + Jupyter
 7. Ingress routes
+8. ClickHouse
+9. Training status nightly cronjob
 
 ### 2️⃣ Verify Deployment
 

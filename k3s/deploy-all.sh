@@ -75,6 +75,7 @@ apply_manifest "$SCRIPT_DIR/04-frontend-dashboard.yaml" "Frontend Dashboard"
 apply_manifest "$SCRIPT_DIR/05-spark-and-jupyter.yaml" "Spark & Jupyter"
 apply_manifest "$SCRIPT_DIR/06-ingress.yaml" "Ingress Routes"
 apply_manifest "$SCRIPT_DIR/07-clickhouse.yaml" "ClickHouse & ClickHouse Keeper"
+apply_manifest "$SCRIPT_DIR/08-trainingstatus-cronjob.yaml" "Training Status Nightly CronJob"
 
 echo -e "${GREEN}========================================"
 echo "✓ All resources deployed successfully!"
