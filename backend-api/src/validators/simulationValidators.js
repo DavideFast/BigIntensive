@@ -45,7 +45,7 @@ export function validateForcePlatePayload(body) {
 }
 
 export function validateHeartRatePayload(body) {
-  const { athlete_id } = body || {};
+  const { athlete_id, session_id } = body || {};
   if (!athlete_id) {
     return {
       ok: false,
@@ -55,6 +55,20 @@ export function validateHeartRatePayload(body) {
         required: ["athlete_id"],
       },
     };
+  }
+
+  if (session_id !== undefined) {
+    const parsedSessionId = Number(session_id);
+    if (!Number.isInteger(parsedSessionId) || parsedSessionId <= 0) {
+      return {
+        ok: false,
+        status: 400,
+        payload: {
+          error: "Invalid session_id",
+          details: "session_id must be a positive integer",
+        },
+      };
+    }
   }
 
   return { ok: true };

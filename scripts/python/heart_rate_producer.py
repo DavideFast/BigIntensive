@@ -4,6 +4,7 @@
 import argparse
 import json
 import time
+from datetime import datetime
 
 from kafka import KafkaProducer
 
@@ -18,14 +19,17 @@ def send_heart_rate_data(
     duration_ms: int,
     repeat: int,
     interval_s: float,
+    session_id: int | None,
 ) -> None:
     for session in range(repeat):
         print(f"\n=== Session {session + 1}/{repeat} ===")
+        current_session_id = session_id or int(datetime.utcnow().timestamp()) + session
 
         simulator = HeartRateSimulator(athlete_id=athlete_id, duration_ms=duration_ms)
         samples = simulator.generate_samples(sample_rate_hz=1)
 
         for sample in samples:
+            sample["session_id"] = current_session_id
             producer.send(topic, value=json.dumps(sample).encode("utf-8"))
             time.sleep(1.0)
 
@@ -46,6 +50,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--repeat", type=int, default=1, help="Number of sessions")
     parser.add_argument("--interval-s", type=float, default=10.0, help="Pause between sessions")
     parser.add_argument("--topic", default="heart-rate-events", help="Kafka topic name")
+    parser.add_argument("--session-id", type=int, default=None, help="Session identifier")
     return parser
 
 
@@ -64,6 +69,7 @@ def main() -> None:
         duration_ms=args.duration_ms,
         repeat=args.repeat,
         interval_s=args.interval_s,
+        session_id=args.session_id,
     )
 
 
