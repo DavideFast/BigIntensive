@@ -7,7 +7,7 @@ from datetime import datetime
 from pyspark.sql.window import Window
 from pyspark.sql.functions import lag, when
 
-spark = SparkSession.builder.appName("matrice-correlazione-job").config("spark.jar.packages", "org.postgresql:postgresql:42.7.2").getOrCreate()
+spark = SparkSession.builder.appName("matrice-correlazione-job").config("spark.jar.packages", "org.postgresql:postgresql:42.7.2").config("spark.jar.packages", "com.clickhouse:clickhouse-jdbc:0.9.8-all").getOrCreate()
 
 
 #Prendo tutti gli id degli esercizi da citus e creo uno schema dinamico per il json
