@@ -13,9 +13,18 @@ CREATE TABLE IF NOT EXISTS athletes (
 );
 
 CREATE TABLE IF NOT EXISTS jobs_in_coda (
-  athlete_id INT PRIMARY KEY REFERENCES athletes(athlete_id),
+  athlete_id INT PRIMARY KEY,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE jobs_in_coda
+  DROP CONSTRAINT IF EXISTS jobs_in_coda_athlete_id_fkey;
+
+ALTER TABLE jobs_in_coda
+  ADD CONSTRAINT fk_jobs_in_coda_athlete
+  FOREIGN KEY (athlete_id)
+  REFERENCES athletes(athlete_id)
+  ON DELETE CASCADE;
 
 CREATE TABLE IF NOT EXISTS exercises (
   exercise_id SERIAL PRIMARY KEY,

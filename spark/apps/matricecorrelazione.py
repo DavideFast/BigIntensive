@@ -14,8 +14,8 @@ spark = SparkSession.builder.appName("matrice-correlazione-job").config("spark.j
 citus_url = "jdbc:postgresql://localhost:5432/bigintensive"
 citus_properties = {"user": "postgres", "password": "postgres", "driver": "org.postgresql.Driver"}
 citus_esercizi = spark.read.jdbc(url=citus_url, table = "exercises", properties=citus_properties)
-citus_atleta = spark.read.jdbc(url=citus_url, table = "jobs-in-coda",properties=citus_properties).select("atleta").distinct()
-input_atleta = [r.atleta for r in citus_atleta.select("atleta").distinct().collect()]
+citus_atleta = spark.read.jdbc(url=citus_url, table = "jobs_in_coda",properties=citus_properties).select("athlete_id").distinct()
+input_atleta = [str(r.athlete_id) for r in citus_atleta.select("athlete_id").distinct().collect()]
 
 campi = []
 for field in citus_esercizi.schema.fields:
