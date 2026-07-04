@@ -5,7 +5,6 @@ import { createOriginChecker } from "../middleware/corsOrigin.js";
 import { resolvePythonExecutable, resolveDockerExecutable } from "../utils/runtimeResolvers.js";
 import { createResolvePythonScript } from "../utils/pythonScriptResolver.js";
 import { createCorrelationStore } from "../stores/correlationStore.js";
-import { createSmartwatchSessionStore } from "../stores/smartwatchSessionStore.js";
 import { createKafkaProducerFromEnv } from "../utils/kafkaProducer.js";
 
 export function createServerContext(importMetaUrl) {
@@ -21,7 +20,6 @@ export function createServerContext(importMetaUrl) {
     isAllowedOrigin: createOriginChecker(process.env.CORS_ORIGIN || "http://localhost:5173"),
     pool: createDbPool(),
     correlationStore: createCorrelationStore(),
-    smartwatchSessionStore: createSmartwatchSessionStore(),
     kafkaProducer: createKafkaProducerFromEnv(),
     pythonRuntime: resolvePythonExecutable(),
     dockerRuntime: resolveDockerExecutable(),

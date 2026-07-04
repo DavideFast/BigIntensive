@@ -75,7 +75,7 @@ export function validateHeartRatePayload(body) {
 }
 
 export function validateSmartwatchSessionStartPayload(body) {
-  const { athlete_id } = body || {};
+  const { athlete_id, topic } = body || {};
   if (!athlete_id) {
     return {
       ok: false,
@@ -83,6 +83,29 @@ export function validateSmartwatchSessionStartPayload(body) {
       payload: {
         error: "Missing required fields",
         required: ["athlete_id"],
+      },
+    };
+  }
+
+  const parsedAthleteId = Number(athlete_id);
+  if (!Number.isInteger(parsedAthleteId) || parsedAthleteId <= 0) {
+    return {
+      ok: false,
+      status: 400,
+      payload: {
+        error: "Invalid athlete_id",
+        details: "athlete_id must be a positive integer",
+      },
+    };
+  }
+
+  if (topic !== undefined && (typeof topic !== "string" || topic.trim().length === 0)) {
+    return {
+      ok: false,
+      status: 400,
+      payload: {
+        error: "Invalid topic",
+        details: "topic must be a non-empty string when provided",
       },
     };
   }

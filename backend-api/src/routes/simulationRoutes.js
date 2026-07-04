@@ -8,15 +8,17 @@ import {
   validateSmartwatchSessionEndPayload,
 } from "../validators/simulationValidators.js";
 import { startPythonJob } from "../utils/pythonSpawn.js";
+import { createSmartwatchSessionsRepository } from "../repositories/smartwatchSessionsRepository.js";
 
 export function createSimulationRouter({
   pythonRuntime,
   resolvePythonScript,
   kafkaProducer,
-  smartwatchSessionStore,
+  pool,
 }) {
   const router = express.Router();
   const smartwatchKafkaTopic = process.env.SMARTWATCH_KAFKA_TOPIC || "heart-rate-events";
+  const smartwatchSessionsRepository = createSmartwatchSessionsRepository(pool);
 
   const events = [
     {
@@ -164,22 +166,30 @@ export function createSimulationRouter({
     });
   });
 
-  router.post("/simulation/session/start", (req, res) => {
+  router.post("/simulation/session/start", async (req, res) => {
     const validation = validateSmartwatchSessionStartPayload(req.body);
     if (!validation.ok) {
       return res.status(validation.status).json(validation.payload);
     }
 
     const { athlete_id, topic } = req.body || {};
-    const session = smartwatchSessionStore.create({
-      athleteId: athlete_id,
-      topic: topic || smartwatchKafkaTopic,
-    });
+    try {
+      const session = await smartwatchSessionsRepository.create({
+        athleteId: Number(athlete_id),
+        topic: topic || smartwatchKafkaTopic,
+      });
 
-    return res.status(201).json({
-      status: "started",
-      session,
-    });
+      return res.status(201).json({
+        status: "started",
+        session,
+      });
+    } catch (err) {
+      console.error("Session start error:", err.message);
+      return res.status(500).json({
+        error: "Session start failed",
+        details: err.message,
+      });
+    }
   });
 
   router.post("/simulation/session/:sessionId/samples", async (req, res) => {
@@ -189,7 +199,7 @@ export function createSimulationRouter({
     }
 
     const sessionId = Number(req.params.sessionId);
-    const session = smartwatchSessionStore.get(sessionId);
+    const session = await smartwatchSessionsRepository.getById(sessionId);
 
     if (!session) {
       return res.status(404).json({ error: "Session not found" });
@@ -222,7 +232,7 @@ export function createSimulationRouter({
         events: enriched,
       });
 
-      const updated = smartwatchSessionStore.addSamples(sessionId, sent.sentCount);
+      const updated = await smartwatchSessionsRepository.addSamples(sessionId, sent.sentCount);
 
       return res.status(202).json({
         status: "accepted",
@@ -239,14 +249,14 @@ export function createSimulationRouter({
     }
   });
 
-  router.post("/simulation/session/:sessionId/end", (req, res) => {
+  router.post("/simulation/session/:sessionId/end", async (req, res) => {
     const validation = validateSmartwatchSessionEndPayload(req.body);
     if (!validation.ok) {
       return res.status(validation.status).json(validation.payload);
     }
 
     const sessionId = Number(req.params.sessionId);
-    const session = smartwatchSessionStore.get(sessionId);
+    const session = await smartwatchSessionsRepository.getById(sessionId);
 
     if (!session) {
       return res.status(404).json({ error: "Session not found" });
@@ -256,7 +266,16 @@ export function createSimulationRouter({
       return res.status(409).json({ error: "Session already ended" });
     }
 
-    const closed = smartwatchSessionStore.close(sessionId);
+    let closed;
+    try {
+      closed = await smartwatchSessionsRepository.close(sessionId, req.body?.reason);
+    } catch (err) {
+      console.error("Session end error:", err.message);
+      return res.status(500).json({
+        error: "Session end failed",
+        details: err.message,
+      });
+    }
 
     return res.json({
       status: "ended",

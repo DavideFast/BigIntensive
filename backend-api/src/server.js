@@ -31,7 +31,7 @@ app.use(
     pythonRuntime: context.pythonRuntime,
     resolvePythonScript: context.resolvePythonScript,
     kafkaProducer: context.kafkaProducer,
-    smartwatchSessionStore: context.smartwatchSessionStore,
+    pool: context.pool,
   }),
 );
 

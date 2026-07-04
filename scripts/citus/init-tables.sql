@@ -44,9 +44,21 @@ CREATE TABLE IF NOT EXISTS training_status (
   CONSTRAINT uq_training_status_day UNIQUE (athlete_id, giorno)
 );
 
+CREATE TABLE IF NOT EXISTS smartwatch_sessions (
+  session_id BIGSERIAL PRIMARY KEY,
+  athlete_id INT NOT NULL REFERENCES athletes(athlete_id) ON DELETE CASCADE,
+  topic VARCHAR(255) NOT NULL DEFAULT 'heart-rate-events',
+  status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'ended')),
+  samples_sent INT NOT NULL DEFAULT 0 CHECK (samples_sent >= 0),
+  started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ended_at TIMESTAMP,
+  end_reason TEXT
+);
+
 SELECT create_reference_table('athletes');
 SELECT create_reference_table('exercises');
 SELECT create_reference_table('jobs_in_coda');
+SELECT create_reference_table('smartwatch_sessions');
 SELECT create_distributed_table('training_status', 'athlete_id');
 
 INSERT INTO athletes (nome, cognome, eta, sesso, altezza_cm, peso_kg)
