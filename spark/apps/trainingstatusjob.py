@@ -16,7 +16,7 @@ df_clickhouse = spark.read.jdbc(
     properties=clickhouse_properties,
 )
 
-df_kafka_schema = df_clickhouse.select(
+df_tabella = df_clickhouse.select(
     col("atleta_id").cast("string").alias("atleta"),
     col("ts").cast("date").alias("giorno"),
     col("heart_rate_bpm").cast("double").alias("frequenza cardiaca"),
@@ -28,7 +28,7 @@ df_kafka_schema = df_clickhouse.select(
 
 
 
-df_raggruppato = df_kafka_schema.groupBy("atleta","giorno").agg(
+df_raggruppato = df_tabella.groupBy("atleta","giorno").agg(
     max("durata").alias("max_durata"), # in secondi
     avg("velocità").alias("media_velocita"), # in m/s
     avg("frequenza cardiaca").alias("media_freq_cardiaca"), #in bpm
