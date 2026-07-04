@@ -66,7 +66,7 @@ df_variazione = (
             col("media_mensile_precedente").isNull() | (col("media_mensile_precedente") == 0),
             None,
         ).otherwise(
-            when(col("tipo") == "aerobico", -1).otherwise(1)
+            when(col("tipo") == "endurance", -1).otherwise(1)
             * (
                 (col("media_max_valore") - col("media_mensile_precedente"))
                 / col("media_mensile_precedente")
