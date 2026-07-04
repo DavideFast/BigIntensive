@@ -23,7 +23,7 @@ df_tabella = df_clickhouse.select(
     (col("speed_kmh").cast("double") / lit(3.6)).alias("velocità"),
     (col("secondo").cast("double") * (col("speed_kmh").cast("double") / lit(3.6))).alias("distanza"),
     col("secondo").cast("double").alias("durata"),
-    lit(20.0).alias("temperatura"),
+    col("temperature_c").cast("double").alias("temperatura"),
 )
 
 

@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS bigintensive.corsa_endurance_campioni (
   cadence_spm Float32,
   speed_kmh Float32,
   altitude_m Float32,
+  temperature_c Float32,
   ts DateTime
 ) ENGINE = MergeTree
 ORDER BY (ts, atleta_id, sessione_id, secondo)

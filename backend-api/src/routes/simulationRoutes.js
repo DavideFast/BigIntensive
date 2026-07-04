@@ -1,21 +1,9 @@
 import express from "express";
-import {
-  validateEventPayload,
-  validateForcePlatePayload,
-  validateHeartRatePayload,
-  validateSmartwatchSessionStartPayload,
-  validateSmartwatchSamplesPayload,
-  validateSmartwatchSessionEndPayload,
-} from "../validators/simulationValidators.js";
+import { validateEventPayload, validateForcePlatePayload, validateHeartRatePayload, validateSmartwatchSessionStartPayload, validateSmartwatchSamplesPayload, validateSmartwatchSessionEndPayload } from "../validators/simulationValidators.js";
 import { startPythonJob } from "../utils/pythonSpawn.js";
 import { createSmartwatchSessionsRepository } from "../repositories/smartwatchSessionsRepository.js";
 
-export function createSimulationRouter({
-  pythonRuntime,
-  resolvePythonScript,
-  kafkaProducer,
-  pool,
-}) {
+export function createSimulationRouter({ pythonRuntime, resolvePythonScript, kafkaProducer, pool }) {
   const router = express.Router();
   const smartwatchKafkaTopic = process.env.SMARTWATCH_KAFKA_TOPIC || "heart-rate-events";
   const smartwatchSessionsRepository = createSmartwatchSessionsRepository(pool);
@@ -218,9 +206,8 @@ export function createSimulationRouter({
       cadence_spm: Number(sample.cadence_spm),
       speed_kmh: Number(sample.speed_kmh),
       altitude_m: Number(sample.altitude_m),
-      sample_index: Number.isInteger(Number(sample.sample_index))
-        ? Number(sample.sample_index)
-        : baseIndex + idx,
+      temperature_c: Number.isFinite(Number(sample.temperature_c)) ? Number(sample.temperature_c) : 20.0,
+      sample_index: Number.isInteger(Number(sample.sample_index)) ? Number(sample.sample_index) : baseIndex + idx,
       timestamp: sample.timestamp || new Date().toISOString(),
       source: sample.source || "frontend-sim",
       sport: sample.sport || "running_endurance",

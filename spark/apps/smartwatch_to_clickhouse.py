@@ -37,6 +37,7 @@ payload_schema = StructType(
         StructField("cadence_spm", DoubleType(), True),
         StructField("speed_kmh", DoubleType(), True),
         StructField("altitude_m", DoubleType(), True),
+        StructField("temperature_c", DoubleType(), True),
         StructField("timestamp", StringType(), True),
         StructField("sample_index", IntegerType(), True),
     ]
@@ -68,6 +69,7 @@ parsed_df = (
         col("cadence_spm").cast("double"),
         col("speed_kmh").cast("double"),
         col("altitude_m").cast("double"),
+        col("temperature_c").cast("double"),
         col("ts"),
     )
     .filter(col("atleta_id").isNotNull() & col("ts").isNotNull())
@@ -86,6 +88,7 @@ def write_batch_to_clickhouse(batch_df, batch_id):
         col("cadence_spm").cast("float").alias("cadence_spm"),
         col("speed_kmh").cast("float").alias("speed_kmh"),
         col("altitude_m").cast("float").alias("altitude_m"),
+        col("temperature_c").cast("float").alias("temperature_c"),
         col("ts").alias("ts"),
     )
 
