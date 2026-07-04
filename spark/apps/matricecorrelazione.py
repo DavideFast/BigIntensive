@@ -1,5 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col,  max, avg
+from pyspark.sql.functions import coalesce, lit, lower
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.stat import Correlation
 from datetime import datetime
@@ -16,19 +17,37 @@ citus_esercizi = spark.read.jdbc(url=citus_url, table = "exercises", properties=
 citus_atleta = spark.read.jdbc(url=citus_url, table = "jobs_in_coda",properties=citus_properties).select("athlete_id").distinct()
 input_atleta = [str(r.athlete_id) for r in citus_atleta.select("athlete_id").distinct().collect()]
 
+df_tipi_esercizio = citus_esercizi.selectExpr(
+    "CAST(exercise_id AS STRING) AS esercizio",
+    "CAST(tipo_esercizio AS STRING) AS tipo_esercizio"
+)
+
 #Prendo da clickhouse tutti i dati degli esercizi e li trasformo in un dataframe spark a parità di atleta
 clickhouse_url = "jdbc:clickhouse://localhost:8123/bigintensive"
 clickhouse_properties = {"user": "default", "password": "", "driver": "com.clickhouse.jdbc.ClickHouseDriver"}
 clickhouse_tabella = spark.read.jdbc(url=clickhouse_url, table = "allenamento_dettagli", properties=clickhouse_properties)
 
 
-df_clickhouse = clickhouse_tabella.selectExpr(
+df_clickhouse_base = clickhouse_tabella.selectExpr(
     "CAST(atleta_id AS STRING) AS atleta",
     "CAST(ts AS DATE) AS giorno",
     "CAST(esercizio_id AS STRING) AS esercizio",
-    "CAST(risultato AS DOUBLE) AS valore",
-    "CAST(tipo AS STRING) AS tipo"
-).filter(col("atleta").isin(input_atleta))
+    "CAST(risultato AS DOUBLE) AS valore"
+)
+
+df_clickhouse = (
+    df_clickhouse_base
+    .join(df_tipi_esercizio, on="esercizio", how="left")
+    .withColumn(
+        "tipo",
+        when(
+            lower(coalesce(col("tipo_esercizio"), lit("forza"))) == "endurance",
+            lit("aerobico"),
+        ).otherwise(lower(coalesce(col("tipo_esercizio"), lit("forza"))))
+    )
+    .select("atleta", "giorno", "esercizio", "valore", "tipo")
+    .filter(col("atleta").isin(input_atleta))
+)
 
 df_primo_round = (
     df_clickhouse
