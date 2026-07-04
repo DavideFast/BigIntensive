@@ -2,7 +2,6 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col,  max, avg
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.stat import Correlation
-from datetime import datetime
 from pyspark.sql.window import Window
 from pyspark.sql.functions import lag, when
 
