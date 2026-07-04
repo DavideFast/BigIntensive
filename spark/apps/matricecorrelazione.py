@@ -38,13 +38,6 @@ df_clickhouse_base = clickhouse_tabella.selectExpr(
 df_clickhouse = (
     df_clickhouse_base
     .join(df_tipi_esercizio, on="esercizio", how="left")
-    .withColumn(
-        "tipo",
-        when(
-            lower(coalesce(col("tipo_esercizio"), lit("forza"))) == "endurance",
-            lit("aerobico"),
-        ).otherwise(lower(coalesce(col("tipo_esercizio"), lit("forza"))))
-    )
     .select("atleta", "giorno", "esercizio", "valore", "tipo")
     .filter(col("atleta").isin(input_atleta))
 )
