@@ -73,3 +73,70 @@ export function validateHeartRatePayload(body) {
 
   return { ok: true };
 }
+
+export function validateSmartwatchSessionStartPayload(body) {
+  const { athlete_id } = body || {};
+  if (!athlete_id) {
+    return {
+      ok: false,
+      status: 400,
+      payload: {
+        error: "Missing required fields",
+        required: ["athlete_id"],
+      },
+    };
+  }
+
+  return { ok: true };
+}
+
+function isFiniteNumber(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+export function validateSmartwatchSamplesPayload(body) {
+  const { samples } = body || {};
+
+  if (!Array.isArray(samples) || samples.length === 0) {
+    return {
+      ok: false,
+      status: 400,
+      payload: {
+        error: "Invalid samples payload",
+        details: "samples must be a non-empty array",
+      },
+    };
+  }
+
+  for (let i = 0; i < samples.length; i += 1) {
+    const item = samples[i] || {};
+    if (!isFiniteNumber(Number(item.heart_rate_bpm)) || !isFiniteNumber(Number(item.cadence_spm)) || !isFiniteNumber(Number(item.speed_kmh)) || !isFiniteNumber(Number(item.altitude_m))) {
+      return {
+        ok: false,
+        status: 400,
+        payload: {
+          error: "Invalid sample item",
+          details: `samples[${i}] must contain numeric heart_rate_bpm, cadence_spm, speed_kmh, altitude_m`,
+        },
+      };
+    }
+  }
+
+  return { ok: true };
+}
+
+export function validateSmartwatchSessionEndPayload(body) {
+  const { reason } = body || {};
+  if (reason !== undefined && typeof reason !== "string") {
+    return {
+      ok: false,
+      status: 400,
+      payload: {
+        error: "Invalid reason",
+        details: "reason must be a string when provided",
+      },
+    };
+  }
+
+  return { ok: true };
+}

@@ -30,6 +30,8 @@ app.use(
   createSimulationRouter({
     pythonRuntime: context.pythonRuntime,
     resolvePythonScript: context.resolvePythonScript,
+    kafkaProducer: context.kafkaProducer,
+    smartwatchSessionStore: context.smartwatchSessionStore,
   }),
 );
 
@@ -55,4 +57,14 @@ app.use(
 // ============================ AVVIO ===============================
 app.listen(context.port, () => {
   console.log(`Backend API listening on http://localhost:${context.port}`);
+});
+
+process.on("SIGINT", async () => {
+  await context.kafkaProducer.disconnect();
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  await context.kafkaProducer.disconnect();
+  process.exit(0);
 });
