@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, from_json, max, avg, datediff, current
-from pyspark.sql.types import StructType, StructField, StringType, DateType, DoubleType
+from pyspark.sql.functions import col,  max, avg
+from pyspark.sql.types import StructType, StructField, StringType
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.stat import Correlation
 from datetime import datetime
@@ -24,7 +24,7 @@ schema_json = StructType(campi)
 
 #Prendo da clickhouse tutti i dati degli esercizi e li trasformo in un dataframe spark a parità di atleta
 clickhouse_url = "jdbc:clickhouse://localhost:8123/bigintensive"
-clickhouse_properties = {"user": "default", "password": "", "driver": "ru.yandex.clickhouse.ClickHouseDriver"}
+clickhouse_properties = {"user": "default", "password": "", "driver": "com.clickhouse.jdbc.ClickHouseDriver"}
 clickhouse_tabella = spark.read.jdbc(url=clickhouse_url, table = "allenamento_dettagli", properties=clickhouse_properties)
 
 
