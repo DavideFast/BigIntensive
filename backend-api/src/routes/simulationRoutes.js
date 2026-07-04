@@ -1,9 +1,5 @@
 import express from "express";
-import {
-  validateEventPayload,
-  validateForcePlatePayload,
-  validateHeartRatePayload,
-} from "../validators/simulationValidators.js";
+import { validateEventPayload, validateForcePlatePayload, validateHeartRatePayload } from "../validators/simulationValidators.js";
 import { startPythonJob } from "../utils/pythonSpawn.js";
 
 export function createSimulationRouter({ pythonRuntime, resolvePythonScript }) {
@@ -90,22 +86,7 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript }) {
       return res.status(500).json({ error: "Python script path error", details: err.message });
     }
 
-    const args = [
-      ...pythonRuntime.preArgs,
-      pythonScript,
-      "--athlete-id",
-      athlete_id,
-      "--exercise",
-      exercise,
-      "--duration-ms",
-      String(duration_ms || 3000),
-      "--repeat",
-      String(repeat || 1),
-      "--interval-s",
-      String(interval_s || 2),
-      "--topic",
-      "force-plate-events",
-    ];
+    const args = [...pythonRuntime.preArgs, pythonScript, "--athlete-id", athlete_id, "--exercise", exercise, "--duration-ms", String(duration_ms || 3000), "--repeat", String(repeat || 1), "--interval-s", String(interval_s || 2), "--topic", "force-plate-events"];
 
     startPythonJob({
       command: pythonRuntime.command,
@@ -147,20 +128,7 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript }) {
       return res.status(500).json({ error: "Python script path error", details: err.message });
     }
 
-    const args = [
-      ...pythonRuntime.preArgs,
-      pythonScript,
-      "--athlete-id",
-      athlete_id,
-      "--duration-ms",
-      String(duration_ms || 30000),
-      "--repeat",
-      String(repeat || 1),
-      "--interval-s",
-      String(interval_s || 10),
-      "--topic",
-      "heart-rate-events",
-    ];
+    const args = [...pythonRuntime.preArgs, pythonScript, "--athlete-id", athlete_id, "--duration-ms", String(duration_ms || 30000), "--repeat", String(repeat || 1), "--interval-s", String(interval_s || 10), "--topic", "heart-rate-events"];
 
     if (session_id !== undefined) {
       args.push("--session-id", String(session_id));
