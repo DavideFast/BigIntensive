@@ -1,21 +1,30 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, from_json, max, avg, datediff, current_date
-from pyspark.sql.types import StructType, StructField, StringType, DateType, DoubleType
+from pyspark.sql.functions import col, max, avg, datediff, current_date, lit
 
-spark = SparkSession.builder.appName("training-status-job").config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0").getOrCreate()
+spark = SparkSession.builder.appName("training-status-job").config("spark.jars.packages", "com.clickhouse:clickhouse-jdbc:0.6.3").getOrCreate()
 
-df_kafka = spark.readStream.format("kafka").option("kafka.bootstrap.servers", "localhost:9092").option("subscribe", "training-status").option("startingOffsets", "latest").load()
+clickhouse_url = "jdbc:clickhouse://localhost:8123/bigintensive"
+clickhouse_properties = {
+    "user": "default",
+    "password": "",
+    "driver": "com.clickhouse.jdbc.ClickHouseDriver",
+}
 
-schema_json = StructType ([
-    StructField("atleta", StringType(), True),
-    StructField("giorno", DateType(), True),
-    StructField("frequenza cardiaca", DoubleType(), True),
-    StructField("velocità", DoubleType(), True),
-    StructField("distanza", DoubleType(), True),
-    StructField("durata", DoubleType(), True),
-    StructField("temperatura", DoubleType(), True)
-])
-df_kafka_schema = df_kafka.select(from_json(col("value").cast("string"), schema_json).alias("data")).select("data.*")
+df_clickhouse = spark.read.jdbc(
+    url=clickhouse_url,
+    table="bigintensive.corsa_endurance_campioni",
+    properties=clickhouse_properties,
+)
+
+df_kafka_schema = df_clickhouse.select(
+    col("atleta_id").cast("string").alias("atleta"),
+    col("ts").cast("date").alias("giorno"),
+    col("heart_rate_bpm").cast("double").alias("frequenza cardiaca"),
+    (col("speed_kmh").cast("double") / lit(3.6)).alias("velocità"),
+    (col("secondo").cast("double") * (col("speed_kmh").cast("double") / lit(3.6))).alias("distanza"),
+    col("secondo").cast("double").alias("durata"),
+    lit(20.0).alias("temperatura"),
+)
 
 
 
@@ -57,9 +66,4 @@ def process_batch(batch_df, batch_id):
     df_risultato.unpersist()
 
 
-query = df_raggruppato.writeStream \
-    .outputMode("update") \
-    .foreachBatch(process_batch) \
-    .start()
-
-query.awaitTermination()
+process_batch(df_raggruppato, 0)
