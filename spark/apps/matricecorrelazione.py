@@ -1,6 +1,5 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col,  max, avg
-from pyspark.sql.functions import coalesce, lit, lower
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.stat import Correlation
 from datetime import datetime
