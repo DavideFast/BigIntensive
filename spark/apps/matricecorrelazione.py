@@ -18,7 +18,7 @@ input_atleta = [str(r.athlete_id) for r in citus_atleta.select("athlete_id").dis
 
 df_tipi_esercizio = citus_esercizi.selectExpr(
     "CAST(exercise_id AS STRING) AS esercizio",
-    "CAST(tipo_esercizio AS STRING) AS tipo_esercizio"
+    "CAST(tipo_esercizio AS STRING) AS tipo"
 )
 
 #Prendo da clickhouse tutti i dati degli esercizi e li trasformo in un dataframe spark a parità di atleta
