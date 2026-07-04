@@ -125,7 +125,7 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript }) {
   });
 
   router.post("/heart-rate/start", (req, res) => {
-    const { athlete_id, duration_ms, repeat, interval_s } = req.body || {};
+    const { athlete_id, duration_ms, repeat, interval_s, session_id } = req.body || {};
 
     const validation = validateHeartRatePayload(req.body);
     if (!validation.ok) {
@@ -162,6 +162,10 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript }) {
       "heart-rate-events",
     ];
 
+    if (session_id !== undefined) {
+      args.push("--session-id", String(session_id));
+    }
+
     startPythonJob({
       command: pythonRuntime.command,
       args,
@@ -171,6 +175,7 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript }) {
     return res.json({
       status: "started",
       athlete_id,
+      session_id: session_id || null,
       duration_ms: duration_ms || 30000,
       repeat: repeat || 1,
       interval_s: interval_s || 10,
