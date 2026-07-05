@@ -26,7 +26,7 @@ from datetime import datetime, timedelta
 
 # Initialize Spark Session
 spark = SparkSession.builder \
-    .appName("training-status-job") \
+    .appName("job1-cardio-analysis") \
     .config("spark.jars.packages", "org.postgresql:postgresql:42.7.2,com.clickhouse:clickhouse-jdbc:0.6.3") \
     .config("spark.sql.shuffle.partitions", "10") \
     .getOrCreate()
@@ -338,7 +338,7 @@ def write_results_to_citus(df_results):
         raise
 
 def main():
-    print("🚀 Job 1: Multi-window Cardio Analysis (Training Status)")
+    print("🚀 Job 1: Multi-window Cardio Analysis")
     print(f"   Start time: {datetime.now()}")
     print()
     
