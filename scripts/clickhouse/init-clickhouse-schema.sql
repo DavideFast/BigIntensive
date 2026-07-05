@@ -50,3 +50,28 @@ CREATE TABLE IF NOT EXISTS bigintensive.corsa_endurance_campioni (
 ) ENGINE = MergeTree
 ORDER BY (ts, atleta_id, sessione_id, secondo)
 PARTITION BY toYYYYMM(ts);
+
+CREATE TABLE IF NOT EXISTS bigintensive.coach_feedback (
+  feedback_id UInt32,
+  athlete_id UInt32 NOT NULL,
+  feedback_date Date NOT NULL,
+  feedback_text String NOT NULL,
+  intensity_impression Enum8(
+    'pessimo' = 1,
+    'scarso' = 2,
+    'moderato' = 3,
+    'buono' = 4,
+    'ottimo' = 5
+  ),
+  recovery_impression Enum8(
+    'pessimo' = 1,
+    'scarso' = 2,
+    'moderato' = 3,
+    'buono' = 4,
+    'ottimo' = 5
+  ),
+  created_at DateTime DEFAULT now()
+)
+ENGINE = ReplacingMergeTree(created_at)
+ORDER BY (athlete_id, feedback_date)
+PARTITION BY toYYYYMM(feedback_date);

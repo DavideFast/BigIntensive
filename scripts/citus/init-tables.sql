@@ -55,10 +55,67 @@ CREATE TABLE IF NOT EXISTS smartwatch_sessions (
   end_reason TEXT
 );
 
+-- INJURY_HISTORY: dati infortuni per training ML su prevenzione
+CREATE TABLE IF NOT EXISTS injury_history (
+  injury_id SERIAL PRIMARY KEY,
+  athlete_id INT NOT NULL REFERENCES athletes(athlete_id) ON DELETE CASCADE,
+  injury_date DATE NOT NULL,
+  injury_type VARCHAR(100) NOT NULL,
+  severity VARCHAR(20) NOT NULL CHECK (severity IN ('light', 'moderate', 'severe')),
+  recovery_days INT NOT NULL,
+  pre_injury_acwr DECIMAL(5, 2),
+  pre_injury_hrv DECIMAL(5, 3),
+  pre_injury_load INT,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- TRAINING_STATUS_RESULTS: output Job 1 (multi-window cardio analysis)
+CREATE TABLE IF NOT EXISTS training_status_results (
+  result_id SERIAL PRIMARY KEY,
+  athlete_id INT NOT NULL REFERENCES athletes(athlete_id) ON DELETE CASCADE,
+  result_date DATE NOT NULL,
+  acwr DECIMAL(5, 2),
+  hrv DECIMAL(5, 3),
+  readiness INT,
+  injury_risk_pct DECIMAL(5, 2),
+  status VARCHAR(20) CHECK (status IN ('green', 'amber', 'red')),
+  trimp_3d DECIMAL(10, 2),
+  trimp_7d DECIMAL(10, 2),
+  trimp_28d DECIMAL(10, 2),
+  trimp_42d DECIMAL(10, 2),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- FEATURE_IMPORTANCE_RESULTS: output Job 2 (exercise correlation + ML importance)
+CREATE TABLE IF NOT EXISTS feature_importance_results (
+  result_id SERIAL PRIMARY KEY,
+  feature_name VARCHAR(100) NOT NULL,
+  importance_score DECIMAL(5, 4),
+  ranking INT,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- EXERCISE_VOLUMES_CLUSTERS: output Job 3 (volume aggregation + K-Means + anomaly detection)
+CREATE TABLE IF NOT EXISTS exercise_volumes_clusters (
+  result_id SERIAL PRIMARY KEY,
+  athlete_id INT NOT NULL REFERENCES athletes(athlete_id) ON DELETE CASCADE,
+  exercise_type VARCHAR(50),
+  volume_week DECIMAL(10, 2),
+  cluster_id INT,
+  is_anomaly BOOLEAN DEFAULT FALSE,
+  anomaly_reason VARCHAR(200),
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 SELECT create_reference_table('athletes');
 SELECT create_reference_table('exercises');
 SELECT create_reference_table('jobs_in_coda');
 SELECT create_reference_table('smartwatch_sessions');
+SELECT create_reference_table('injury_history');
+SELECT create_reference_table('training_status_results');
+SELECT create_reference_table('feature_importance_results');
+SELECT create_reference_table('exercise_volumes_clusters');
 SELECT create_distributed_table('training_status', 'athlete_id');
 
 INSERT INTO athletes (nome, cognome, eta, sesso, altezza_cm, peso_kg)
@@ -105,6 +162,22 @@ VALUES
   (1),
   (2)
 ON CONFLICT (athlete_id) DO NOTHING;
+
+INSERT INTO injury_history (athlete_id, injury_date, injury_type, severity, recovery_days, pre_injury_acwr, pre_injury_hrv, pre_injury_load, notes)
+SELECT *
+FROM (
+  VALUES
+    (1, '2024-04-15', 'Sprained ankle', 'moderate', 14, 1.8, 45.2, 350, 'Training overload during sprint work'),
+    (2, '2024-05-02', 'Lower back strain', 'light', 7, 2.1, 38.5, 380, 'Poor form on heavy squats'),
+    (1, '2024-02-20', 'Knee pain', 'light', 10, 1.5, 42.1, 320, 'Excessive plyometric volume')
+) AS seed(athlete_id, injury_date, injury_type, severity, recovery_days, pre_injury_acwr, pre_injury_hrv, pre_injury_load, notes)
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM injury_history ih
+  WHERE ih.athlete_id = seed.athlete_id
+    AND ih.injury_date = seed.injury_date
+    AND ih.injury_type = seed.injury_type
+);
 
 -- Create view for latest athlete data
 CREATE OR REPLACE VIEW athletes_latest AS
