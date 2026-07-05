@@ -22,14 +22,26 @@ from pyspark.ml.stat import Correlation
 import os
 from datetime import datetime
 
-# Initialize Spark Session
+#####################################################################################################################
+###                                                                                                               ###
+###                                          INITIALIZE SPARK SESSION                                             ###
+###                                                                                                               ###
+#####################################################################################################################
+
+
 spark = SparkSession.builder \
     .appName("job2-exercise-correlation") \
     .config("spark.jars.packages", "org.postgresql:postgresql:42.7.2,com.clickhouse:clickhouse-jdbc:0.6.3") \
     .config("spark.sql.shuffle.partitions", "10") \
     .getOrCreate()
 
-# Database connections
+######################################################################################################################
+###                                                                                                                ###
+###                                          DATABASE CONNECTIONS                                                  ###
+###                                                                                                                ###
+######################################################################################################################
+
+
 CITUS_URL = os.getenv("CITUS_JDBC_URL", "jdbc:postgresql://localhost:5432/bigintensive")
 CITUS_PROPS = {
     "user": os.getenv("CITUS_USER", "postgres"),
@@ -70,6 +82,12 @@ def read_exercises_reference():
         col("nome_esercizio").alias("exercise_name"),
         col("tipo_esercizio").alias("exercise_type"),
     )
+
+######################################################################################################################
+###                                                                                                                ###
+###                                          DATA PROCESSING AND METRICS CALCULATION                               ###
+###                                                                                                                ###
+######################################################################################################################
 
 def aggregate_exercise_metrics(df_metrics):
     """
