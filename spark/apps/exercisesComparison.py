@@ -1,123 +1,334 @@
-# Matrice di correlazione deve fare per atleta e per esercizio un incrocio tra i
-# miglioramenti o peggioramenti mensili incrociando anche con volume di allenamento,
-# densità di allenamento e intensità di allenamento.
+#!/usr/bin/env python3
+"""
+Job 2: Exercise Correlation & Feature Importance Analysis
+Analyzes exercise metrics, calculates correlations, and ranks feature importance
+using Gradient Boosting to predict performance trends.
 
+Input:
+  - ClickHouse: allenamento_dettagli (exercise metrics per atleta)
+  - Citus: exercises (reference data)
 
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import col,  max, avg
-from pyspark.ml.feature import VectorAssembler
+Output:
+  - Citus: feature_importance_results (ranking of exercise features by importance)
+"""
+
+from pyspark.sql import SparkSession, Window
+from pyspark.sql.functions import (
+    col, max, avg, stddev, when, lag, row_number, datediff, current_date, lit
+)
+from pyspark.ml.feature import VectorAssembler, StandardScaler
+from pyspark.ml.regression import GBTRegressor
 from pyspark.ml.stat import Correlation
-from pyspark.sql.window import Window
-from pyspark.sql.functions import lag, when
+import os
+from datetime import datetime
 
-spark = SparkSession.builder.appName("matrice-correlazione-job").config("spark.jars.packages", "org.postgresql:postgresql:42.7.2,com.clickhouse:clickhouse-jdbc:0.9.8-all").getOrCreate()
+# Initialize Spark Session
+spark = SparkSession.builder \
+    .appName("job2-exercise-correlation") \
+    .config("spark.jars.packages", "org.postgresql:postgresql:42.7.2,com.clickhouse:clickhouse-jdbc:0.6.3") \
+    .config("spark.sql.shuffle.partitions", "10") \
+    .getOrCreate()
 
+# Database connections
+CITUS_URL = os.getenv("CITUS_JDBC_URL", "jdbc:postgresql://localhost:5432/bigintensive")
+CITUS_PROPS = {
+    "user": os.getenv("CITUS_USER", "postgres"),
+    "password": os.getenv("CITUS_PASSWORD", "postgres"),
+    "driver": "org.postgresql.Driver",
+}
 
-#Prendo tutti gli id degli esercizi da citus e creo uno schema dinamico per il json
-citus_url = "jdbc:postgresql://localhost:5432/bigintensive"
-citus_properties = {"user": "postgres", "password": "postgres", "driver": "org.postgresql.Driver"}
-citus_esercizi = spark.read.jdbc(url=citus_url, table = "exercises", properties=citus_properties)
-citus_atleta = spark.read.jdbc(url=citus_url, table = "jobs_in_coda",properties=citus_properties).select("athlete_id").distinct()
-input_atleta = [str(r.athlete_id) for r in citus_atleta.select("athlete_id").distinct().collect()]
+CLICKHOUSE_URL = os.getenv("CLICKHOUSE_JDBC_URL", "jdbc:clickhouse://localhost:8123/bigintensive")
+CLICKHOUSE_PROPS = {
+    "user": os.getenv("CLICKHOUSE_USER", "default"),
+    "password": os.getenv("CLICKHOUSE_PASSWORD", ""),
+    "driver": "com.clickhouse.jdbc.ClickHouseDriver",
+}
 
-df_tipi_esercizio = citus_esercizi.selectExpr(
-    "CAST(exercise_id AS STRING) AS esercizio",
-    "CAST(tipo_esercizio AS STRING) AS tipo"
-)
-
-#Prendo da clickhouse tutti i dati degli esercizi e li trasformo in un dataframe spark a parità di atleta
-clickhouse_url = "jdbc:clickhouse://localhost:8123/bigintensive"
-clickhouse_properties = {"user": "default", "password": "", "driver": "com.clickhouse.jdbc.ClickHouseDriver"}
-clickhouse_tabella = spark.read.jdbc(url=clickhouse_url, table = "allenamento_dettagli", properties=clickhouse_properties)
-
-
-df_clickhouse_base = clickhouse_tabella.selectExpr(
-    "CAST(atleta_id AS STRING) AS atleta",
-    "CAST(ts AS DATE) AS giorno",
-    "CAST(esercizio_id AS STRING) AS esercizio",
-    "CAST(risultato AS DOUBLE) AS valore"
-)
-
-df_clickhouse = (
-    df_clickhouse_base
-    .join(df_tipi_esercizio, on="esercizio", how="left")
-    .select("atleta", "giorno", "esercizio", "valore", "tipo")
-    .filter(col("atleta").isin(input_atleta))
-)
-
-df_primo_round = (
-    df_clickhouse
-    .withColumn("mese", col("giorno").cast("string").substr(1,7))
-    .groupBy("atleta","giorno","esercizio","mese","tipo")
-    .agg(
-        max("valore").alias("max_valore"),
-        avg("valore").alias("media_valore"),
+def read_exercise_metrics():
+    """Read exercise details from ClickHouse"""
+    df = spark.read.jdbc(
+        url=CLICKHOUSE_URL,
+        table="bigintensive.allenamento_dettagli",
+        properties=CLICKHOUSE_PROPS,
     )
-)
+    return df.select(
+        col("atleta_id").cast("integer").alias("athlete_id"),
+        col("ts").cast("date").alias("training_date"),
+        col("esercizio_id").cast("integer").alias("exercise_id"),
+        col("risultato").cast("double").alias("performance"),
+    )
 
-df_secondo_round = df_primo_round.groupBy("atleta","mese","esercizio","tipo").agg(
-    avg("max_valore").alias("media_max_valore")
-)
+def read_exercises_reference():
+    """Read exercise reference data from Citus"""
+    df = spark.read.jdbc(
+        url=CITUS_URL,
+        table="exercises",
+        properties=CITUS_PROPS,
+    )
+    return df.select(
+        col("exercise_id"),
+        col("nome_esercizio").alias("exercise_name"),
+        col("tipo_esercizio").alias("exercise_type"),
+    )
 
+def aggregate_exercise_metrics(df_metrics):
+    """
+    Aggregate exercise metrics by athlete, exercise, and month.
+    Calculate monthly performance trends and variations.
+    """
+    df_with_month = df_metrics.withColumn(
+        "year_month",
+        col("training_date").cast("string").substr(1, 7)  # YYYY-MM
+    )
+    
+    # Daily aggregation by exercise
+    daily_agg = df_with_month.groupBy(
+        "athlete_id", "training_date", "exercise_id", "year_month"
+    ).agg(
+        max("performance").alias("max_performance"),
+        avg("performance").alias("avg_performance"),
+        stddev("performance").alias("std_performance"),
+    )
+    
+    # Monthly aggregation by exercise
+    monthly_agg = daily_agg.groupBy(
+        "athlete_id", "year_month", "exercise_id"
+    ).agg(
+        avg("max_performance").alias("monthly_max_perf"),
+        avg("avg_performance").alias("monthly_avg_perf"),
+        count("*").alias("session_count"),
+    )
+    
+    return monthly_agg
 
-w = Window.partitionBy("atleta", "esercizio").orderBy("mese")
-
-df_variazione = (
-    df_secondo_round
-    .withColumn("media_mensile_precedente", lag("media_max_valore", 1).over(w))
-    .withColumn(
-        "variazione_percentuale",
-        when(
-            col("media_mensile_precedente").isNull() | (col("media_mensile_precedente") == 0),
-            None,
-        ).otherwise(
-            when(col("tipo") == "endurance", -1).otherwise(1)
-            * (
-                (col("media_max_valore") - col("media_mensile_precedente"))
-                / col("media_mensile_precedente")
+def calculate_performance_trends(df_agg):
+    """Calculate month-over-month performance variation"""
+    
+    w = Window.partitionBy("athlete_id", "exercise_id").orderBy("year_month")
+    
+    df_trends = df_agg \
+        .withColumn(
+            "prev_monthly_max",
+            lag("monthly_max_perf", 1).over(w)
+        ) \
+        .withColumn(
+            "perf_variation",
+            when(
+                (col("prev_monthly_max").isNull()) | (col("prev_monthly_max") == 0),
+                0.0
+            ).otherwise(
+                ((col("monthly_max_perf") - col("prev_monthly_max")) / col("prev_monthly_max")) * 100
             )
-            * 100
-        ),
+        ) \
+        .filter(col("perf_variation").isNotNull())
+    
+    return df_trends
+
+def calculate_correlation_matrix(df_trends):
+    """
+    Calculate Pearson correlation matrix between exercises
+    to identify which exercises correlate with overall performance.
+    """
+    
+    # Pivot: exercises as columns, performance variations as values
+    pivot_df = df_trends.select(
+        "athlete_id", "year_month", "exercise_id", "perf_variation"
+    ).groupBy(
+        "athlete_id", "year_month"
+    ).pivot(
+        "exercise_id"
+    ).agg(
+        avg("perf_variation")
+    ).fillna(0.0)
+    
+    # Get feature columns (exercise IDs)
+    feature_cols = [c for c in pivot_df.columns if c not in ["athlete_id", "year_month"]]
+    
+    if len(feature_cols) < 2:
+        print("⚠️  Insufficient exercises for correlation matrix")
+        return None, feature_cols
+    
+    # Assemble features
+    assembler = VectorAssembler(inputCols=feature_cols, outputCol="features")
+    df_features = assembler.transform(pivot_df).select("features")
+    
+    # Calculate Pearson correlation
+    try:
+        corr_matrix = Correlation.corr(df_features, "features", "pearson").head()[0]
+        return corr_matrix.toArray(), feature_cols
+    except Exception as e:
+        print(f"⚠️  Error calculating correlation: {e}")
+        return None, feature_cols
+
+def train_gradient_boosting_model(df_trends):
+    """
+    Train Gradient Boosting model to predict performance variation
+    and rank exercise features by importance.
+    """
+    
+    # Create feature vector from exercise metrics
+    feature_cols = ["monthly_max_perf", "monthly_avg_perf", "std_performance", "session_count"]
+    
+    # Handle nulls
+    for col_name in feature_cols:
+        if col_name not in df_trends.columns:
+            df_trends = df_trends.withColumn(col_name, lit(0.0))
+    
+    # Fill nulls with 0
+    df_clean = df_trends.select(*feature_cols + ["perf_variation"]).fillna(0.0)
+    
+    # Remove rows with null target
+    df_clean = df_clean.filter(col("perf_variation").isNotNull())
+    
+    if df_clean.count() < 10:
+        print("⚠️  Insufficient data for model training")
+        return None
+    
+    # Vector assembler
+    assembler = VectorAssembler(
+        inputCols=feature_cols,
+        outputCol="features"
     )
-    .orderBy("atleta", "mese", "esercizio")
-)
+    
+    # Scaler
+    scaler = StandardScaler(
+        inputCol="features",
+        outputCol="scaled_features",
+        withMean=True,
+        withStd=True
+    )
+    
+    # Gradient Boosting Regressor
+    gbt = GBTRegressor(
+        featuresCol="scaled_features",
+        labelCol="perf_variation",
+        maxIter=20,
+        maxDepth=4,
+        seed=42
+    )
+    
+    try:
+        # Prepare data
+        df_assembled = assembler.transform(df_clean)
+        scaler_model = scaler.fit(df_assembled)
+        df_scaled = scaler_model.transform(df_assembled)
+        
+        # Train model
+        model = gbt.fit(df_scaled)
+        
+        # Extract feature importance
+        importances = model.featureImportances.toArray()
+        
+        importance_list = []
+        for idx, imp in enumerate(importances):
+            importance_list.append({
+                "feature_name": feature_cols[idx],
+                "importance_score": float(imp),
+                "ranking": 0  # Will be updated after sorting
+            })
+        
+        # Sort by importance descending
+        importance_list.sort(key=lambda x: x["importance_score"], reverse=True)
+        for i, item in enumerate(importance_list):
+            item["ranking"] = i + 1
+        
+        return importance_list
+    
+    except Exception as e:
+        print(f"⚠️  Error training model: {e}")
+        return None
 
-# Creare matrici di correlazione separate per atleta con MLlib
-pivot_df = (
-    df_variazione
-    .groupBy("atleta", "mese")
-    .pivot("esercizio")
-    .agg(avg("variazione_percentuale"))
-    .fillna(0)
-)
+def write_results_to_citus(importance_list):
+    """Write feature importance results to Citus"""
+    
+    if not importance_list:
+        print("❌ No results to write")
+        return
+    
+    conn = None
+    try:
+        import psycopg2
+        conn = psycopg2.connect(
+            host=os.getenv("CITUS_HOST", "localhost"),
+            port=int(os.getenv("CITUS_PORT", 5432)),
+            user=os.getenv("CITUS_USER", "postgres"),
+            password=os.getenv("CITUS_PASSWORD", "postgres"),
+            database=os.getenv("CITUS_DB", "bigintensive"),
+        )
+        cur = conn.cursor()
+        
+        # Truncate and insert
+        cur.execute("TRUNCATE TABLE feature_importance_results")
+        
+        for item in importance_list:
+            cur.execute(
+                """INSERT INTO feature_importance_results (feature_name, importance_score, ranking)
+                   VALUES (%s, %s, %s)""",
+                (item["feature_name"], item["importance_score"], item["ranking"])
+            )
+        
+        conn.commit()
+        print(f"✅ Successfully wrote {len(importance_list)} feature importance records to Citus")
+    
+    except Exception as e:
+        print(f"❌ Error writing results: {e}")
+        if conn:
+            conn.rollback()
+    
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
 
-feature_columns = [c for c in pivot_df.columns if c not in ["atleta", "mese"]]
-matrici_per_atleta = {}
+def main():
+    print("🚀 Job 2: Exercise Correlation & Feature Importance")
+    print(f"   Start time: {datetime.now()}")
+    print()
+    
+    try:
+        # 1. Read data
+        print("📖 Reading exercise metrics from ClickHouse...")
+        df_metrics = read_exercise_metrics()
+        print(f"   → {df_metrics.count()} metrics read")
+        
+        # 2. Aggregate metrics
+        print("\n⚙️  Aggregating exercise metrics by month...")
+        df_agg = aggregate_exercise_metrics(df_metrics)
+        print(f"   → {df_agg.count()} monthly aggregates")
+        
+        # 3. Calculate trends
+        print("\n⚙️  Calculating performance trends...")
+        df_trends = calculate_performance_trends(df_agg)
+        print(f"   → {df_trends.count()} trend records")
+        
+        # 4. Calculate correlation matrix
+        print("\n⚙️  Calculating correlation matrix between exercises...")
+        corr_matrix, feature_cols = calculate_correlation_matrix(df_trends)
+        if corr_matrix is not None:
+            print(f"   → Correlation matrix: {len(feature_cols)} exercises")
+        
+        # 5. Train Gradient Boosting model
+        print("\n⚙️  Training Gradient Boosting model for feature importance...")
+        importance_list = train_gradient_boosting_model(df_trends)
+        
+        if importance_list:
+            print("   → Feature Importance Ranking:")
+            for item in importance_list:
+                print(f"      {item['ranking']}. {item['feature_name']}: {item['importance_score']:.4f}")
+        
+        # 6. Write results
+        print("\n📝 Writing results to Citus...")
+        write_results_to_citus(importance_list)
+        
+        print(f"\n✅ Job 2 completed successfully at {datetime.now()}")
+    
+    except Exception as e:
+        print(f"\n❌ Job 2 failed: {e}")
+        raise
+    
+    finally:
+        spark.stop()
 
-if len(feature_columns) < 2:
-    print("Dati insufficienti: servono almeno 2 esercizi per calcolare la correlazione")
-else:
-    assembler = VectorAssembler(inputCols=feature_columns, outputCol="features")
-    athlete_ids = [r["atleta"] for r in pivot_df.select("atleta").distinct().collect()]
-
-    for atleta_id in athlete_ids:
-        athlete_df = pivot_df.filter(col("atleta") == atleta_id)
-        sample_count = athlete_df.count()
-
-        if sample_count < 2:
-            print(f"Atleta {atleta_id}: dati insufficienti per la correlazione (righe={sample_count})")
-            continue
-
-        df_features = assembler.transform(athlete_df).select("features")
-        correlation_matrix = Correlation.corr(df_features, "features", "pearson").head()[0]
-
-        matrici_per_atleta[atleta_id] = {
-            "columns": feature_columns,
-            "matrix": correlation_matrix.toArray().tolist(),
-            "rows": sample_count,
-        }
-
-        print(f"=== Matrice di correlazione (Pearson) atleta {atleta_id} ===")
-        print("Colonne:", feature_columns)
-        print(correlation_matrix)
+if __name__ == "__main__":
+    main()
 
