@@ -1,15 +1,32 @@
 import { useState } from "react";
-import { starterWorkout } from "../data/dashboardData";
+import { simulateWorkout } from "../api/dashboardApi";
 
 export default function AddSingleWorkoutPage() {
-  const [singleForm, setSingleForm] = useState(starterWorkout);
+  const [singleForm, setSingleForm] = useState({
+    athlete: "AT-001",
+    sessionType: "Forza",
+    duration: 65,
+    intensity: 7,
+    notes: "",
+  });
   const [singleMessage, setSingleMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmitSingle(event) {
+  async function handleSubmitSingle(event) {
     event.preventDefault();
-    setSingleMessage(
-      `Allenamento simulato per ${singleForm.athlete}: ${singleForm.sessionType}, ${singleForm.duration} min, RPE ${singleForm.intensity}.`,
-    );
+
+    try {
+      setSubmitting(true);
+      const response = await simulateWorkout(singleForm);
+      const payload = response.payload || {};
+      setSingleMessage(
+        `Backend: ${payload.athlete || singleForm.athlete}, ${payload.sessionType || singleForm.sessionType}, ${payload.duration || singleForm.duration} min, RPE ${payload.intensity || singleForm.intensity}.`,
+      );
+    } catch (err) {
+      setSingleMessage(`Errore simulazione backend: ${err.message}`);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -21,29 +38,22 @@ export default function AddSingleWorkoutPage() {
       <form className="force-plate-form" onSubmit={handleSubmitSingle}>
         <div className="form-group">
           <label htmlFor="single-athlete">Atleta</label>
-          <select
+          <input
             id="single-athlete"
+            type="text"
             value={singleForm.athlete}
             onChange={(event) => setSingleForm({ ...singleForm, athlete: event.target.value })}
-          >
-            <option value="AT-001">AT-001</option>
-            <option value="AT-002">AT-002</option>
-            <option value="AT-003">AT-003</option>
-            <option value="AT-004">AT-004</option>
-          </select>
+          />
         </div>
 
         <div className="form-group">
           <label htmlFor="single-type">Tipo sessione</label>
-          <select
+          <input
             id="single-type"
+            type="text"
             value={singleForm.sessionType}
             onChange={(event) => setSingleForm({ ...singleForm, sessionType: event.target.value })}
-          >
-            <option value="Forza">Forza</option>
-            <option value="Tecnica">Tecnica</option>
-            <option value="Recupero">Recupero</option>
-          </select>
+          />
         </div>
 
         <div className="form-group">
@@ -86,8 +96,8 @@ export default function AddSingleWorkoutPage() {
         </div>
 
         <div className="form-actions">
-          <button type="submit" className="btn-primary">
-            Simula inserimento
+          <button type="submit" className="btn-primary" disabled={submitting}>
+            {submitting ? "Invio..." : "Simula inserimento"}
           </button>
         </div>
       </form>

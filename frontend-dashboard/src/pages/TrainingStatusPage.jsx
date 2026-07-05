@@ -1,7 +1,40 @@
-import { useMemo } from "react";
-import { athletes } from "../data/dashboardData";
+import { useEffect, useMemo, useState } from "react";
+import { getTrainingStatus } from "../api/dashboardApi";
 
 export default function TrainingStatusPage() {
+  const [athletes, setAthletes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function load() {
+      try {
+        setLoading(true);
+        const payload = await getTrainingStatus();
+        if (!isMounted) {
+          return;
+        }
+        setAthletes(Array.isArray(payload.items) ? payload.items : []);
+      } catch (err) {
+        if (!isMounted) {
+          return;
+        }
+        setError(`Errore caricamento status: ${err.message}`);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const statusSummary = useMemo(() => {
     const total = athletes.length;
     const green = athletes.filter((item) => item.status === "green").length;
@@ -9,7 +42,7 @@ export default function TrainingStatusPage() {
     const red = athletes.filter((item) => item.status === "red").length;
 
     return { total, green, amber, red };
-  }, []);
+  }, [athletes]);
 
   return (
     <section aria-label="Training status atleti">
@@ -18,6 +51,9 @@ export default function TrainingStatusPage() {
         Snapshot readiness e rischio per atleta, utile per decidere scarico, mantenimento o
         incremento del carico.
       </p>
+
+      {loading ? <p className="notice">Caricamento dati da backend...</p> : null}
+      {error ? <p className="notice">{error}</p> : null}
 
       <div className="stats-grid">
         <article className="stat-card">

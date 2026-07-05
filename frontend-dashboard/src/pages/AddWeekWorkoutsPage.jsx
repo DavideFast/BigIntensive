@@ -1,16 +1,32 @@
 import { useState } from "react";
-import { starterWeek } from "../data/dashboardData";
+import { simulateWeeklyPlan } from "../api/dashboardApi";
 
 export default function AddWeekWorkoutsPage() {
-  const [weekForm, setWeekForm] = useState(starterWeek);
+  const [weekForm, setWeekForm] = useState({
+    athlete: "AT-002",
+    phase: "Costruzione",
+    targetLoad: 3200,
+    focus: "Tolleranza lattato",
+  });
   const [weekMessage, setWeekMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmitWeek(event) {
+  async function handleSubmitWeek(event) {
     event.preventDefault();
-    const perDay = Math.round(Number(weekForm.targetLoad) / 7);
-    setWeekMessage(
-      `Microciclo creato per ${weekForm.athlete}: fase ${weekForm.phase}, focus ${weekForm.focus}, carico medio giornaliero ${perDay}.`,
-    );
+
+    try {
+      setSubmitting(true);
+      const response = await simulateWeeklyPlan(weekForm);
+      const payload = response.payload || {};
+      const perDay = response.estimatedDailyLoad || Math.round(Number(weekForm.targetLoad) / 7);
+      setWeekMessage(
+        `Backend: microciclo per ${payload.athlete || weekForm.athlete}, fase ${payload.phase || weekForm.phase}, focus ${payload.focus || weekForm.focus}, carico medio giornaliero ${perDay}.`,
+      );
+    } catch (err) {
+      setWeekMessage(`Errore simulazione backend: ${err.message}`);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -23,29 +39,22 @@ export default function AddWeekWorkoutsPage() {
       <form className="force-plate-form" onSubmit={handleSubmitWeek}>
         <div className="form-group">
           <label htmlFor="week-athlete">Atleta</label>
-          <select
+          <input
             id="week-athlete"
+            type="text"
             value={weekForm.athlete}
             onChange={(event) => setWeekForm({ ...weekForm, athlete: event.target.value })}
-          >
-            <option value="AT-001">AT-001</option>
-            <option value="AT-002">AT-002</option>
-            <option value="AT-003">AT-003</option>
-            <option value="AT-004">AT-004</option>
-          </select>
+          />
         </div>
 
         <div className="form-group">
           <label htmlFor="week-phase">Fase</label>
-          <select
+          <input
             id="week-phase"
+            type="text"
             value={weekForm.phase}
             onChange={(event) => setWeekForm({ ...weekForm, phase: event.target.value })}
-          >
-            <option value="Costruzione">Costruzione</option>
-            <option value="Intensificazione">Intensificazione</option>
-            <option value="Taper">Taper</option>
-          </select>
+          />
         </div>
 
         <div className="form-group">
@@ -74,8 +83,8 @@ export default function AddWeekWorkoutsPage() {
         </div>
 
         <div className="form-actions">
-          <button type="submit" className="btn-primary">
-            Simula microciclo
+          <button type="submit" className="btn-primary" disabled={submitting}>
+            {submitting ? "Invio..." : "Simula microciclo"}
           </button>
         </div>
       </form>
