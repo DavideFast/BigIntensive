@@ -32,7 +32,12 @@ spark = SparkSession.builder \
     .config("spark.sql.shuffle.partitions", "10") \
     .getOrCreate()
 
-# Database connections
+#####################################################################################################################
+###                                                                                                               ###
+###                                          DATABASE CONNECTIONS                                                 ###
+###                                                                                                               ###
+#####################################################################################################################
+
 CITUS_URL = os.getenv("CITUS_JDBC_URL", "jdbc:postgresql://localhost:5432/bigintensive")
 CITUS_PROPS = {
     "user": os.getenv("CITUS_USER", "postgres"),
@@ -46,6 +51,13 @@ CLICKHOUSE_PROPS = {
     "password": os.getenv("CLICKHOUSE_PASSWORD", ""),
     "driver": "com.clickhouse.jdbc.ClickHouseDriver",
 }
+
+#####################################################################################################################
+###                                                                                                               ###
+###                                               SPARK FUNCTIONS                                                 ###
+###                                                                                                               ###
+#####################################################################################################################
+
 
 def read_cardio_samples():
     """Read cardio endurance samples from ClickHouse"""
