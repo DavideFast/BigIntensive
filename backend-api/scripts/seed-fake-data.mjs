@@ -198,7 +198,6 @@ function buildWorkoutData(
   const workoutExercises = [];
   const trainingStatus = [];
   const smartwatchSessions = [];
-  const exerciseMetrics = [];
   const cardioSamples = [];
   const clickhouseEnduranceSessions = [];
   const athleteProfiles = buildAthleteProfiles(athleteIds, athletesSeedData);
@@ -268,16 +267,6 @@ function buildWorkoutData(
             risultato,
             timestamp: toDateTime(date, randInt(0, 3600)),
           });
-
-          exerciseMetrics.push({
-            athlete_id: athleteId,
-            esercizio: `exercise_${exerciseId}`,
-            valore_salto: Number(jumpValue.toFixed(2)),
-            rsi: Number(rsiValue.toFixed(4)),
-            differenza_bilaterale: Number(bilateralDiff.toFixed(2)),
-            potenza_sviluppata: Number(generatedPower.toFixed(2)),
-            created_at: toDateTime(date, randInt(0, 3600)),
-          });
         });
 
         const sampleEverySec = 30;
@@ -345,7 +334,6 @@ function buildWorkoutData(
     workoutExercises,
     trainingStatus,
     smartwatchSessions,
-    exerciseMetrics,
     cardioSamples,
     clickhouseEnduranceSessions,
   };

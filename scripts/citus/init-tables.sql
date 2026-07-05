@@ -62,17 +62,38 @@ SELECT create_reference_table('smartwatch_sessions');
 SELECT create_distributed_table('training_status', 'athlete_id');
 
 INSERT INTO athletes (nome, cognome, eta, sesso, altezza_cm, peso_kg)
-VALUES 
-  ('Marco', 'Rossi', 28, 'M', 182, 80.5),
-  ('Giulia', 'Bianchi', 25, 'F', 168, 62.3),
-  ('Alessandro', 'Verdi', 32, 'M', 175, 75.0)
-ON CONFLICT DO NOTHING;
+SELECT *
+FROM (
+  VALUES
+    ('Marco', 'Rossi', 28, 'M', 182, 80.5),
+    ('Giulia', 'Bianchi', 25, 'F', 168, 62.3),
+    ('Alessandro', 'Verdi', 32, 'M', 175, 75.0)
+) AS seed(nome, cognome, eta, sesso, altezza_cm, peso_kg)
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM athletes a
+  WHERE a.nome = seed.nome
+    AND a.cognome = seed.cognome
+    AND a.eta = seed.eta
+    AND a.sesso = seed.sesso
+    AND a.altezza_cm = seed.altezza_cm
+    AND a.peso_kg = seed.peso_kg
+);
 
 INSERT INTO exercises (nome_esercizio, tipo_esercizio, descrizione)
-VALUES
-  ('Panca piana', 'forza', 'Esercizio multiarticolare per il petto'),
-  ('Squat', 'forza', 'Esercizio multiarticolare per gli arti inferiori')
-ON CONFLICT DO NOTHING;
+SELECT *
+FROM (
+  VALUES
+    ('Panca piana', 'forza', 'Esercizio multiarticolare per il petto'),
+    ('Squat', 'forza', 'Esercizio multiarticolare per gli arti inferiori')
+) AS seed(nome_esercizio, tipo_esercizio, descrizione)
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM exercises e
+  WHERE e.nome_esercizio = seed.nome_esercizio
+    AND e.tipo_esercizio = seed.tipo_esercizio
+    AND COALESCE(e.descrizione, '') = COALESCE(seed.descrizione, '')
+);
 
 INSERT INTO training_status (athlete_id, giorno, valore)
 VALUES
