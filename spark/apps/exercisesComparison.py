@@ -14,7 +14,7 @@ Output:
 
 from pyspark.sql import SparkSession, Window
 from pyspark.sql.functions import (
-    col, max, avg, stddev, when, lag, row_number, datediff, current_date, lit
+    col, max, avg, stddev, when, lag, lit, count
 )
 from pyspark.ml.feature import VectorAssembler, StandardScaler
 from pyspark.ml.regression import GBTRegressor
