@@ -14,16 +14,13 @@ Output:
 
 from pyspark.sql import SparkSession, Window
 from pyspark.sql.functions import (
-    col, sum, avg, max, count, stddev, when, lag, lead, lit, concat_ws,
-    year, month, weekofyear, datediff, current_date, abs as spark_abs
+    col, sum, avg, max, count, stddev, when, lag, lead, concat_ws,
+    year, weekofyear
 )
 from pyspark.ml.feature import VectorAssembler, StandardScaler
 from pyspark.ml.clustering import KMeans
-from pyspark.ml.evaluation import ClusteringEvaluator
 import os
-import math
 from datetime import datetime
-import numpy as np
 
 
 #####################################################################################################################
@@ -73,21 +70,6 @@ def read_exercise_volumes():
         col("serie").cast("double").alias("sets"),
         col("ripetizioni").cast("double").alias("reps"),
         col("risultato").cast("double").alias("result"),
-    )
-
-def read_training_status():
-    """Read training status (ACWR, HRV, injury risk) from Citus"""
-    df = spark.read.jdbc(
-        url=CITUS_URL,
-        table="training_status_results",
-        properties=CITUS_PROPS,
-    )
-    return df.select(
-        col("athlete_id"),
-        col("result_date").alias("status_date"),
-        col("acwr"),
-        col("hrv"),
-        col("injury_risk_pct"),
     )
 
 ######################################################################################################################
@@ -251,7 +233,7 @@ def perform_kmeans_clustering(df_metrics):
         print(f"⚠️  K-Means error: {e}")
         return None
 
-def detect_anomalies(df_metrics, df_training_status):
+def detect_anomalies(df_metrics):
     """
     Isolation Forest-like anomaly detection using statistical thresholds.
     Flags: overtraining, fatigue, recovery_issue, bilateral_imbalance
@@ -260,8 +242,6 @@ def detect_anomalies(df_metrics, df_training_status):
       - Volume change > 2.5σ → overtraining (sudden spike)
       - Volume decrease > -2σ → fatigue/undertraining
       - Deviation from rolling avg > 2.5σ → anomaly
-      - HRV decline + low performance → fatigue
-      - ACWR > 1.5 + high injury risk → overtraining
     """
     
     anomalies = []
@@ -402,7 +382,7 @@ def main():
         
         # 5. Anomaly detection
         print("\n⚙️  Detecting anomalies via statistical thresholds...")
-        anomalies = detect_anomalies(df_metrics, None)  # Optional: join with training_status later
+        anomalies = detect_anomalies(df_metrics)
         print(f"   → {len(anomalies)} anomalies detected")
         
         if anomalies:
