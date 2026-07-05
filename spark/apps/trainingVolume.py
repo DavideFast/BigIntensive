@@ -22,11 +22,24 @@ from pyspark.ml.clustering import KMeans
 import os
 from datetime import datetime
 
+#######################################################################################################################
+###                                                                                                                 ###
+###                                          INITIALIZE SPARK SESSION                                               ###
+###                                                                                                                 ###
+#######################################################################################################################
+
 spark = SparkSession.builder \
     .appName("job3-training-volume-clustering") \
     .config("spark.jars.packages", "org.postgresql:postgresql:42.7.2,com.clickhouse:clickhouse-jdbc:0.6.3") \
     .config("spark.sql.shuffle.partitions", "10") \
     .getOrCreate()
+
+#######################################################################################################################
+###                                                                                                                 ###
+###                                          DATABASE CONNECTIONS                                                   ###
+###                                                                                                                 ###
+#######################################################################################################################
+
 
 CITUS_URL = os.getenv("CITUS_JDBC_URL", "jdbc:postgresql://localhost:5432/bigintensive")
 CITUS_PROPS = {
@@ -94,44 +107,6 @@ def read_weekly_cardio():
 ###                                                                                                                 ###
 #######################################################################################################################
 
-
-def aggregate_exercise_volumes_by_type(df_exercises, df_exercise_types):
-    """
-    Aggregate exercise volumes by athlete, week, and exercise type.
-    Returns: athlete_id, year_week, exercise_type, volume_metric, session_count
-    """
-    
-    # Join exercises with their types
-    df_with_types = df_exercises.join(
-        df_exercise_types,
-        on="exercise_id",
-        how="left"
-    )
-    
-    # Add year-week column
-    df_with_week = df_with_types.withColumn(
-        "year_week",
-        concat_ws("-", year("training_date"), weekofyear("training_date"))
-    )
-    
-    # Calculate volume per exercise
-    df_with_volume = df_with_week.withColumn(
-        "volume_metric",
-        col("sets") * col("reps") * col("result")
-    )
-    
-    # Aggregate by type per week
-    weekly_by_type = df_with_volume.groupBy(
-        "athlete_id",
-        "year_week",
-        "exercise_type"
-    ).agg(
-        sum("volume_metric").alias("total_volume"),
-        count("*").alias("session_count"),
-        avg("result").alias("avg_performance"),
-    ).fillna(0.0)
-    
-    return weekly_by_type
 
 def aggregate_exercise_volumes_by_type(df_exercises, df_exercise_types):
     """
