@@ -383,7 +383,7 @@ def calculate_weekly_cardio_aggregates(df_daily, df_cardio):
     # Approx: distance = avg_speed * (duration_hours)
     # Group by athlete-week and sum duration, avg speed
     cardio_distance = df_cardio_week.groupBy("athlete_id", "year_week").agg(
-        (avg("speed_kmh") * (count("*") * 5 / 3600.0)).alias("total_km_running")  # 5sec per sample
+        (avg("speed") * (count("*") * 5 / 3600.0)).alias("total_km_running")  # 5sec per sample
     )
     
     # Join

@@ -94,7 +94,7 @@ def read_weekly_cardio():
         col("athlete_id"),
         col("week_id").alias("year_week"),
         col("total_trimp").cast("double"),
-        col("total_km_running").cast("double").alias("total_km"),
+        col("total_km_running").cast("double"),
         col("avg_hr"),
         col("max_hr"),
         col("avg_hrv"),
@@ -220,10 +220,10 @@ def calculate_volume_trends(df_profile):
 def perform_kmeans_clustering(df_profile):
     """
     K-Means clustering on balanced training profiles.
-    Features: volume_strength, volume_mobility, total_km_running, avg_speed_kmh
+    Features: volume_strength, volume_mobility, total_km_running, avg_speed
     """
     
-    feature_cols = ["volume_strength", "volume_mobility", "total_km_running", "avg_speed_kmh"]
+    feature_cols = ["volume_strength", "volume_mobility", "total_km_running", "avg_speed"]
     
     # Ensure all columns exist, fill nulls
     df_clean = df_profile.select("athlete_id", "year_week", *feature_cols).fillna(0.0)
