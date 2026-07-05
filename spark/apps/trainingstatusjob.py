@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Job 1: Multi-window Cardio Analysis
-Calculates training affaticamento (fatigue), ACWR, HRV, readiness, and injury risk
+Calculates training fatigue, ACWR, HRV, readiness, and injury risk
 from smartwatch cardio data using 7 concurrent window functions.
 
 Input:
@@ -13,18 +13,19 @@ Output:
 """
 
 from pyspark.sql import SparkSession, Window
-from pyspark.sql.functions import (
-    col, avg, max, min, stddev, datediff, current_date, lit,
-    when, sum as spark_sum, lag, row_number, concat_ws
-)
+from pyspark.sql.functions import (col, avg, max, min, stddev, lit,when, sum as spark_sum)
 from pyspark.ml import Pipeline
 from pyspark.ml.feature import VectorAssembler, StandardScaler
 from pyspark.ml.classification import RandomForestClassifier
-from pyspark.sql.types import StructType, StructField, IntegerType, FloatType, StringType, DateType
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 
-# Initialize Spark Session
+####################################################################################################################
+###                                                                                                              ###
+###                                          INITIALIZE SPARK SESSION                                            ###
+###                                                                                                              ###
+####################################################################################################################
+
 spark = SparkSession.builder \
     .appName("training-status-job") \
     .config("spark.jars.packages", "org.postgresql:postgresql:42.7.2,com.clickhouse:clickhouse-jdbc:0.6.3") \
