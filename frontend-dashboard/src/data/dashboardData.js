@@ -51,6 +51,19 @@ export const weeklyVolumes = [
   { day: "Dom", load: 240 },
 ];
 
+export const runningSeries = [
+  { km: 1, distanceSplit: 1.0, heartRate: 132 },
+  { km: 2, distanceSplit: 1.0, heartRate: 138 },
+  { km: 3, distanceSplit: 1.0, heartRate: 146 },
+  { km: 4, distanceSplit: 1.0, heartRate: 151 },
+  { km: 5, distanceSplit: 1.0, heartRate: 158 },
+  { km: 6, distanceSplit: 1.0, heartRate: 164 },
+  { km: 7, distanceSplit: 1.0, heartRate: 169 },
+  { km: 8, distanceSplit: 1.0, heartRate: 166 },
+  { km: 9, distanceSplit: 1.0, heartRate: 161 },
+  { km: 10, distanceSplit: 1.0, heartRate: 156 },
+];
+
 export const starterWorkout = {
   athlete: "AT-001",
   sessionType: "Forza",

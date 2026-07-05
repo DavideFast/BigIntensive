@@ -2,6 +2,7 @@ import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import AddSingleWorkoutPage from "./pages/AddSingleWorkoutPage";
 import AddWeekWorkoutsPage from "./pages/AddWeekWorkoutsPage";
 import CorrelationPage from "./pages/CorrelationPage";
+import RunningChartPage from "./pages/RunningChartPage";
 import TrainingStatusPage from "./pages/TrainingStatusPage";
 import VolumePage from "./pages/VolumePage";
 
@@ -9,6 +10,7 @@ const pages = [
   { id: "correlation", label: "Matrice correlazione", path: "/correlation" },
   { id: "status", label: "Training status", path: "/training-status" },
   { id: "volume", label: "Volumi", path: "/volumi-allenamento" },
+  { id: "running", label: "Grafico corsa", path: "/grafico-corsa" },
   { id: "add-single", label: "Aggiungi allenamento", path: "/simula-aggiunta-allenamento" },
   { id: "add-week", label: "Pianifica settimana", path: "/simula-aggiunta-allenamenti" },
 ];
@@ -44,6 +46,7 @@ export default function App() {
           <Route path="/correlation" element={<CorrelationPage />} />
           <Route path="/training-status" element={<TrainingStatusPage />} />
           <Route path="/volumi-allenamento" element={<VolumePage />} />
+          <Route path="/grafico-corsa" element={<RunningChartPage />} />
           <Route path="/simula-aggiunta-allenamento" element={<AddSingleWorkoutPage />} />
           <Route path="/simula-aggiunta-allenamenti" element={<AddWeekWorkoutsPage />} />
           <Route path="/" element={<Navigate to="/correlation" replace />} />
