@@ -5,6 +5,7 @@ import { createDeployLoadtestRouter } from "./routes/deployLoadtestRoutes.js";
 import { createSimulationRouter } from "./routes/simulationRoutes.js";
 import { createBusinessRouter } from "./routes/businessRoutes.js";
 import { createSystemRouter } from "./routes/systemRoutes.js";
+import { createDashboardRouter } from "./routes/dashboardRoutes.js";
 import { createServerContext } from "./bootstrap/serverContext.js";
 
 dotenv.config();
@@ -53,6 +54,9 @@ app.use(
     correlationStore: context.correlationStore,
   }),
 );
+
+// ============================ DASHBOARD ROUTES START ===========================
+app.use(createDashboardRouter());
 
 // ============================ AVVIO ===============================
 app.listen(context.port, () => {
