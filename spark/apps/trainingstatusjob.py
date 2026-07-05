@@ -1,3 +1,7 @@
+# Il training status deve calcolare l'indice di affaticamento incrociando
+# corse simili per durata e riuscire a capire le soglie, il drift cardiaco
+# e distinguere fasi di riscaldamento, defaticamento e lavoro centrale.
+
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, max, avg, datediff, current_date, lit
 import os

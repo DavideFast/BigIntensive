@@ -1,3 +1,8 @@
+# Matrice di correlazione deve fare per atleta e per esercizio un incrocio tra i
+# miglioramenti o peggioramenti mensili incrociando anche con volume di allenamento,
+# densità di allenamento e intensità di allenamento.
+
+
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col,  max, avg
 from pyspark.ml.feature import VectorAssembler
