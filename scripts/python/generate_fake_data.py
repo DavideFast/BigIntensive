@@ -4,7 +4,7 @@ Generate realistic fake training data for BigIntensive.
 Populates:
   - ClickHouse: cardio (corsa_endurance_campioni), exercise details (allenamento_dettagli), coach feedback
   - Citus: injury history (injury_history)
-90 days of data for 10 athletes.
+90 days of data for 1000 athletes.
 """
 
 import os
@@ -27,7 +27,7 @@ CLICKHOUSE_USER = os.getenv("CLICKHOUSE_USER", "default")
 CLICKHOUSE_PASSWORD = os.getenv("CLICKHOUSE_PASSWORD", "")
 
 # Data generation parameters
-NUM_ATHLETES = 10
+NUM_ATHLETES = 1000
 DAYS = 90
 START_DATE = datetime.now() - timedelta(days=DAYS)
 
@@ -52,19 +52,37 @@ def connect_clickhouse():
     )
 
 def generate_athletes():
-    """Generate 10 realistic athletes"""
-    athletes = [
-        ("Marco", "Rossi", 28, "M", 182, 80.5),
-        ("Giulia", "Bianchi", 25, "F", 168, 62.3),
-        ("Alessandro", "Verdi", 32, "M", 175, 75.0),
-        ("Luca", "Ferri", 26, "M", 178, 73.2),
-        ("Marta", "Leone", 29, "F", 165, 61.5),
-        ("Davide", "Moretti", 31, "M", 180, 78.0),
-        ("Giulia", "Vanni", 24, "F", 170, 65.0),
-        ("Marco", "Gallo", 27, "M", 176, 74.5),
-        ("Elena", "Romano", 28, "F", 167, 63.0),
-        ("Andrea", "Giordano", 30, "M", 179, 76.5),
+    """Generate N realistic athletes with random names and attributes"""
+    first_names = [
+        "Marco", "Giulia", "Alessandro", "Luca", "Marta", "Davide", "Elena", "Andrea",
+        "Francesco", "Chiara", "Lorenzo", "Alessia", "Matteo", "Sofia", "Riccardo",
+        "Valentina", "Giovanni", "Federica", "Carlo", "Martina", "Paolo", "Giuliana",
+        "Roberto", "Silvia", "Antonio", "Francesca", "Domenico", "Roberta", "Giuseppe",
+        "Antonietta", "Vincenzo", "Stefania", "Pietro", "Monica", "Luigi", "Patrizia",
+        "Salvatore", "Teresa", "Carmelo", "Paola", "Gennaro", "Vittoria", "Vito",
+        "Giovanna", "Nicola", "Rita", "Pasquale", "Adriana", "Giancarlo", "Benedetta"
     ]
+    
+    last_names = [
+        "Rossi", "Bianchi", "Verdi", "Ferri", "Leone", "Moretti", "Vanni", "Gallo",
+        "Romano", "Giordano", "Conti", "Rizzo", "Colombo", "Riccardi", "Martinelli",
+        "Barbieri", "Rolla", "Graziani", "Fontana", "Benedetti", "Gatti", "Rinaldi",
+        "De Luca", "Costa", "Ferrara", "Lombardi", "Sala", "Santoro", "Palumbo",
+        "Sorrentino", "Gentile", "Mantovani", "Villa", "Rossi", "Ferretti", "Marzi",
+        "Palmieri", "Pini", "Russo", "Ferrari", "Esposito", "Baldi", "Sartori"
+    ]
+    
+    athletes = []
+    for i in range(NUM_ATHLETES):
+        nome = random.choice(first_names)
+        cognome = random.choice(last_names)
+        eta = random.randint(18, 60)
+        sesso = random.choice(['M', 'F'])
+        altezza_cm = random.randint(155, 195) if sesso == 'F' else random.randint(165, 205)
+        peso_kg = round(random.uniform(50, 120) if sesso == 'F' else random.uniform(70, 140), 1)
+        
+        athletes.append((nome, cognome, eta, sesso, altezza_cm, peso_kg))
+    
     return athletes
 
 def generate_cardio_session(athlete_id, session_date, session_num):

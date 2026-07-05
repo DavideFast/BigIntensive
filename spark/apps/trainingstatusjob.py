@@ -34,7 +34,7 @@ spark = SparkSession.builder \
 
 #####################################################################################################################
 ###                                                                                                               ###
-###                                          DATABASE CONNECTIONS                                                 ###
+###                                     DATABASE CONNECTIONS AND READING                                          ###
 ###                                                                                                               ###
 #####################################################################################################################
 
@@ -52,13 +52,7 @@ CLICKHOUSE_PROPS = {
     "driver": "com.clickhouse.jdbc.ClickHouseDriver",
 }
 
-#####################################################################################################################
-###                                                                                                               ###
-###                                               SPARK FUNCTIONS                                                 ###
-###                                                                                                               ###
-#####################################################################################################################
-
-
+# Read cardio samples from ClickHouse
 def read_cardio_samples():
     """Read cardio endurance samples from ClickHouse"""
     df = spark.read.jdbc(
@@ -76,6 +70,7 @@ def read_cardio_samples():
         col("temperature_c").cast("double").alias("temperature"),
     )
 
+# Read injury history from Citus
 def read_injury_history():
     """Read injury history from Citus for ML training"""
     df = spark.read.jdbc(
@@ -91,6 +86,13 @@ def read_injury_history():
         col("pre_injury_hrv").cast("double"),
         col("pre_injury_load").cast("integer"),
     )
+
+
+######################################################################################################################
+###                                                                                                               ###
+###                                     DATA PROCESSING AND METRICS CALCULATION                                   ###
+###                                                                                                               ###
+######################################################################################################################
 
 def calculate_trimp(df):
     """
