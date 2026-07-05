@@ -352,6 +352,77 @@ def write_results_to_citus(df_results):
         print(f"❌ Error writing results to Citus: {e}")
         raise
 
+def calculate_weekly_cardio_aggregates(df_daily, df_cardio):
+    """
+    Calculate weekly cardio aggregates from daily data and raw samples.
+    Outputs: athlete_id, year_week, total_km, avg_hr, max_hr, avg_hrv, avg_speed
+    """
+    from pyspark.sql.functions import year, weekofyear, concat_ws
+    
+    # Weekly aggregation from daily TRIMP data
+    df_with_week = df_daily.withColumn(
+        "year_week",
+        concat_ws("-", year("training_date"), weekofyear("training_date"))
+    )
+    
+    weekly = df_with_week.groupBy("athlete_id", "year_week").agg(
+        spark_sum("trimp").alias("total_trimp"),
+        avg("hr_avg").alias("avg_hr"),
+        max("hr_max").alias("max_hr"),
+        avg("hrv").alias("avg_hrv"),
+        avg("speed_avg").alias("avg_speed"),
+        count("*").alias("session_count"),
+    ).fillna(0.0)
+    
+    # Calculate distance from speed and duration
+    df_cardio_week = df_cardio.withColumn(
+        "year_week",
+        concat_ws("-", year(col("timestamp").cast("date")), weekofyear(col("timestamp").cast("date")))
+    )
+    
+    # Approx: distance = avg_speed * (duration_hours)
+    # Group by athlete-week and sum duration, avg speed
+    cardio_distance = df_cardio_week.groupBy("athlete_id", "year_week").agg(
+        (avg("speed_kmh") * (count("*") * 5 / 3600.0)).alias("total_km_running")  # 5sec per sample
+    )
+    
+    # Join
+    weekly = weekly.join(
+        cardio_distance,
+        on=["athlete_id", "year_week"],
+        how="left"
+    ).fillna(0.0)
+    
+    return weekly
+
+def write_weekly_aggregates_to_citus(df_weekly):
+    """Write weekly cardio aggregates to Citus"""
+    
+    try:
+        df_output = df_weekly.select(
+            col("athlete_id"),
+            col("year_week").alias("week_id"),
+            col("total_trimp").cast("decimal(10,2)"),
+            col("total_km_running").cast("decimal(8,2)"),
+            col("avg_hr").cast("decimal(6,2)"),
+            col("max_hr").cast("integer"),
+            col("avg_hrv").cast("decimal(6,3)"),
+            col("avg_speed").cast("decimal(6,2)"),
+            col("session_count").cast("integer"),
+        ).distinct()
+        
+        df_output.write \
+            .mode("overwrite") \
+            .jdbc(
+                url=CITUS_URL,
+                table="weekly_cardio_aggregates",
+                properties=CITUS_PROPS,
+            )
+        print(f"✅ Wrote {df_output.count()} weekly cardio aggregates")
+    
+    except Exception as e:
+        print(f"❌ Error writing weekly aggregates: {e}")
+
 def main():
     print("🚀 Job 1: Multi-window Cardio Analysis (Training Status)")
     print(f"   Start time: {datetime.now()}")
@@ -393,6 +464,11 @@ def main():
         # 7. Write to Citus
         print("\n📝 Writing results to Citus...")
         write_results_to_citus(df_final)
+        
+        # 8. Calculate and save weekly aggregates
+        print("\n📝 Calculating and writing weekly cardio aggregates...")
+        df_weekly = calculate_weekly_cardio_aggregates(df_daily, df_cardio)
+        write_weekly_aggregates_to_citus(df_weekly)
         
         print(f"\n✅ Job 1 completed successfully at {datetime.now()}")
     

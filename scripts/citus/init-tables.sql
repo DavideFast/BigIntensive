@@ -108,6 +108,22 @@ CREATE TABLE IF NOT EXISTS exercise_volumes_clusters (
   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- WEEKLY_CARDIO_AGGREGATES: output of Job 1 aggregation (pre-computed for Job 3)
+CREATE TABLE IF NOT EXISTS weekly_cardio_aggregates (
+  agg_id SERIAL PRIMARY KEY,
+  athlete_id INT NOT NULL REFERENCES athletes(athlete_id) ON DELETE CASCADE,
+  week_id VARCHAR(20) NOT NULL,
+  total_trimp DECIMAL(10, 2),
+  total_km_running DECIMAL(8, 2),
+  avg_hr DECIMAL(6, 2),
+  max_hr INT,
+  avg_hrv DECIMAL(6, 3),
+  avg_speed DECIMAL(6, 2),
+  session_count INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uq_weekly_cardio UNIQUE (athlete_id, week_id)
+);
+
 SELECT create_reference_table('athletes');
 SELECT create_reference_table('exercises');
 SELECT create_reference_table('jobs_in_coda');
@@ -116,6 +132,7 @@ SELECT create_reference_table('injury_history');
 SELECT create_reference_table('training_status_results');
 SELECT create_reference_table('feature_importance_results');
 SELECT create_reference_table('exercise_volumes_clusters');
+SELECT create_reference_table('weekly_cardio_aggregates');
 SELECT create_distributed_table('training_status', 'athlete_id');
 
 INSERT INTO athletes (nome, cognome, eta, sesso, altezza_cm, peso_kg)
