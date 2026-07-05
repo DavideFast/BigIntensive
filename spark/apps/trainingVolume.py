@@ -25,14 +25,26 @@ import math
 from datetime import datetime
 import numpy as np
 
-# Initialize Spark Session
+
+#####################################################################################################################
+###                                                                                                               ###
+###                                          INITIALIZE SPARK SESSION                                             ###
+###                                                                                                               ###
+#####################################################################################################################
+
 spark = SparkSession.builder \
     .appName("job3-training-volume-clustering") \
     .config("spark.jars.packages", "org.postgresql:postgresql:42.7.2,com.clickhouse:clickhouse-jdbc:0.6.3") \
     .config("spark.sql.shuffle.partitions", "10") \
     .getOrCreate()
 
-# Database connections
+######################################################################################################################
+###                                                                                                                ###
+###                                          DATABASE CONNECTIONS                                                  ###
+###                                                                                                                ###
+######################################################################################################################
+
+
 CITUS_URL = os.getenv("CITUS_JDBC_URL", "jdbc:postgresql://localhost:5432/bigintensive")
 CITUS_PROPS = {
     "user": os.getenv("CITUS_USER", "postgres"),
@@ -77,6 +89,12 @@ def read_training_status():
         col("hrv"),
         col("injury_risk_pct"),
     )
+
+######################################################################################################################
+###                                                                                                                ###
+###                                          DATA PROCESSING AND METRICS CALCULATION                               ###
+###                                                                                                                ###
+######################################################################################################################
 
 def aggregate_weekly_volumes(df_exercises):
     """
