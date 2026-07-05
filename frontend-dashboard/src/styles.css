@@ -268,6 +268,21 @@ th {
   color: #312720;
 }
 
+.status-green {
+  background: rgba(45, 127, 120, 0.17);
+  color: #0f4f4a;
+}
+
+.status-amber {
+  background: rgba(208, 100, 42, 0.15);
+  color: #7e3417;
+}
+
+.status-red {
+  background: rgba(175, 45, 45, 0.15);
+  color: #6e1e1e;
+}
+
 .force-plate-section {
   margin-top: 2rem;
   background: var(--surface);
@@ -445,6 +460,72 @@ th {
   font-weight: 700;
 }
 
+.correlation-table-wrap td {
+  text-align: center;
+  font-weight: 700;
+  color: #fff;
+}
+
+.correlation-table-wrap td:first-child {
+  text-align: left;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.volume-bars {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.bar-card {
+  background: #fff;
+  border: 1px solid rgba(31, 26, 20, 0.08);
+  border-radius: 14px;
+  padding: 0.7rem 0.55rem;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.bar-card p {
+  margin: 0;
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.bar-card strong {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.bar-shell {
+  margin: 0.7rem auto 0;
+  height: 170px;
+  width: 100%;
+  max-width: 52px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(45, 127, 120, 0.18), rgba(208, 100, 42, 0.12));
+  border: 1px solid rgba(31, 26, 20, 0.1);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.2rem;
+}
+
+.bar-fill {
+  width: 100%;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #2d7f78 0%, #d0642a 100%);
+  animation: rise 480ms ease-out;
+}
+
+.simulation-notice {
+  margin-bottom: 0;
+}
+
 @keyframes rise {
   from {
     transform: translateY(8px);
@@ -464,6 +545,10 @@ th {
   .chart-summary {
     grid-template-columns: 1fr;
   }
+
+  .volume-bars {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 560px) {
@@ -478,5 +563,9 @@ th {
 
   .stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .volume-bars {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
