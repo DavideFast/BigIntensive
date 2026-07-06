@@ -7,6 +7,7 @@ from pyspark.sql.types import DoubleType, IntegerType, StringType, StructField, 
 
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "heart-rate-events")
+KAFKA_STARTING_OFFSETS = os.getenv("SPARK_STREAM_STARTING_OFFSETS", "latest")
 
 CLICKHOUSE_URL = os.getenv("CLICKHOUSE_JDBC_URL", "jdbc:clickhouse://localhost:8123/bigintensive")
 CLICKHOUSE_TABLE = os.getenv("CLICKHOUSE_TABLE", "bigintensive.corsa_endurance_campioni")
@@ -47,7 +48,7 @@ kafka_df = (
     spark.readStream.format("kafka")
     .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS)
     .option("subscribe", KAFKA_TOPIC)
-    .option("startingOffsets", "latest")
+    .option("startingOffsets", KAFKA_STARTING_OFFSETS)
     .load()
 )
 
@@ -115,7 +116,7 @@ query = (
 
 print(
     "Consumer avviato: Kafka -> ClickHouse "
-    f"(topic={KAFKA_TOPIC}, table={CLICKHOUSE_TABLE}, brokers={KAFKA_BOOTSTRAP_SERVERS})"
+    f"(topic={KAFKA_TOPIC}, table={CLICKHOUSE_TABLE}, brokers={KAFKA_BOOTSTRAP_SERVERS}, startingOffsets={KAFKA_STARTING_OFFSETS})"
 )
 
 query.awaitTermination()

@@ -33,6 +33,12 @@ export function createServerContext(importMetaUrl) {
     sparkAppsDir: process.env.SPARK_APPS_DIR || "/opt/spark-apps",
     sparkCitusJdbcUrl: process.env.SPARK_CITUS_JDBC_URL || "jdbc:postgresql://citus-coordinator:5432/bigintensive",
     sparkClickhouseJdbcUrl: process.env.SPARK_CLICKHOUSE_JDBC_URL || "jdbc:clickhouse://clickhouse:8123/bigintensive",
+    sparkKafkaBootstrapServers: process.env.SPARK_KAFKA_BOOTSTRAP_SERVERS || "kafka:19092",
+    sparkKafkaTopic: process.env.SPARK_KAFKA_TOPIC || "heart-rate-events",
+    sparkClickhouseTable: process.env.SPARK_CLICKHOUSE_TABLE || "bigintensive.corsa_endurance_campioni",
+    sparkClickhouseUser: process.env.SPARK_CLICKHOUSE_USER || "default",
+    sparkClickhousePassword: process.env.SPARK_CLICKHOUSE_PASSWORD || "",
+    sparkCheckpointDir: process.env.SPARK_CHECKPOINT_DIR || "/tmp/spark-checkpoints/smartwatch-to-clickhouse",
     clickhouse: {
       host: process.env.CLICKHOUSE_HOST || "clickhouse",
       port: Number(process.env.CLICKHOUSE_PORT || 8123),

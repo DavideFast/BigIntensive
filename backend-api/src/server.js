@@ -57,6 +57,12 @@ app.use(
     sparkAppsDir: context.sparkAppsDir,
     sparkCitusJdbcUrl: context.sparkCitusJdbcUrl,
     sparkClickhouseJdbcUrl: context.sparkClickhouseJdbcUrl,
+    sparkKafkaBootstrapServers: context.sparkKafkaBootstrapServers,
+    sparkKafkaTopic: context.sparkKafkaTopic,
+    sparkClickhouseTable: context.sparkClickhouseTable,
+    sparkClickhouseUser: context.sparkClickhouseUser,
+    sparkClickhousePassword: context.sparkClickhousePassword,
+    sparkCheckpointDir: context.sparkCheckpointDir,
   }),
 );
 
