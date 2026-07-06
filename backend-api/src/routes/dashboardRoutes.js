@@ -171,6 +171,22 @@ async function queryClickHouse(config, sql) {
   return Array.isArray(payload?.data) ? payload.data : [];
 }
 
+async function clickhouseTableExists(config, table) {
+  const rows = await queryClickHouse(
+    config,
+    `
+    SELECT count() AS c
+    FROM system.tables
+    WHERE database = '${config.database.replace(/'/g, "''")}'
+      AND name = '${String(table).replace(/'/g, "''")}'
+    LIMIT 1
+    `,
+  );
+
+  const count = Number(rows?.[0]?.c || 0);
+  return Number.isFinite(count) && count > 0;
+}
+
 export function createDashboardRouter({ pool, clickhouseConfig } = {}) {
   const router = express.Router();
   const clickhouse = buildClickHouseConfig(clickhouseConfig);
@@ -505,6 +521,44 @@ export function createDashboardRouter({ pool, clickhouseConfig } = {}) {
     } catch (err) {
       console.error("Running chart query error:", err.message);
       return res.status(500).json({ error: "Running chart query failed", details: err.message });
+    }
+  });
+
+  router.get("/dashboard/workouts-clickhouse-chart", async (req, res) => {
+    try {
+      const tableExists = await clickhouseTableExists(clickhouse, clickhouseWorkoutsTable);
+      if (!tableExists) {
+        return res.json(listPayload([], "clickhouse"));
+      }
+
+      const rows = await queryClickHouse(
+        clickhouse,
+        `
+        SELECT
+          toDate(created_at) AS day,
+          count() AS inserts,
+          round(avgOrNull(intensity), 2) AS avgIntensity,
+          sumOrNull(target_load) AS totalTargetLoad
+        FROM ${clickhouseWorkoutsTable}
+        GROUP BY day
+        ORDER BY day DESC
+        LIMIT 14
+        `,
+      );
+
+      const items = rows
+        .map((row) => ({
+          day: String(row.day || ""),
+          inserts: parseNumber(row.inserts),
+          avgIntensity: parseNumber(row.avgIntensity),
+          totalTargetLoad: parseNumber(row.totalTargetLoad),
+        }))
+        .reverse();
+
+      return res.json(listPayload(items, "clickhouse"));
+    } catch (err) {
+      console.error("Workouts ClickHouse chart query error:", err.message);
+      return res.status(500).json({ error: "Workouts ClickHouse chart query failed", details: err.message });
     }
   });
 

@@ -44,6 +44,10 @@ export function getRunningChart() {
   return request("/dashboard/running-chart").then(normalizeListPayload);
 }
 
+export function getWorkoutsClickhouseChart() {
+  return request("/dashboard/workouts-clickhouse-chart").then(normalizeListPayload);
+}
+
 export function simulateWorkout(payload) {
   return request("/dashboard/workout/simulate", {
     method: "POST",
@@ -53,6 +57,27 @@ export function simulateWorkout(payload) {
 
 export function simulateWeeklyPlan(payload) {
   return request("/dashboard/workouts/week/simulate", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function startSmartwatchSession(payload) {
+  return request("/simulation/session/start", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function sendSmartwatchSamples(sessionId, payload) {
+  return request(`/simulation/session/${sessionId}/samples`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function endSmartwatchSession(sessionId, payload = {}) {
+  return request(`/simulation/session/${sessionId}/end`, {
     method: "POST",
     body: JSON.stringify(payload),
   });

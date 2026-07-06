@@ -3,14 +3,18 @@ import AddSingleWorkoutPage from "./pages/AddSingleWorkoutPage";
 import AddWeekWorkoutsPage from "./pages/AddWeekWorkoutsPage";
 import CorrelationPage from "./pages/CorrelationPage";
 import RunningChartPage from "./pages/RunningChartPage";
+import SmartwatchSimulatorPage from "./pages/SmartwatchSimulatorPage";
 import TrainingStatusPage from "./pages/TrainingStatusPage";
 import VolumePage from "./pages/VolumePage";
+import WorkoutsClickhousePage from "./pages/WorkoutsClickhousePage";
 
 const pages = [
   { id: "correlation", label: "Matrice correlazione", path: "/correlation" },
   { id: "status", label: "Training status", path: "/training-status" },
   { id: "volume", label: "Volumi", path: "/volumi-allenamento" },
   { id: "running", label: "Grafico corsa", path: "/grafico-corsa" },
+  { id: "smartwatch", label: "Simulatore smartwatch", path: "/simulatore-smartwatch" },
+  { id: "workouts-ch", label: "Grafico CH allenamenti", path: "/grafico-clickhouse-allenamenti" },
   { id: "add-single", label: "Aggiungi allenamento", path: "/simula-aggiunta-allenamento" },
   { id: "add-week", label: "Pianifica settimana", path: "/simula-aggiunta-allenamenti" },
 ];
@@ -47,6 +51,8 @@ export default function App() {
           <Route path="/training-status" element={<TrainingStatusPage />} />
           <Route path="/volumi-allenamento" element={<VolumePage />} />
           <Route path="/grafico-corsa" element={<RunningChartPage />} />
+          <Route path="/simulatore-smartwatch" element={<SmartwatchSimulatorPage />} />
+          <Route path="/grafico-clickhouse-allenamenti" element={<WorkoutsClickhousePage />} />
           <Route path="/simula-aggiunta-allenamento" element={<AddSingleWorkoutPage />} />
           <Route path="/simula-aggiunta-allenamenti" element={<AddWeekWorkoutsPage />} />
           <Route path="/" element={<Navigate to="/correlation" replace />} />
