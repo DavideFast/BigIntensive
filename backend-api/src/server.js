@@ -34,7 +34,6 @@ app.use(
     resolvePythonScript: context.resolvePythonScript,
     kafkaProducer: context.kafkaProducer,
     pool: context.pool,
-    clickhouseConfig: context.clickhouse,
   }),
 );
 

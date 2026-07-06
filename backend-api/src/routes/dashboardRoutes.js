@@ -25,6 +25,132 @@ function buildClickHouseConfig(raw) {
   };
 }
 
+function resolveWorkoutDestination(value) {
+  const normalized = String(value || "citus").trim().toLowerCase();
+  if (normalized === "citus") {
+    return "citus";
+  }
+
+  if (["clickhouse", "ch"].includes(normalized)) {
+    return "clickhouse";
+  }
+
+  return null;
+}
+
+function buildClickHouseAuthHeader(config) {
+  if (!config.user) {
+    return null;
+  }
+
+  const auth = Buffer.from(`${config.user}:${config.password || ""}`).toString("base64");
+  return `Basic ${auth}`;
+}
+
+async function execClickHouse(config, sql) {
+  const url = `http://${config.host}:${config.port}/?database=${encodeURIComponent(config.database)}&query=${encodeURIComponent(sql)}`;
+  const headers = { Accept: "application/json" };
+  const authHeader = buildClickHouseAuthHeader(config);
+  if (authHeader) {
+    headers.Authorization = authHeader;
+  }
+
+  const response = await fetch(url, { method: "POST", headers });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`ClickHouse command failed (${response.status}): ${text}`);
+  }
+}
+
+async function insertRowsClickHouse(config, table, rows) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return;
+  }
+
+  const query = `INSERT INTO ${table} FORMAT JSONEachRow`;
+  const url = `http://${config.host}:${config.port}/?database=${encodeURIComponent(config.database)}&query=${encodeURIComponent(query)}`;
+  const headers = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+  const authHeader = buildClickHouseAuthHeader(config);
+  if (authHeader) {
+    headers.Authorization = authHeader;
+  }
+
+  const body = rows.map((row) => JSON.stringify(row)).join("\n");
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`ClickHouse insert failed (${response.status}): ${text}`);
+  }
+}
+
+function parseAthleteId(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return null;
+  }
+
+  const match = raw.match(/(\d+)/);
+  if (!match) {
+    return null;
+  }
+
+  const parsed = Number(match[1]);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+async function ensureCitusWorkoutTable(pool) {
+  await pool.query(
+    `
+    CREATE TABLE IF NOT EXISTS workout_plans (
+      plan_id BIGSERIAL PRIMARY KEY,
+      athlete_code TEXT NOT NULL,
+      athlete_id INTEGER,
+      session_type TEXT,
+      duration_min INTEGER,
+      intensity INTEGER,
+      notes TEXT,
+      phase TEXT,
+      target_load INTEGER,
+      focus TEXT,
+      source TEXT NOT NULL DEFAULT 'frontend-dashboard',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+    `,
+  );
+}
+
+async function ensureClickHouseWorkoutTable(clickhouse, table) {
+  await execClickHouse(
+    clickhouse,
+    `
+    CREATE TABLE IF NOT EXISTS ${table} (
+      plan_id UUID DEFAULT generateUUIDv4(),
+      athlete_code String,
+      athlete_id Nullable(Int32),
+      session_type Nullable(String),
+      duration_min Nullable(Int32),
+      intensity Nullable(Int32),
+      notes Nullable(String),
+      phase Nullable(String),
+      target_load Nullable(Int32),
+      focus Nullable(String),
+      source String,
+      created_at DateTime DEFAULT now()
+    )
+    ENGINE = MergeTree
+    ORDER BY (created_at, athlete_code)
+    `,
+  );
+}
+
 async function queryClickHouse(config, sql) {
   const query = `${sql.trim()} FORMAT JSON`;
   const url = `http://${config.host}:${config.port}/?database=${encodeURIComponent(config.database)}&query=${encodeURIComponent(query)}`;
@@ -48,6 +174,7 @@ async function queryClickHouse(config, sql) {
 export function createDashboardRouter({ pool, clickhouseConfig } = {}) {
   const router = express.Router();
   const clickhouse = buildClickHouseConfig(clickhouseConfig);
+  const clickhouseWorkoutsTable = process.env.CLICKHOUSE_WORKOUTS_TABLE || "workout_plans";
 
   router.get("/dashboard/correlation-matrix", async (req, res) => {
     if (!pool) {
@@ -193,41 +320,160 @@ export function createDashboardRouter({ pool, clickhouseConfig } = {}) {
     }
   });
 
-  router.post("/dashboard/workout/simulate", (req, res) => {
+  router.post("/dashboard/workout/simulate", async (req, res) => {
     const { athlete, sessionType, duration, intensity, notes } = req.body || {};
+    const destination = resolveWorkoutDestination(req.body?.destination);
 
-    res.status(202).json({
-      status: "accepted",
-      simulated: true,
-      payload: {
-        athlete: athlete || "AT-001",
-        sessionType: sessionType || "Forza",
-        duration: Number(duration) || 60,
-        intensity: Number(intensity) || 7,
-        notes: notes || "",
-      },
-      message: "Workout simulation accepted (mock endpoint).",
-      timestamp: new Date().toISOString(),
-    });
+    if (!destination) {
+      return res.status(400).json({
+        error: "Invalid destination",
+        valid: ["citus", "clickhouse"],
+      });
+    }
+
+    const payload = {
+      athlete: athlete || "AT-001",
+      sessionType: sessionType || "Forza",
+      duration: Number(duration) || 60,
+      intensity: Number(intensity) || 7,
+      notes: notes || "",
+    };
+
+    const athleteId = parseAthleteId(payload.athlete);
+
+    try {
+      if (destination === "citus") {
+        if (!pool) {
+          return res.status(500).json({ error: "Database pool unavailable" });
+        }
+
+        await ensureCitusWorkoutTable(pool);
+        await pool.query(
+          `
+          INSERT INTO workout_plans (
+            athlete_code,
+            athlete_id,
+            session_type,
+            duration_min,
+            intensity,
+            notes,
+            source
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, 'frontend-dashboard')
+          `,
+          [payload.athlete, athleteId, payload.sessionType, payload.duration, payload.intensity, payload.notes],
+        );
+      } else {
+        await ensureClickHouseWorkoutTable(clickhouse, clickhouseWorkoutsTable);
+        await insertRowsClickHouse(clickhouse, clickhouseWorkoutsTable, [
+          {
+            athlete_code: payload.athlete,
+            athlete_id: athleteId,
+            session_type: payload.sessionType,
+            duration_min: payload.duration,
+            intensity: payload.intensity,
+            notes: payload.notes,
+            phase: null,
+            target_load: null,
+            focus: null,
+            source: "frontend-dashboard",
+          },
+        ]);
+      }
+
+      return res.status(202).json({
+        status: "accepted",
+        simulated: false,
+        destination,
+        payload,
+        message: `Workout persisted to ${destination}`,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("Workout persist error:", err.message);
+      return res.status(502).json({
+        error: "Workout persist failed",
+        details: err.message,
+      });
+    }
   });
 
-  router.post("/dashboard/workouts/week/simulate", (req, res) => {
+  router.post("/dashboard/workouts/week/simulate", async (req, res) => {
     const { athlete, phase, targetLoad, focus } = req.body || {};
-    const normalizedTargetLoad = Number(targetLoad) || 3200;
+    const destination = resolveWorkoutDestination(req.body?.destination);
 
-    res.status(202).json({
-      status: "accepted",
-      simulated: true,
-      payload: {
-        athlete: athlete || "AT-002",
-        phase: phase || "Costruzione",
-        targetLoad: normalizedTargetLoad,
-        focus: focus || "Tolleranza lattato",
-      },
-      estimatedDailyLoad: Math.round(normalizedTargetLoad / 7),
-      message: "Weekly workout plan simulation accepted (mock endpoint).",
-      timestamp: new Date().toISOString(),
-    });
+    if (!destination) {
+      return res.status(400).json({
+        error: "Invalid destination",
+        valid: ["citus", "clickhouse"],
+      });
+    }
+
+    const normalizedTargetLoad = Number(targetLoad) || 3200;
+    const payload = {
+      athlete: athlete || "AT-002",
+      phase: phase || "Costruzione",
+      targetLoad: normalizedTargetLoad,
+      focus: focus || "Tolleranza lattato",
+    };
+    const athleteId = parseAthleteId(payload.athlete);
+
+    try {
+      if (destination === "citus") {
+        if (!pool) {
+          return res.status(500).json({ error: "Database pool unavailable" });
+        }
+
+        await ensureCitusWorkoutTable(pool);
+        await pool.query(
+          `
+          INSERT INTO workout_plans (
+            athlete_code,
+            athlete_id,
+            session_type,
+            phase,
+            target_load,
+            focus,
+            source
+          )
+          VALUES ($1, $2, 'weekly-plan', $3, $4, $5, 'frontend-dashboard')
+          `,
+          [payload.athlete, athleteId, payload.phase, payload.targetLoad, payload.focus],
+        );
+      } else {
+        await ensureClickHouseWorkoutTable(clickhouse, clickhouseWorkoutsTable);
+        await insertRowsClickHouse(clickhouse, clickhouseWorkoutsTable, [
+          {
+            athlete_code: payload.athlete,
+            athlete_id: athleteId,
+            session_type: "weekly-plan",
+            duration_min: null,
+            intensity: null,
+            notes: null,
+            phase: payload.phase,
+            target_load: payload.targetLoad,
+            focus: payload.focus,
+            source: "frontend-dashboard",
+          },
+        ]);
+      }
+
+      return res.status(202).json({
+        status: "accepted",
+        simulated: false,
+        destination,
+        payload,
+        estimatedDailyLoad: Math.round(normalizedTargetLoad / 7),
+        message: `Weekly workout plan persisted to ${destination}`,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("Weekly workout persist error:", err.message);
+      return res.status(502).json({
+        error: "Weekly workout persist failed",
+        details: err.message,
+      });
+    }
   });
 
   router.get("/dashboard/running-chart", async (req, res) => {

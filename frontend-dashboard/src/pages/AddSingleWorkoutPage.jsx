@@ -8,6 +8,7 @@ export default function AddSingleWorkoutPage() {
     duration: 65,
     intensity: 7,
     notes: "",
+    destination: "citus",
   });
   const [singleMessage, setSingleMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -20,7 +21,7 @@ export default function AddSingleWorkoutPage() {
       const response = await simulateWorkout(singleForm);
       const payload = response.payload || {};
       setSingleMessage(
-        `Backend: ${payload.athlete || singleForm.athlete}, ${payload.sessionType || singleForm.sessionType}, ${payload.duration || singleForm.duration} min, RPE ${payload.intensity || singleForm.intensity}.`,
+        `Backend: ${payload.athlete || singleForm.athlete}, ${payload.sessionType || singleForm.sessionType}, ${payload.duration || singleForm.duration} min, RPE ${payload.intensity || singleForm.intensity}. Destinazione: ${response.destination || singleForm.destination}.`,
       );
     } catch (err) {
       setSingleMessage(`Errore simulazione backend: ${err.message}`);
@@ -82,6 +83,18 @@ export default function AddSingleWorkoutPage() {
               setSingleForm({ ...singleForm, intensity: Number(event.target.value) })
             }
           />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="single-destination">Destinazione database</label>
+          <select
+            id="single-destination"
+            value={singleForm.destination}
+            onChange={(event) => setSingleForm({ ...singleForm, destination: event.target.value })}
+          >
+            <option value="citus">Citus</option>
+            <option value="clickhouse">ClickHouse</option>
+          </select>
         </div>
 
         <div className="form-group">

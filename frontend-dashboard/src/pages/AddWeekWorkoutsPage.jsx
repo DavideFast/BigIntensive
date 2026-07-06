@@ -7,6 +7,7 @@ export default function AddWeekWorkoutsPage() {
     phase: "Costruzione",
     targetLoad: 3200,
     focus: "Tolleranza lattato",
+    destination: "citus",
   });
   const [weekMessage, setWeekMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -20,7 +21,7 @@ export default function AddWeekWorkoutsPage() {
       const payload = response.payload || {};
       const perDay = response.estimatedDailyLoad || Math.round(Number(weekForm.targetLoad) / 7);
       setWeekMessage(
-        `Backend: microciclo per ${payload.athlete || weekForm.athlete}, fase ${payload.phase || weekForm.phase}, focus ${payload.focus || weekForm.focus}, carico medio giornaliero ${perDay}.`,
+        `Backend: microciclo per ${payload.athlete || weekForm.athlete}, fase ${payload.phase || weekForm.phase}, focus ${payload.focus || weekForm.focus}, carico medio giornaliero ${perDay}. Destinazione: ${response.destination || weekForm.destination}.`,
       );
     } catch (err) {
       setWeekMessage(`Errore simulazione backend: ${err.message}`);
@@ -70,6 +71,18 @@ export default function AddWeekWorkoutsPage() {
               setWeekForm({ ...weekForm, targetLoad: Number(event.target.value) })
             }
           />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="week-destination">Destinazione database</label>
+          <select
+            id="week-destination"
+            value={weekForm.destination}
+            onChange={(event) => setWeekForm({ ...weekForm, destination: event.target.value })}
+          >
+            <option value="citus">Citus</option>
+            <option value="clickhouse">ClickHouse</option>
+          </select>
         </div>
 
         <div className="form-group">
