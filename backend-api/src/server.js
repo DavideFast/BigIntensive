@@ -6,6 +6,7 @@ import { createSimulationRouter } from "./routes/simulationRoutes.js";
 import { createBusinessRouter } from "./routes/businessRoutes.js";
 import { createSystemRouter } from "./routes/systemRoutes.js";
 import { createDashboardRouter } from "./routes/dashboardRoutes.js";
+import { createSparkJobsRouter } from "./routes/sparkJobsRoutes.js";
 import { createServerContext } from "./bootstrap/serverContext.js";
 
 dotenv.config();
@@ -44,6 +45,18 @@ app.use(
     k6SharedScriptPath: context.k6SharedScriptPath,
     k6DockerNetwork: context.k6DockerNetwork,
     k6DockerVolume: context.k6DockerVolume,
+  }),
+);
+
+// ========================== SPARK JOB ROUTES START ============================
+app.use(
+  createSparkJobsRouter({
+    dockerRuntime: context.dockerRuntime,
+    sparkComposeService: context.sparkComposeService,
+    sparkMasterUrl: context.sparkMasterUrl,
+    sparkAppsDir: context.sparkAppsDir,
+    sparkCitusJdbcUrl: context.sparkCitusJdbcUrl,
+    sparkClickhouseJdbcUrl: context.sparkClickhouseJdbcUrl,
   }),
 );
 

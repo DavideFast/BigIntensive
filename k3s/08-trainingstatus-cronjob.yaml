@@ -75,7 +75,11 @@ kind: CronJob
 metadata:
   name: trainingstatus-nightly
   namespace: bigintensive
+  annotations:
+    bigintensive.io/status: "legacy-suspended"
+    bigintensive.io/note: "This CronJob still uses a legacy inline script and is intentionally suspended until migrated to spark/apps/trainingstatusjob.py logic."
 spec:
+  suspend: true
   schedule: "0 2 * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3

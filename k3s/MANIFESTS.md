@@ -14,7 +14,7 @@ k3s/
 ├── 05-spark-and-jupyter.yaml        → Spark Native k8s + Jupyter
 ├── 06-ingress.yaml                  → Traefik Ingress Routes
 ├── 07-clickhouse.yaml               → ClickHouse + ClickHouse Keeper
-├── 08-trainingstatus-cronjob.yaml   → Nightly Spark CronJob (training status)
+├── 08-trainingstatus-cronjob.yaml   → Legacy training-status CronJob (currently suspended)
 ├── deploy-all.sh                    → Deploy script (applica tutto in ordine)
 ├── README.md                         → This file
 └── bigintensive-k3s.yaml (legacy)   → Old single-file manifest (deprecated)
@@ -39,7 +39,7 @@ Lo script applica i file nell'ordine corretto:
 6. Spark + Jupyter
 7. Ingress routes
 8. ClickHouse
-9. Training status nightly cronjob
+9. Legacy training status cronjob (suspended)
 
 ### 2️⃣ Verify Deployment
 
