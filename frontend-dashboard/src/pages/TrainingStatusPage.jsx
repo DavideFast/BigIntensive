@@ -3,6 +3,7 @@ import { getTrainingStatus } from "../api/dashboardApi";
 
 export default function TrainingStatusPage() {
   const [athletes, setAthletes] = useState([]);
+  const [meta, setMeta] = useState({ source: "-", timestamp: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -16,7 +17,8 @@ export default function TrainingStatusPage() {
         if (!isMounted) {
           return;
         }
-        setAthletes(Array.isArray(payload.items) ? payload.items : []);
+        setAthletes(payload.items);
+        setMeta({ source: payload.source, timestamp: payload.timestamp });
       } catch (err) {
         if (!isMounted) {
           return;
@@ -47,13 +49,18 @@ export default function TrainingStatusPage() {
   return (
     <section aria-label="Training status atleti">
       <h2>Training Status</h2>
-      <p className="panel-subtitle">
-        Snapshot readiness e rischio per atleta, utile per decidere scarico, mantenimento o
-        incremento del carico.
-      </p>
+      <p className="panel-subtitle">Snapshot readiness e rischio per atleta, utile per decidere scarico, mantenimento o incremento del carico.</p>
 
       {loading ? <p className="notice">Caricamento dati da backend...</p> : null}
       {error ? <p className="notice">{error}</p> : null}
+      {!loading && !error ? (
+        <p className="api-target">
+          Fonte: {meta.source}
+          {meta.timestamp ? ` | Aggiornato: ${new Date(meta.timestamp).toLocaleString()}` : ""}
+        </p>
+      ) : null}
+
+      {!loading && !error && athletes.length === 0 ? <p className="notice">Nessun atleta disponibile per il training status.</p> : null}
 
       <div className="stats-grid">
         <article className="stat-card">
@@ -94,9 +101,9 @@ export default function TrainingStatusPage() {
                 <td>
                   <span className={`status status-${item.status}`}>{item.status}</span>
                 </td>
-                <td>{item.acwr.toFixed(2)}</td>
-                <td>{item.readiness}</td>
-                <td>{item.nextSession}</td>
+                <td>{Number(item.acwr ?? 0).toFixed(2)}</td>
+                <td>{Number(item.readiness ?? 0)}</td>
+                <td>{item.nextSession || "-"}</td>
               </tr>
             ))}
           </tbody>

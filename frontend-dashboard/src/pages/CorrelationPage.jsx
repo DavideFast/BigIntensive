@@ -11,6 +11,7 @@ function getCorrelationTone(value) {
 
 export default function CorrelationPage() {
   const [rows, setRows] = useState([]);
+  const [meta, setMeta] = useState({ source: "-", timestamp: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -24,7 +25,8 @@ export default function CorrelationPage() {
         if (!isMounted) {
           return;
         }
-        setRows(Array.isArray(payload.items) ? payload.items : []);
+        setRows(payload.items);
+        setMeta({ source: payload.source, timestamp: payload.timestamp });
       } catch (err) {
         if (!isMounted) {
           return;
@@ -46,13 +48,18 @@ export default function CorrelationPage() {
   return (
     <section aria-label="Dati matrice di correlazione">
       <h2>Matrice di Correlazione</h2>
-      <p className="panel-subtitle">
-        Confronto tra variabili di training load e indicatori di recupero. Celle verdi indicano
-        associazione positiva, rosse associazione negativa.
-      </p>
+      <p className="panel-subtitle">Confronto tra variabili di training load e indicatori di recupero. Celle verdi indicano associazione positiva, rosse associazione negativa.</p>
 
       {loading ? <p className="notice">Caricamento dati da backend...</p> : null}
       {error ? <p className="notice">{error}</p> : null}
+      {!loading && !error ? (
+        <p className="api-target">
+          Fonte: {meta.source}
+          {meta.timestamp ? ` | Aggiornato: ${new Date(meta.timestamp).toLocaleString()}` : ""}
+        </p>
+      ) : null}
+
+      {!loading && !error && rows.length === 0 ? <p className="notice">Nessun dato disponibile per la matrice di correlazione.</p> : null}
 
       <div className="table-wrap correlation-table-wrap">
         <table>
@@ -69,18 +76,10 @@ export default function CorrelationPage() {
             {rows.map((row) => (
               <tr key={row.metric}>
                 <td>{row.metric}</td>
-                <td style={{ backgroundColor: getCorrelationTone(row.volume) }}>
-                  {row.volume.toFixed(2)}
-                </td>
-                <td style={{ backgroundColor: getCorrelationTone(row.acwr) }}>
-                  {row.acwr.toFixed(2)}
-                </td>
-                <td style={{ backgroundColor: getCorrelationTone(row.wellness) }}>
-                  {row.wellness.toFixed(2)}
-                </td>
-                <td style={{ backgroundColor: getCorrelationTone(row.readiness) }}>
-                  {row.readiness.toFixed(2)}
-                </td>
+                <td style={{ backgroundColor: getCorrelationTone(row.volume) }}>{Number(row.volume ?? 0).toFixed(2)}</td>
+                <td style={{ backgroundColor: getCorrelationTone(row.acwr) }}>{Number(row.acwr ?? 0).toFixed(2)}</td>
+                <td style={{ backgroundColor: getCorrelationTone(row.wellness) }}>{Number(row.wellness ?? 0).toFixed(2)}</td>
+                <td style={{ backgroundColor: getCorrelationTone(row.readiness) }}>{Number(row.readiness ?? 0).toFixed(2)}</td>
               </tr>
             ))}
           </tbody>

@@ -23,6 +23,7 @@ export default function RunningChartPage() {
   const [showDistance, setShowDistance] = useState(true);
   const [showHeartRate, setShowHeartRate] = useState(true);
   const [runningSeries, setRunningSeries] = useState([]);
+  const [meta, setMeta] = useState({ source: "-", timestamp: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -36,7 +37,8 @@ export default function RunningChartPage() {
         if (!isMounted) {
           return;
         }
-        setRunningSeries(Array.isArray(payload.items) ? payload.items : []);
+        setRunningSeries(payload.items);
+        setMeta({ source: payload.source, timestamp: payload.timestamp });
       } catch (err) {
         if (!isMounted) {
           return;
@@ -79,15 +81,9 @@ export default function RunningChartPage() {
     return { min, max, avg };
   }, [runningSeries]);
 
-  const distancePath = useMemo(
-    () => buildPath(runningSeries, "distanceSplit", 940, 360, 30, distanceStats.min, distanceStats.max),
-    [distanceStats.max, distanceStats.min, runningSeries],
-  );
+  const distancePath = useMemo(() => buildPath(runningSeries, "distanceSplit", 940, 360, 30, distanceStats.min, distanceStats.max), [distanceStats.max, distanceStats.min, runningSeries]);
 
-  const heartRatePath = useMemo(
-    () => buildPath(runningSeries, "heartRate", 940, 360, 30, heartRateStats.min, heartRateStats.max),
-    [heartRateStats.max, heartRateStats.min, runningSeries],
-  );
+  const heartRatePath = useMemo(() => buildPath(runningSeries, "heartRate", 940, 360, 30, heartRateStats.min, heartRateStats.max), [heartRateStats.max, heartRateStats.min, runningSeries]);
 
   return (
     <section aria-label="Grafico corsa con distanza e frequenza cardiaca">
@@ -96,6 +92,14 @@ export default function RunningChartPage() {
 
       {loading ? <p className="notice">Caricamento dati da backend...</p> : null}
       {error ? <p className="notice">{error}</p> : null}
+      {!loading && !error ? (
+        <p className="api-target">
+          Fonte: {meta.source}
+          {meta.timestamp ? ` | Aggiornato: ${new Date(meta.timestamp).toLocaleString()}` : ""}
+        </p>
+      ) : null}
+
+      {!loading && !error && runningSeries.length === 0 ? <p className="notice">Nessun dato disponibile per il grafico corsa.</p> : null}
 
       <div className="run-toggle-row" role="group" aria-label="Serie da visualizzare">
         <label className="run-toggle">

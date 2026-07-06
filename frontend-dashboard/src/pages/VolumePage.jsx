@@ -3,6 +3,7 @@ import { getTrainingVolumes } from "../api/dashboardApi";
 
 export default function VolumePage() {
   const [weeklyVolumes, setWeeklyVolumes] = useState([]);
+  const [meta, setMeta] = useState({ source: "-", timestamp: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -16,7 +17,8 @@ export default function VolumePage() {
         if (!isMounted) {
           return;
         }
-        setWeeklyVolumes(Array.isArray(payload.items) ? payload.items : []);
+        setWeeklyVolumes(payload.items);
+        setMeta({ source: payload.source, timestamp: payload.timestamp });
       } catch (err) {
         if (!isMounted) {
           return;
@@ -50,25 +52,27 @@ export default function VolumePage() {
   return (
     <section aria-label="Volumi allenamento settimanali">
       <h2>Volumi Allenamento</h2>
-      <p className="panel-subtitle">
-        Distribuzione del carico interno settimanale per evitare picchi improvvisi e migliorare
-        continuita del piano.
-      </p>
+      <p className="panel-subtitle">Distribuzione del carico interno settimanale per evitare picchi improvvisi e migliorare continuita del piano.</p>
 
       {loading ? <p className="notice">Caricamento dati da backend...</p> : null}
       {error ? <p className="notice">{error}</p> : null}
+      {!loading && !error ? (
+        <p className="api-target">
+          Fonte: {meta.source}
+          {meta.timestamp ? ` | Aggiornato: ${new Date(meta.timestamp).toLocaleString()}` : ""}
+        </p>
+      ) : null}
+
+      {!loading && !error && weeklyVolumes.length === 0 ? <p className="notice">Nessun volume settimanale disponibile.</p> : null}
 
       <div className="volume-bars" role="img" aria-label="Grafico a barre dei volumi giornalieri">
         {weeklyVolumes.map((day) => (
           <article key={day.day} className="bar-card">
             <p>{day.day}</p>
             <div className="bar-shell">
-              <div
-                className="bar-fill"
-                style={{ height: `${Math.round((day.load / weeklyStats.max) * 100)}%` }}
-              />
+              <div className="bar-fill" style={{ height: `${Math.round((Number(day.load ?? 0) / weeklyStats.max) * 100)}%` }} />
             </div>
-            <strong>{day.load}</strong>
+            <strong>{Number(day.load ?? 0)}</strong>
           </article>
         ))}
       </div>
