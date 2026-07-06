@@ -361,11 +361,6 @@ async function ensureCitusSchema(client) {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE TABLE IF NOT EXISTS jobs_in_coda (
-      athlete_id INT PRIMARY KEY,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-
     CREATE TABLE IF NOT EXISTS training_status (
       status_id BIGSERIAL,
       athlete_id INT NOT NULL REFERENCES athletes(athlete_id),
@@ -394,18 +389,6 @@ async function ensureCitusSchema(client) {
     CHECK (tipo_esercizio IN ('forza', 'endurance', 'mobilità'));
   `);
 
-  await client.query(`
-    ALTER TABLE jobs_in_coda
-    DROP CONSTRAINT IF EXISTS jobs_in_coda_athlete_id_fkey;
-  `);
-
-  await client.query(`
-    ALTER TABLE jobs_in_coda
-    ADD CONSTRAINT fk_jobs_in_coda_athlete
-    FOREIGN KEY (athlete_id)
-    REFERENCES athletes(athlete_id)
-    ON DELETE CASCADE;
-  `);
 }
 
 async function resetCitus(client) {
@@ -487,15 +470,6 @@ async function seedCitus(client, athletesToCreate, exercisesToCreate, days) {
         ],
       );
     }
-  }
-
-  for (const athleteId of insertedAthletes.slice(0, Math.min(3, insertedAthletes.length))) {
-    await client.query(
-      `INSERT INTO jobs_in_coda (athlete_id)
-       VALUES ($1)
-       ON CONFLICT (athlete_id) DO NOTHING`,
-      [athleteId],
-    );
   }
 
   return {

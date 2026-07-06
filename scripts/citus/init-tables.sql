@@ -12,20 +12,6 @@ CREATE TABLE IF NOT EXISTS athletes (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS jobs_in_coda (
-  athlete_id INT PRIMARY KEY,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-ALTER TABLE jobs_in_coda
-  DROP CONSTRAINT IF EXISTS jobs_in_coda_athlete_id_fkey;
-
-ALTER TABLE jobs_in_coda
-  ADD CONSTRAINT fk_jobs_in_coda_athlete
-  FOREIGN KEY (athlete_id)
-  REFERENCES athletes(athlete_id)
-  ON DELETE CASCADE;
-
 CREATE TABLE IF NOT EXISTS exercises (
   exercise_id SERIAL PRIMARY KEY,
   nome_esercizio VARCHAR(150) NOT NULL,
@@ -135,7 +121,6 @@ CREATE TABLE IF NOT EXISTS weekly_cardio_aggregates (
 
 SELECT create_reference_table('athletes');
 SELECT create_reference_table('exercises');
-SELECT create_reference_table('jobs_in_coda');
 SELECT create_reference_table('smartwatch_sessions');
 SELECT create_reference_table('injury_history');
 SELECT create_reference_table('training_status_results');
@@ -183,12 +168,6 @@ INSERT INTO training_status (athlete_id, giorno, valore)
 VALUES
   (1, '2024-06-01', 85)
 ON CONFLICT (athlete_id, giorno) DO UPDATE SET valore = EXCLUDED.valore;
-
-INSERT INTO jobs_in_coda (athlete_id)
-VALUES
-  (1),
-  (2)
-ON CONFLICT (athlete_id) DO NOTHING;
 
 INSERT INTO injury_history (athlete_id, injury_date, injury_type, severity, recovery_days, pre_injury_acwr, pre_injury_hrv, pre_injury_load, notes)
 SELECT *
