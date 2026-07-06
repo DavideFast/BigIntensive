@@ -333,22 +333,24 @@ def write_results_to_citus(df_clustered, anomalies):
         # Truncate
         cur.execute("TRUNCATE TABLE exercise_volumes_clusters")
         
-        # Insert clustering
+        # Build anomaly lookup by athlete-week for efficient inserts
+        anomalies_by_key = {
+            (a["athlete_id"], a["year_week"]): a["anomaly_reason"]
+            for a in anomalies
+        }
+
+        # Insert clustering rows aligned with Citus schema
         for row in df_clustered.collect():
+            athlete_id = row["athlete_id"]
+            year_week = row["year_week"]
+            anomaly_reason = anomalies_by_key.get((athlete_id, year_week))
+            is_anomaly = anomaly_reason is not None
+
             cur.execute(
                 """INSERT INTO exercise_volumes_clusters 
-                   (athlete_id, volume_week, cluster_id, is_anomaly, anomaly_reason, timestamp)
+                   (athlete_id, exercise_type, week_id, cluster_id, is_anomaly, anomaly_reason, timestamp)
                    VALUES (%s, %s, %s, %s, %s, %s)""",
-                (row["athlete_id"], row["year_week"], int(row["cluster_id"]), False, None, datetime.now())
-            )
-        
-        # Update anomalies
-        for anomaly in anomalies:
-            cur.execute(
-                """UPDATE exercise_volumes_clusters 
-                   SET is_anomaly = %s, anomaly_reason = %s
-                   WHERE athlete_id = %s AND volume_week = %s""",
-                (True, anomaly["anomaly_reason"], anomaly["athlete_id"], anomaly["year_week"])
+                (athlete_id, "mixed", year_week, int(row["cluster_id"]), is_anomaly, anomaly_reason, datetime.now())
             )
         
         conn.commit()
@@ -396,7 +398,7 @@ def main():
         
         print("⚙️  K-Means clustering (k=5)...")
         df_clustered = perform_kmeans_clustering(df_trends)
-        if df_clustered:
+        if df_clustered is not None:
             print(f"   → {df_clustered.count()} clustered")
         
         print("⚙️  Detecting anomalies...")

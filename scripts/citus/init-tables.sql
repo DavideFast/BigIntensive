@@ -96,12 +96,21 @@ CREATE TABLE IF NOT EXISTS feature_importance_results (
   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- EXERCISE_CORRELATIONS: output Job 2 (pairwise exercise correlations)
+CREATE TABLE IF NOT EXISTS exercise_correlations (
+  corr_id SERIAL PRIMARY KEY,
+  exercise1_id INT,
+  exercise2_id INT,
+  correlation_coefficient DECIMAL(5, 4),
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- EXERCISE_VOLUMES_CLUSTERS: output Job 3 (volume aggregation + K-Means + anomaly detection)
 CREATE TABLE IF NOT EXISTS exercise_volumes_clusters (
   result_id SERIAL PRIMARY KEY,
   athlete_id INT NOT NULL REFERENCES athletes(athlete_id) ON DELETE CASCADE,
   exercise_type VARCHAR(50),
-  volume_week DECIMAL(10, 2),
+  week_id VARCHAR(20),
   cluster_id INT,
   is_anomaly BOOLEAN DEFAULT FALSE,
   anomaly_reason VARCHAR(200),
@@ -131,6 +140,7 @@ SELECT create_reference_table('smartwatch_sessions');
 SELECT create_reference_table('injury_history');
 SELECT create_reference_table('training_status_results');
 SELECT create_reference_table('feature_importance_results');
+SELECT create_reference_table('exercise_correlations');
 SELECT create_reference_table('exercise_volumes_clusters');
 SELECT create_reference_table('weekly_cardio_aggregates');
 SELECT create_distributed_table('training_status', 'athlete_id');

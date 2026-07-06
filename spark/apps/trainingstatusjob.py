@@ -13,7 +13,7 @@ Output:
 """
 
 from pyspark.sql import SparkSession, Window
-from pyspark.sql.functions import (col, avg, max, min, stddev, lit,when, sum as spark_sum)
+from pyspark.sql.functions import (col, avg, max, min, stddev, lit, when, sum as spark_sum, count)
 from pyspark.ml import Pipeline
 from pyspark.ml.feature import VectorAssembler, StandardScaler
 from pyspark.ml.classification import RandomForestClassifier
