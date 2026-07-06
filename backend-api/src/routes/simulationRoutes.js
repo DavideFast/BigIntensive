@@ -3,13 +3,6 @@ import { validateEventPayload, validateForcePlatePayload, validateHeartRatePaylo
 import { startPythonJob } from "../utils/pythonSpawn.js";
 import { createSmartwatchSessionsRepository } from "../repositories/smartwatchSessionsRepository.js";
 
-function resolveSamplesDestination(value) {
-  const normalized = String(value || "kafka")
-    .trim()
-    .toLowerCase();
-  return normalized;
-}
-
 export function createSimulationRouter({ pythonRuntime, resolvePythonScript, kafkaProducer, pool }) {
   const router = express.Router();
   const smartwatchKafkaTopic = process.env.SMARTWATCH_KAFKA_TOPIC || "heart-rate-events";
@@ -205,7 +198,7 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript, kaf
     }
 
     const { samples } = req.body || {};
-    const destination = resolveSamplesDestination(req.body?.destination);
+    const destination = String(req.body?.destination || "kafka").trim().toLowerCase();
     if (destination !== "kafka") {
       return res.status(400).json({
         error: "Invalid destination for smartwatch samples",

@@ -82,3 +82,14 @@ export function endSmartwatchSession(sessionId, payload = {}) {
     body: JSON.stringify(payload),
   });
 }
+
+export function startLoadtest(payload) {
+  return request("/loadtest/start", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getLoadtestJob(jobId) {
+  return request(`/loadtest/jobs/${jobId}`);
+}

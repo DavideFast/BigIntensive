@@ -4,6 +4,7 @@ import AddWeekWorkoutsPage from "./pages/AddWeekWorkoutsPage";
 import CorrelationPage from "./pages/CorrelationPage";
 import RunningChartPage from "./pages/RunningChartPage";
 import SmartwatchSimulatorPage from "./pages/SmartwatchSimulatorPage";
+import StressTestPage from "./pages/StressTestPage";
 import TrainingStatusPage from "./pages/TrainingStatusPage";
 import VolumePage from "./pages/VolumePage";
 import WorkoutsClickhousePage from "./pages/WorkoutsClickhousePage";
@@ -14,6 +15,7 @@ const pages = [
   { id: "volume", label: "Volumi", path: "/volumi-allenamento" },
   { id: "running", label: "Grafico corsa", path: "/grafico-corsa" },
   { id: "smartwatch", label: "Simulatore smartwatch", path: "/simulatore-smartwatch" },
+  { id: "stress", label: "Stress test", path: "/stress-test" },
   { id: "workouts-ch", label: "Grafico CH allenamenti", path: "/grafico-clickhouse-allenamenti" },
   { id: "add-single", label: "Aggiungi allenamento", path: "/simula-aggiunta-allenamento" },
   { id: "add-week", label: "Pianifica settimana", path: "/simula-aggiunta-allenamenti" },
@@ -29,8 +31,8 @@ export default function App() {
         <p className="eyebrow">BigIntensive Dashboard</p>
         <h1>Training Intelligence Hub</h1>
         <p className="subtitle">
-          Cinque schermate operative: analisi correlazioni, stato atleti, carichi settimanali e due
-          modalita per simulare inserimenti di allenamento.
+          Dashboard operativa con analisi correlazioni, stato atleti, volumi, grafici ClickHouse e
+          simulatori di inserimento dati per allenamenti e smartwatch.
         </p>
         <nav className="page-tabs" aria-label="Schermate principali">
           {pages.map((page) => (
@@ -52,6 +54,7 @@ export default function App() {
           <Route path="/volumi-allenamento" element={<VolumePage />} />
           <Route path="/grafico-corsa" element={<RunningChartPage />} />
           <Route path="/simulatore-smartwatch" element={<SmartwatchSimulatorPage />} />
+          <Route path="/stress-test" element={<StressTestPage />} />
           <Route path="/grafico-clickhouse-allenamenti" element={<WorkoutsClickhousePage />} />
           <Route path="/simula-aggiunta-allenamento" element={<AddSingleWorkoutPage />} />
           <Route path="/simula-aggiunta-allenamenti" element={<AddWeekWorkoutsPage />} />
