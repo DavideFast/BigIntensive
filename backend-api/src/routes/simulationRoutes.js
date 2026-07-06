@@ -3,9 +3,62 @@ import { validateEventPayload, validateForcePlatePayload, validateHeartRatePaylo
 import { startPythonJob } from "../utils/pythonSpawn.js";
 import { createSmartwatchSessionsRepository } from "../repositories/smartwatchSessionsRepository.js";
 
-export function createSimulationRouter({ pythonRuntime, resolvePythonScript, kafkaProducer, pool }) {
+function resolveSamplesDestination(value) {
+  const normalized = String(value || "kafka")
+    .trim()
+    .toLowerCase();
+  if (normalized === "kafka") {
+    return "kafka";
+  }
+
+  if (["db", "database", "clickhouse", "direct"].includes(normalized)) {
+    return "clickhouse";
+  }
+
+  return null;
+}
+
+function buildClickHouseAuthHeader(config) {
+  if (!config?.user) {
+    return null;
+  }
+
+  const token = Buffer.from(`${config.user}:${config.password || ""}`).toString("base64");
+  return `Basic ${token}`;
+}
+
+async function writeSamplesToClickHouse({ clickhouseConfig, table, samples }) {
+  const query = `INSERT INTO ${table} FORMAT JSONEachRow`;
+  const url = `http://${clickhouseConfig.host}:${clickhouseConfig.port}/?database=${encodeURIComponent(clickhouseConfig.database)}&query=${encodeURIComponent(query)}`;
+
+  const authHeader = buildClickHouseAuthHeader(clickhouseConfig);
+  const headers = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+
+  if (authHeader) {
+    headers.Authorization = authHeader;
+  }
+
+  const body = samples.map((item) => JSON.stringify(item)).join("\n");
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body,
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`ClickHouse insert failed (${response.status}): ${details}`);
+  }
+}
+
+export function createSimulationRouter({ pythonRuntime, resolvePythonScript, kafkaProducer, pool, clickhouseConfig }) {
   const router = express.Router();
   const smartwatchKafkaTopic = process.env.SMARTWATCH_KAFKA_TOPIC || "heart-rate-events";
+  const clickhouseSamplesTable = process.env.CLICKHOUSE_SAMPLES_TABLE || "corsa_endurance_campioni";
   const smartwatchSessionsRepository = createSmartwatchSessionsRepository(pool);
 
   const events = [
@@ -198,6 +251,14 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript, kaf
     }
 
     const { samples } = req.body || {};
+    const destination = resolveSamplesDestination(req.body?.destination);
+    if (!destination) {
+      return res.status(400).json({
+        error: "Invalid destination",
+        valid: ["kafka", "clickhouse"],
+      });
+    }
+
     const baseIndex = session.samples_sent;
     const enriched = samples.map((sample, idx) => ({
       athlete_id: String(session.athlete_id),
@@ -214,23 +275,54 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript, kaf
     }));
 
     try {
-      const sent = await kafkaProducer.sendJsonBatch({
-        topic: session.topic,
-        events: enriched,
-      });
+      let sentCount = 0;
+      if (destination === "kafka") {
+        const sent = await kafkaProducer.sendJsonBatch({
+          topic: session.topic,
+          events: enriched,
+        });
+        sentCount = sent.sentCount;
+      } else {
+        if (!clickhouseConfig) {
+          return res.status(500).json({
+            error: "ClickHouse configuration unavailable",
+            details: "Provide clickhouseConfig to simulation router.",
+          });
+        }
 
-      const updated = await smartwatchSessionsRepository.addSamples(sessionId, sent.sentCount);
+        const clickhouseRows = enriched.map((item) => ({
+          atleta_id: Number(item.athlete_id),
+          sessione_id: Number(item.session_id),
+          secondo: Number(item.sample_index),
+          heart_rate_bpm: Number(item.heart_rate_bpm),
+          cadence_spm: Number(item.cadence_spm),
+          speed_kmh: Number(item.speed_kmh),
+          altitude_m: Number(item.altitude_m),
+          temperature_c: Number(item.temperature_c),
+          ts: item.timestamp,
+        }));
+
+        await writeSamplesToClickHouse({
+          clickhouseConfig,
+          table: clickhouseSamplesTable,
+          samples: clickhouseRows,
+        });
+        sentCount = clickhouseRows.length;
+      }
+
+      const updated = await smartwatchSessionsRepository.addSamples(sessionId, sentCount);
 
       return res.status(202).json({
         status: "accepted",
+        destination,
         topic: session.topic,
-        sent_count: sent.sentCount,
+        sent_count: sentCount,
         session: updated,
       });
     } catch (err) {
-      console.error("Kafka publish error:", err.message);
+      console.error("Samples publish error:", err.message);
       return res.status(502).json({
-        error: "Kafka publish failed",
+        error: "Samples publish failed",
         details: err.message,
       });
     }
