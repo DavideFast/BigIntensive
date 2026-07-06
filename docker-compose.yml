@@ -160,9 +160,7 @@ services:
       - spark-net
 
   backend-api:
-    build:
-      context: .
-      dockerfile: backend-api/Dockerfile
+    image: davidefast/bigintensive-backend-api:latest
     container_name: backend-api
     depends_on:
       - citus-coordinator
@@ -190,9 +188,7 @@ services:
       - spark-net
 
   frontend-dashboard:
-    build:
-      context: .
-      dockerfile: frontend-dashboard/Dockerfile
+    image: davidefast/bigintensive-frontend-dashboard:latest
     container_name: frontend-dashboard
     depends_on:
       - backend-api
