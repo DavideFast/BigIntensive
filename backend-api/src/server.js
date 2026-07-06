@@ -69,7 +69,12 @@ app.use(
 );
 
 // ============================ DASHBOARD ROUTES START ===========================
-app.use(createDashboardRouter());
+app.use(
+  createDashboardRouter({
+    pool: context.pool,
+    clickhouseConfig: context.clickhouse,
+  }),
+);
 
 // ============================ AVVIO ===============================
 app.listen(context.port, () => {

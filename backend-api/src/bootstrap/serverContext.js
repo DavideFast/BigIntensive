@@ -33,5 +33,12 @@ export function createServerContext(importMetaUrl) {
     sparkAppsDir: process.env.SPARK_APPS_DIR || "/opt/spark-apps",
     sparkCitusJdbcUrl: process.env.SPARK_CITUS_JDBC_URL || "jdbc:postgresql://citus-coordinator:5432/bigintensive",
     sparkClickhouseJdbcUrl: process.env.SPARK_CLICKHOUSE_JDBC_URL || "jdbc:clickhouse://clickhouse:8123/bigintensive",
+    clickhouse: {
+      host: process.env.CLICKHOUSE_HOST || "clickhouse",
+      port: Number(process.env.CLICKHOUSE_PORT || 8123),
+      database: process.env.CLICKHOUSE_DB || process.env.CLICKHOUSE_DATABASE || "bigintensive",
+      user: process.env.CLICKHOUSE_USER || "default",
+      password: process.env.CLICKHOUSE_PASSWORD || "",
+    },
   };
 }
