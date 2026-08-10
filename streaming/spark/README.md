@@ -1,5 +1,24 @@
 # Spark Native Kubernetes Setup
 
+## Context
+
+This project aim to simulate a real-time data processing pipeline related to a Fitness App.
+We assume that in this app are signed up 500'000 athletes.
+The parts of this system are:
+
+- **Citus**: A distributed PostgreSQL database to store athletes data
+- **Clickhouse**: A columnar database for storing the results of Spark jobs
+
+- **Kafka**: A distributed streaming platform to handle real-time metrics from athletes
+- **Spark**: A distributed data processing engine to analyze the data from Citus and Kafka
+
+- **Frontend**: A web application to visualize the results of Spark jobs
+- **Backend**: A REST API to serve the results of Spark jobs to the frontend
+
+- **k3s**: A lightweight Kubernetes distribution to run the cluster on a single machine
+
+- **Jupyter**: A web-based interactive computing platform to submit Spark jobs and analyze the data
+
 ## Overview
 
 Spark è configurato in **native Kubernetes mode** nel cluster k3s. Questo significa:
