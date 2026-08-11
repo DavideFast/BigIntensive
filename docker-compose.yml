@@ -2,7 +2,7 @@ name: bigintensive-spark
 
 services:
   spark-master:
-    image: davidefast/bigintensive-sparkWithDependencies:latest
+    image: davidefast/bigintensive-sparkwithdependencies:latest
     container_name: spark-master
     environment:
       - SPARK_MODE=master
