@@ -207,7 +207,7 @@ services:
       - loadtest
     depends_on:
       - backend-api
-    working_dir: /test
+    working_dir: /scripts/load
     volumes:
       - ./test:/scripts/load
     networks:
