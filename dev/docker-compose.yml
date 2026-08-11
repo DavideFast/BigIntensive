@@ -13,8 +13,8 @@ services:
       - "7077:7077"
       - "8080:8080"
     volumes:
-      - ./spark/apps:/opt/spark-apps
-      - ./spark/data:/opt/spark-data
+      - ../streaming/spark/apps:/opt/spark-apps
+      - ../streaming/spark/data:/opt/spark-data
     networks:
       - spark-net
 
@@ -32,8 +32,8 @@ services:
     ports:
       - "8081:8081"
     volumes:
-      - ./spark/apps:/opt/spark-apps
-      - ./spark/data:/opt/spark-data
+      - ../streaming/spark/apps:/opt/spark-apps
+      - ../streaming/spark/data:/opt/spark-data
     networks:
       - spark-net
 
@@ -51,8 +51,8 @@ services:
     ports:
       - "8082:8082"
     volumes:
-      - ./spark/apps:/opt/spark-apps
-      - ./spark/data:/opt/spark-data
+      - ../streaming/spark/apps:/opt/spark-apps
+      - ../streaming/spark/data:/opt/spark-data
     networks:
       - spark-net
 
@@ -71,7 +71,7 @@ services:
     ports:
       - "${JUPYTER_PORT:-8888}:8888"
     volumes:
-      - ./spark:/home/jovyan/work
+      - ../spark:/home/jovyan/work
     networks:
       - spark-net
 
@@ -86,8 +86,8 @@ services:
     ports:
       - "${CITUS_COORDINATOR_PORT:-55432}:5432"
     volumes:
-      - ./postgres/coordinator-data:/var/lib/postgresql/data
-      - ./database/citus:/citus-init
+      - ../database/postgres/coordinator-data:/var/lib/postgresql/data
+      - ../database/citus:/citus-init
     networks:
       - spark-net
 
@@ -102,8 +102,8 @@ services:
     ports:
       - "${CITUS_WORKER1_PORT:-5433}:5432"
     volumes:
-      - ./postgres/worker1-data:/var/lib/postgresql/data
-      - ./database/citus:/citus-init
+      - ../database/postgres/worker1-data:/var/lib/postgresql/data
+      - ../database/citus:/citus-init
     networks:
       - spark-net
 
@@ -118,8 +118,8 @@ services:
     ports:
       - "${CITUS_WORKER2_PORT:-5434}:5432"
     volumes:
-      - ./postgres/worker2-data:/var/lib/postgresql/data
-      - ./database/citus:/citus-init
+      - ../database/postgres/worker2-data:/var/lib/postgresql/data
+      - ../database/citus:/citus-init
     networks:
       - spark-net
 
@@ -142,7 +142,7 @@ services:
     ports:
       - "${KAFKA_EXTERNAL_PORT:-9094}:9092"
     volumes:
-      - ./kafka/data:/bitnami/kafka
+      - ../streaming/kafka/data:/bitnami/kafka
     networks:
       - spark-net
 
@@ -209,7 +209,7 @@ services:
       - backend-api
     working_dir: /scripts/load
     volumes:
-      - ./test:/scripts/load
+      - ../test:/scripts/load
     networks:
       - spark-net
     entrypoint: ["k6"]
