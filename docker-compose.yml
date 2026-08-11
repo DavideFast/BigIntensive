@@ -87,7 +87,7 @@ services:
       - "${CITUS_COORDINATOR_PORT:-55432}:5432"
     volumes:
       - ./postgres/coordinator-data:/var/lib/postgresql/data
-      - ./test:/citus-init
+      - ./database/citus:/citus-init
     networks:
       - spark-net
 
@@ -103,7 +103,7 @@ services:
       - "${CITUS_WORKER1_PORT:-5433}:5432"
     volumes:
       - ./postgres/worker1-data:/var/lib/postgresql/data
-      - ./test:/citus-init
+      - ./database/citus:/citus-init
     networks:
       - spark-net
 
@@ -119,7 +119,7 @@ services:
       - "${CITUS_WORKER2_PORT:-5434}:5432"
     volumes:
       - ./postgres/worker2-data:/var/lib/postgresql/data
-      - ./test:/citus-init
+      - ./database/citus:/citus-init
     networks:
       - spark-net
 
