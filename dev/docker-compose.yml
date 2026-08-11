@@ -13,8 +13,7 @@ services:
       - "7077:7077"
       - "8080:8080"
     volumes:
-      - ../streaming/spark/apps:/opt/spark-apps
-      - ../streaming/spark/data:/opt/spark-data
+      - ../streaming/spark/jobs:/opt/spark-apps
     networks:
       - spark-net
 
@@ -32,8 +31,7 @@ services:
     ports:
       - "8081:8081"
     volumes:
-      - ../streaming/spark/apps:/opt/spark-apps
-      - ../streaming/spark/data:/opt/spark-data
+      - ../streaming/spark/jobs:/opt/spark-apps
     networks:
       - spark-net
 
@@ -51,8 +49,7 @@ services:
     ports:
       - "8082:8082"
     volumes:
-      - ../streaming/spark/apps:/opt/spark-apps
-      - ../streaming/spark/data:/opt/spark-data
+      - ../streaming/spark/jobs:/opt/spark-apps
     networks:
       - spark-net
 
@@ -71,7 +68,7 @@ services:
     ports:
       - "${JUPYTER_PORT:-8888}:8888"
     volumes:
-      - ../spark:/home/jovyan/work
+      - ../streaming/spark:/home/jovyan/work
     networks:
       - spark-net
 
