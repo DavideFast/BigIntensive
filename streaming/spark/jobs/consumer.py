@@ -3,8 +3,13 @@ import os
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import coalesce, col, from_json, regexp_extract, to_timestamp, unix_timestamp
 from pyspark.sql.types import DoubleType, IntegerType, StringType, StructField, StructType
-from config import KAFKA_BOOTSTRAP_SERVERS, KAFKA_TOPIC, KAFKA_STARTING_OFFSETS, CLICKHOUSE_URL
 
+
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "heart-rate-events")
+KAFKA_STARTING_OFFSETS = os.getenv("SPARK_STREAM_STARTING_OFFSETS", "latest")
+
+CLICKHOUSE_URL = os.getenv("CLICKHOUSE_JDBC_URL", "jdbc:clickhouse://localhost:8123/bigintensive")
 CLICKHOUSE_TABLE = os.getenv("CLICKHOUSE_TABLE", "bigintensive.corsa_endurance_campioni")
 CLICKHOUSE_USER = os.getenv("CLICKHOUSE_USER", "default")
 CLICKHOUSE_PASSWORD = os.getenv("CLICKHOUSE_PASSWORD", "")
