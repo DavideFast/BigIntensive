@@ -13,12 +13,13 @@ Output:
 """
 
 from pyspark.sql import SparkSession, Window
-from pyspark.sql.functions import (col, avg, max, min, stddev, lit, when, sum as spark_sum, count)
+from pyspark.sql.functions import (col, avg, max, min, stddev, lit, when, sum as spark_sum, count, unix_timestamp)
 from pyspark.ml import Pipeline
 from pyspark.ml.feature import VectorAssembler, StandardScaler
 from pyspark.ml.classification import RandomForestClassifier
 import os
 from datetime import datetime
+from config import CITUS_URL, CITUS_PROPS, CLICKHOUSE_URL, CLICKHOUSE_PROPS
 
 ####################################################################################################################
 ###                                                                                                              ###
@@ -28,7 +29,6 @@ from datetime import datetime
 
 spark = SparkSession.builder \
     .appName("training-status-job") \
-    .config("spark.jars.packages", "org.postgresql:postgresql:42.7.2,com.clickhouse:clickhouse-jdbc:0.6.3") \
     .config("spark.sql.shuffle.partitions", "10") \
     .getOrCreate()
 
@@ -38,19 +38,7 @@ spark = SparkSession.builder \
 ###                                                                                                               ###
 #####################################################################################################################
 
-CITUS_URL = os.getenv("CITUS_JDBC_URL", "jdbc:postgresql://localhost:5432/bigintensive")
-CITUS_PROPS = {
-    "user": os.getenv("CITUS_USER", "postgres"),
-    "password": os.getenv("CITUS_PASSWORD", "postgres"),
-    "driver": "org.postgresql.Driver",
-}
 
-CLICKHOUSE_URL = os.getenv("CLICKHOUSE_JDBC_URL", "jdbc:clickhouse://localhost:8123/bigintensive")
-CLICKHOUSE_PROPS = {
-    "user": os.getenv("CLICKHOUSE_USER", "default"),
-    "password": os.getenv("CLICKHOUSE_PASSWORD", ""),
-    "driver": "com.clickhouse.jdbc.ClickHouseDriver",
-}
 
 # Read cardio samples from ClickHouse
 def read_cardio_samples():
@@ -114,7 +102,7 @@ def calculate_trimp(df):
         stddev("heart_rate").alias("hrv"),  # HRV as HR standard deviation
         avg("speed").alias("speed_avg"),
         avg("cadence").alias("cadence_avg"),
-        (max("timestamp") - min("timestamp")).cast("long").alias("duration_sec"),  # Duration in seconds
+        (unix_timestamp(max("timestamp")) - unix_timestamp(min("timestamp"))).alias("duration_sec"),
     )
     
     # Calculate TRIMP
@@ -148,7 +136,7 @@ def apply_window_functions(df_daily):
     for days in window_sizes:
         w = Window.partitionBy("athlete_id").orderBy(
             col("training_date").cast("long")
-        ).rangeBetween(-86400 * (days - 1), 0)  # days in seconds
+        ).rangeBetween(-(days - 1), 0)  # date cast to long = days since epoch
         
         alias_trimp = f"trimp_{days}d"
         alias_hr_avg = f"hr_avg_{days}d"

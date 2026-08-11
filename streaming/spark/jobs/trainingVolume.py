@@ -21,6 +21,7 @@ from pyspark.ml.feature import VectorAssembler, StandardScaler
 from pyspark.ml.clustering import KMeans
 import os
 from datetime import datetime
+from config import CITUS_URL, CITUS_PROPS, CLICKHOUSE_URL, CLICKHOUSE_PROPS
 
 #######################################################################################################################
 ###                                                                                                                 ###
@@ -30,7 +31,6 @@ from datetime import datetime
 
 spark = SparkSession.builder \
     .appName("job3-training-volume-clustering") \
-    .config("spark.jars.packages", "org.postgresql:postgresql:42.7.2,com.clickhouse:clickhouse-jdbc:0.6.3") \
     .config("spark.sql.shuffle.partitions", "10") \
     .getOrCreate()
 
@@ -41,19 +41,7 @@ spark = SparkSession.builder \
 #######################################################################################################################
 
 
-CITUS_URL = os.getenv("CITUS_JDBC_URL", "jdbc:postgresql://localhost:5432/bigintensive")
-CITUS_PROPS = {
-    "user": os.getenv("CITUS_USER", "postgres"),
-    "password": os.getenv("CITUS_PASSWORD", "postgres"),
-    "driver": "org.postgresql.Driver",
-}
 
-CLICKHOUSE_URL = os.getenv("CLICKHOUSE_JDBC_URL", "jdbc:clickhouse://localhost:8123/bigintensive")
-CLICKHOUSE_PROPS = {
-    "user": os.getenv("CLICKHOUSE_USER", "default"),
-    "password": os.getenv("CLICKHOUSE_PASSWORD", ""),
-    "driver": "com.clickhouse.jdbc.ClickHouseDriver",
-}
 
 def read_exercise_types():
     """Read exercise types from Citus"""
@@ -349,7 +337,7 @@ def write_results_to_citus(df_clustered, anomalies):
             cur.execute(
                 """INSERT INTO exercise_volumes_clusters 
                    (athlete_id, exercise_type, week_id, cluster_id, is_anomaly, anomaly_reason, timestamp)
-                   VALUES (%s, %s, %s, %s, %s, %s)""",
+                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
                 (athlete_id, "mixed", year_week, int(row["cluster_id"]), is_anomaly, anomaly_reason, datetime.now())
             )
         

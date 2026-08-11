@@ -3,13 +3,8 @@ import os
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import coalesce, col, from_json, regexp_extract, to_timestamp, unix_timestamp
 from pyspark.sql.types import DoubleType, IntegerType, StringType, StructField, StructType
+from config import KAFKA_BOOTSTRAP_SERVERS, KAFKA_TOPIC, KAFKA_STARTING_OFFSETS, CLICKHOUSE_URL
 
-
-KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
-KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "heart-rate-events")
-KAFKA_STARTING_OFFSETS = os.getenv("SPARK_STREAM_STARTING_OFFSETS", "latest")
-
-CLICKHOUSE_URL = os.getenv("CLICKHOUSE_JDBC_URL", "jdbc:clickhouse://localhost:8123/bigintensive")
 CLICKHOUSE_TABLE = os.getenv("CLICKHOUSE_TABLE", "bigintensive.corsa_endurance_campioni")
 CLICKHOUSE_USER = os.getenv("CLICKHOUSE_USER", "default")
 CLICKHOUSE_PASSWORD = os.getenv("CLICKHOUSE_PASSWORD", "")
@@ -21,10 +16,6 @@ CHECKPOINT_DIR = os.getenv(
 
 spark = (
     SparkSession.builder.appName("smartwatch-to-clickhouse-consumer")
-    .config(
-        "spark.jars.packages",
-        "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,com.clickhouse:clickhouse-jdbc:0.6.3",
-    )
     .getOrCreate()
 )
 
@@ -56,7 +47,7 @@ parsed_df = (
     kafka_df.select(from_json(col("value").cast("string"), payload_schema).alias("data"))
     .select("data.*")
     .withColumn("ts", to_timestamp(col("timestamp")))
-    .withColumn("atleta_id", regexp_extract(col("athlete_id"), r"(\\d+)$", 1).cast("int"))
+    .withColumn("atleta_id", regexp_extract(col("athlete_id"), r"(\d+)$", 1).cast("int"))
     .withColumn(
         "sessione_id",
         coalesce(col("session_id").cast("int"), unix_timestamp(col("ts")).cast("int")),
