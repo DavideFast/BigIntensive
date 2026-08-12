@@ -471,7 +471,7 @@ export function createDashboardRouter({ pool, clickhouseConfig } = {}) {
             phase: payload.phase,
             target_load: payload.targetLoad,
             focus: payload.focus,
-            source: "frontend-dashboard",
+            source: "frontend",
           },
         ]);
       }
