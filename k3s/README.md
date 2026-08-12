@@ -2,6 +2,8 @@
 
 Questa cartella contiene la base Kubernetes per avviare BigIntensive su k3s senza passare da Docker Compose.
 
+Per i dettagli tecnici dei manifest (ownership, ordine completo, checklist cambi), vedi [MANIFESTS.md](MANIFESTS.md).
+
 Il cluster gestisce:
 
 - `backend`
@@ -11,8 +13,6 @@ Il cluster gestisce:
 - `citus-worker-2`
 - `kafka`
 - `kafka-ui`
-
-Spark e Jupyter restano fuori da questa prima iterazione perché dipendono dal mount del workspace locale e conviene trattarli come estensione separata.
 
 ## Passo 1: verifica il cluster
 
@@ -186,6 +186,4 @@ Poi apri:
   sudo kubectl get pods -n bigintensive -o wide
   ```
 
-## Cosa non e' ancora incluso
-
-Spark e Jupyter non sono ancora nel manifest. Si possono aggiungere in un secondo passaggio, ma conviene farlo separatamente dal resto del cluster.
+Per operazioni avanzate (deploy selettivo componenti, runtime checks estesi, checklist modifiche), vedi [MANIFESTS.md](MANIFESTS.md).
