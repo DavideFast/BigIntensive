@@ -1,5 +1,8 @@
 # BigIntensive k3s Kubernetes Deployment
 
+> Note: the primary operational guide is [README.md](README.md).
+> This file is a secondary technical reference for the current modular manifests.
+
 ## Structure
 
 Il deployment è diviso in 8 file YAML per una migliore organizzazione:
@@ -14,10 +17,10 @@ k3s/
 ├── 05-spark-and-jupyter.yaml        → Spark Native k8s + Jupyter
 ├── 06-ingress.yaml                  → Traefik Ingress Routes
 ├── 07-clickhouse.yaml               → ClickHouse + ClickHouse Keeper
-├── 08-trainingstatus-cronjob.yaml   → Legacy training-status CronJob (currently suspended)
+├── 08-trainingstatus-cronjob.yaml   → Training-status CronJob (currently suspended)
 ├── deploy-all.sh                    → Deploy script (applica tutto in ordine)
 ├── README.md                         → This file
-└── bigintensive-k3s.yaml (legacy)   → Old single-file manifest (deprecated)
+└── MANIFESTS.md                      → Secondary technical reference
 ```
 
 ## Quick Start
@@ -39,7 +42,7 @@ Lo script applica i file nell'ordine corretto:
 6. Spark + Jupyter
 7. Ingress routes
 8. ClickHouse
-9. Legacy training status cronjob (suspended)
+9. Training status cronjob (suspended)
 
 ### 2️⃣ Verify Deployment
 
@@ -316,22 +319,10 @@ sudo k3s kubectl describe ingress -n bigintensive
 sudo k3s kubectl logs -n kube-system -l app.kubernetes.io/name=traefik
 ```
 
-## Migration from Single File
+## Migration Note
 
-If you were using the old `bigintensive-k3s.yaml`:
-
-```bash
-# Backup old file
-cp bigintensive-k3s.yaml bigintensive-k3s.yaml.backup
-
-# Delete old deployment
-sudo k3s kubectl delete -f bigintensive-k3s.yaml.backup
-
-# Deploy with new files
-bash deploy-all.sh
-```
-
-The new structure is equivalent but better organized.
+The project now uses modular manifests only.
+Use `bash deploy-all.sh` for full deployment, or apply individual YAML files as needed.
 
 ## Advanced: Custom Build Images
 

@@ -3,13 +3,13 @@
 set -euo pipefail
 
 NAMESPACE="bigintensive"
-MANIFEST_PATH="k3s/bigintensive-k3s.yaml"
+DEPLOY_ALL_SCRIPT="k3s/deploy-all.sh"
 BACKEND_IMAGE="bigintensive/backend:local"
 FRONTEND_IMAGE="bigintensive/frontend:local"
 LOCAL_IMAGES_LABEL="bigintensive.io/local-images=true"
 
-if [[ ! -f "$MANIFEST_PATH" ]]; then
-  echo "Manifest non trovato: $MANIFEST_PATH"
+if [[ ! -f "$DEPLOY_ALL_SCRIPT" ]]; then
+  echo "Script non trovato: $DEPLOY_ALL_SCRIPT"
   echo "Esegui lo script dalla root della repo BigIntensive."
   exit 1
 fi
@@ -67,8 +67,8 @@ sudo k3s kubectl label node "$CURRENT_NODE_NAME" "$LOCAL_IMAGES_LABEL" --overwri
 echo "Verifica nodo k3s..."
 sudo k3s kubectl get nodes
 
-echo "Applico manifest Kubernetes..."
-sudo k3s kubectl apply -f "$MANIFEST_PATH"
+echo "Applico manifest Kubernetes modulari..."
+bash "$DEPLOY_ALL_SCRIPT"
 
 echo "Build immagine backend..."
 sudo docker build -f services/backend/Dockerfile -t "$BACKEND_IMAGE" services/backend
