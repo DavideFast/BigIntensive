@@ -155,6 +155,12 @@ Aprire direttamente `http://192.168.1.50` non basta, perche' l'Ingress instrada 
 
 ## Passo 7: verifica l'app
 
+Per un controllo automatico rapido di stato deploy, rollout e servizi:
+
+```bash
+bash k3s/validate-deploy.sh
+```
+
 Controlla prima la health del backend:
 
 ```powershell
