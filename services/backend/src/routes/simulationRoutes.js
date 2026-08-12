@@ -77,7 +77,7 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript, kaf
     if (!pythonRuntime) {
       return res.status(500).json({
         error: "Python runtime not found",
-        details: "Install Python and ensure python/py is in PATH, or set PYTHON_BIN in backend-api/.env",
+        details: "Install Python and ensure python/py is in PATH, or set PYTHON_BIN in backend/.env",
       });
     }
 
@@ -198,7 +198,9 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript, kaf
     }
 
     const { samples } = req.body || {};
-    const destination = String(req.body?.destination || "kafka").trim().toLowerCase();
+    const destination = String(req.body?.destination || "kafka")
+      .trim()
+      .toLowerCase();
     if (destination !== "kafka") {
       return res.status(400).json({
         error: "Invalid destination for smartwatch samples",

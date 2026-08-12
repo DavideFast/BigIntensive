@@ -26,7 +26,9 @@ function buildClickHouseConfig(raw) {
 }
 
 function resolveWorkoutDestination(value) {
-  const normalized = String(value || "citus").trim().toLowerCase();
+  const normalized = String(value || "citus")
+    .trim()
+    .toLowerCase();
   if (normalized === "citus") {
     return "citus";
   }
@@ -120,7 +122,7 @@ async function ensureCitusWorkoutTable(pool) {
       phase TEXT,
       target_load INTEGER,
       focus TEXT,
-      source TEXT NOT NULL DEFAULT 'frontend-dashboard',
+      source TEXT NOT NULL DEFAULT 'frontend',
       created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
     `,

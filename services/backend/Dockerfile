@@ -6,11 +6,11 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 python3-pip docker.io \
   && rm -rf /var/lib/apt/lists/*
 
-COPY ./package*.json /app/backend-api/
-WORKDIR /app/backend-api
+COPY ./package*.json /app/backend/
+WORKDIR /app/backend
 RUN npm ci
 
-COPY . /app/backend-api
+COPY . /app/backend
 COPY ./scripts /app/scripts
 
 
