@@ -17,6 +17,34 @@ La strada consigliata e' il cluster k3s in [k3s/README.md](k3s/README.md). La ve
 - Notebook iniziale: `notebooks/quickstart.ipynb`
 - Job PySpark di esempio in `streaming/spark/jobs`
 
+## Architettura rapida
+
+```mermaid
+flowchart LR
+  FE[Frontend\nservices/frontend] -->|HTTP| BE[Backend\nservices/backend]
+  BE -->|events| KAFKA[Kafka]
+  BE -->|OLTP queries| CITUS[Citus]
+  SPARK[Spark Jobs] -->|read/write| KAFKA
+  SPARK -->|analytics| CITUS
+  JUPYTER[Jupyter] -->|notebook dev| SPARK
+```
+
+- Il frontend parla con il backend via `VITE_API_BASE_URL`.
+- Il backend gestisce API, produce/consuma eventi e scrive dati applicativi.
+- Spark elabora stream/eventi e supporta analisi batch/interactive via Jupyter.
+
+## Quale percorso usare
+
+- Deploy completo k3s (raccomandato): `bash k3s/deploy-all.sh`
+- Deploy locale con build immagini + import in k3s: `bash k3s/deploy-k3s-local.sh`
+- Solo sviluppo locale rapido: `dev/docker-compose.yml`
+- Diagnostica k3s: `kubectl get all -n bigintensive` e `kubectl get ingress -n bigintensive`
+
+## Artefatti generati
+
+- `services/frontend/dist` e' output di build (non sorgente): puo' essere eliminata e rigenerata con `npm run build`.
+- `services/*/node_modules` e i dati runtime in `database/` e `streaming/kafka/data` non vanno versionati.
+
 ## Avvio consigliato
 
 Per partire con il cluster, segui la guida in [k3s/README.md](k3s/README.md).
