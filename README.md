@@ -90,7 +90,7 @@ Se vuoi, puoi usare `kubectl exec` nel pod Kafka per creare topic e produrre mes
 1. Installa dipendenze Python:
 
 ```powershell
-python -m pip install -r .\scripts\python\requirements.txt
+python -m pip install -r .\services\backend-api\scripts\requirements.txt
 ```
 
 2. Configura endpoint Kafka per app host:
@@ -103,28 +103,28 @@ $env:KAFKA_TOPIC = "demo-events"
 3. Invia un evento (producer):
 
 ```powershell
-python .\scripts\python\producer.py --topic demo-events --message "utente registrato" --as-json
+python .\services\backend-api\scripts\producer.py --topic demo-events --message "utente registrato" --as-json
 ```
 
 4. Leggi eventi (consumer):
 
 ```powershell
-python .\scripts\python\consumer.py --topic demo-events --group-id app-consumer --from-beginning --max-messages 10
+python .\services\backend-api\scripts\consumer.py --topic demo-events --group-id app-consumer --from-beginning --max-messages 10
 ```
 
 Nota: se esegui il codice Python dentro un container nella rete Docker, usa `kafka:9092` come bootstrap server invece di `localhost:9094`.
 
 ## Note
 
-- I file locali in `spark/apps` e `spark/data` sono montati dentro i container.
-- L'intera cartella `spark` e' montata in Jupyter come `/home/jovyan/work`.
-- Puoi aggiungere nuovi job PySpark in `spark/apps` e lanciarli con `spark-submit`.
-- I dati PostgreSQL/Citus restano persistenti nelle cartelle `postgres/*-data`.
-- I dati Kafka restano persistenti nella cartella `kafka/data`.
+- I job Spark locali sono montati da `streaming/spark/jobs` dentro i container.
+- L'intera cartella `streaming/spark` e' montata in Jupyter come `/home/jovyan/work`.
+- Puoi aggiungere nuovi job PySpark in `streaming/spark/jobs` e lanciarli con `spark-submit`.
+- I dati PostgreSQL/Citus restano persistenti nelle cartelle `database/postgres/*-data`.
+- I dati Kafka restano persistenti nella cartella `streaming/kafka/data`.
 
 ## Dashboard React
 
-- Path progetto: `frontend-dashboard`
+- Path progetto: `services/frontend-dashboard`
 - URL sviluppo: `http://localhost:5173`
 - Endpoint API configurabili in `frontend-dashboard/.env.example`:
   - `VITE_API_BASE_URL`
@@ -134,7 +134,7 @@ Se l'API non e' ancora disponibile, il dashboard mostra automaticamente dati moc
 
 ## Backend Express
 
-- Path progetto: `backend-api`
+- Path progetto: `services/backend-api`
 - URL sviluppo: `http://localhost:3001`
 - Endpoint principali:
   - `GET /health`

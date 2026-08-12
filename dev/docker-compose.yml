@@ -206,7 +206,7 @@ services:
       - backend-api
     working_dir: /scripts/load
     volumes:
-      - ../test:/scripts/load
+      - ../services/backend-api/scripts:/scripts/load
     networks:
       - spark-net
     entrypoint: ["k6"]

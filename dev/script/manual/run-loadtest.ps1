@@ -9,13 +9,13 @@ param(
 $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$projectRoot = Resolve-Path (Join-Path $scriptDir "..")
+$projectRoot = Resolve-Path (Join-Path $scriptDir "..\..")
 Set-Location $projectRoot
 
 $backendContainerIdRaw = docker compose ps -q backend-api
 $backendContainerId = if ($backendContainerIdRaw) { $backendContainerIdRaw.Trim() } else { "" }
 if (-not $backendContainerId) {
-  Write-Error "backend-api container not running. Start the stack first with .\\scripts\\start-all.ps1"
+  Write-Error "backend-api container not running. Start the dev stack first with 'docker compose up -d' from the dev folder."
   exit 1
 }
 
