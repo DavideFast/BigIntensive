@@ -14,15 +14,16 @@ La strada consigliata e' il cluster k3s in [k3s/README.md](k3s/README.md). La ve
 - 1 Kafka broker (KRaft)
 - 1 Kafka UI
 - 1 Backend Express leggero (API eventi)
-- Notebook iniziale: `spark/notebooks/quickstart.ipynb`
-- Esempio PySpark (`spark/apps/wordcount.py`)
-- Dataset di test (`spark/data/input.txt`)
+- Notebook iniziale: `notebooks/quickstart.ipynb`
+- Job PySpark di esempio in `streaming/spark/jobs`
 
 ## Avvio consigliato
 
 Per partire con il cluster, segui la guida in [k3s/README.md](k3s/README.md).
 
 Se vuoi solo provare l'app rapidamente senza Kubernetes, la vecchia strada Compose e' ancora presente, ma non e' piu il percorso raccomandato.
+
+Il file Compose locale si trova in `dev/docker-compose.yml`.
 
 ## Comandi utili
 
@@ -126,7 +127,7 @@ Nota: se esegui il codice Python dentro un container nella rete Docker, usa `kaf
 
 - Path progetto: `services/frontend-dashboard`
 - URL sviluppo: `http://localhost:5173`
-- Endpoint API configurabili in `frontend-dashboard/.env.example`:
+- Endpoint API configurabili in `services/frontend-dashboard/.env.example`:
   - `VITE_API_BASE_URL`
   - `VITE_EVENTS_PATH`
 
@@ -162,5 +163,5 @@ spark = (
   .getOrCreate()
 )
 
-spark.read.text("/home/jovyan/work/data/input.txt").show(truncate=False)
+spark.read.text("/home/jovyan/work/jobs/consumer.py").show(truncate=False)
 ```
