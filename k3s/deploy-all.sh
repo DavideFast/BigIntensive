@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # BigIntensive k3s Deployment Script
+# This script won't build Docker images; it assumes that the backend and frontend images are already built and available in the local Docker registry.
 # Applies all YAML manifests in the correct order
 
 set -eu
