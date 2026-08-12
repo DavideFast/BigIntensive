@@ -10,10 +10,11 @@ import { createKafkaProducerFromEnv } from "../utils/kafkaProducer.js";
 export function createServerContext(importMetaUrl) {
   const __filename = fileURLToPath(importMetaUrl);
   const __dirname = path.dirname(__filename);
-  const projectRoot = path.resolve(__dirname, "../../..");
+  const backendRoot = path.resolve(__dirname, "../..");
+  const scriptsRoot = path.join(backendRoot, "scripts");
 
-  const pythonScriptsDir = path.join(projectRoot, "scripts", "python");
-  const k6ScriptPath = path.join(projectRoot, "scripts", "load", "k6-backend.js");
+  const pythonScriptsDir = scriptsRoot;
+  const k6ScriptPath = path.join(scriptsRoot, "k6-backend.js");
 
   return {
     port: Number(process.env.PORT || 3001),
