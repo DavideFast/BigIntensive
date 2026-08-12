@@ -49,18 +49,18 @@ Il file Compose locale si trova in `dev/docker-compose.yml`.
 - Aprire il backend in locale senza Ingress:
 
   ```powershell
-  kubectl port-forward -n bigintensive svc/backend-api 3001:3001
+  kubectl port-forward -n bigintensive svc/backend 3001:3001
   ```
 
 - Aprire il frontend in locale senza Ingress:
 
   ```powershell
-  kubectl port-forward -n bigintensive svc/frontend-dashboard 5173:5173
+  kubectl port-forward -n bigintensive svc/frontend 5173:5173
   ```
 
 ## Inizializzare Citus
 
-Nel cluster k3s questa parte e' automatizzata dal job `citus-bootstrap` definito in [k3s/bigintensive-k3s.yaml](k3s/bigintensive-k3s.yaml).
+Nel cluster k3s questa parte e' automatizzata dal job `citus-bootstrap` definito nei manifest modulari in `k3s/` (in particolare `k3s/01-citus.yaml`).
 
 ## Collegare Spark a Citus via JDBC
 
@@ -91,7 +91,7 @@ Se vuoi, puoi usare `kubectl exec` nel pod Kafka per creare topic e produrre mes
 1. Installa dipendenze Python:
 
 ```powershell
-python -m pip install -r .\services\backend-api\scripts\requirements.txt
+python -m pip install -r .\services\backend\scripts\requirements.txt
 ```
 
 2. Configura endpoint Kafka per app host:
@@ -104,13 +104,13 @@ $env:KAFKA_TOPIC = "demo-events"
 3. Invia un evento (producer):
 
 ```powershell
-python .\services\backend-api\scripts\producer.py --topic demo-events --message "utente registrato" --as-json
+python .\services\backend\scripts\producer.py --topic demo-events --message "utente registrato" --as-json
 ```
 
 4. Leggi eventi (consumer):
 
 ```powershell
-python .\services\backend-api\scripts\consumer.py --topic demo-events --group-id app-consumer --from-beginning --max-messages 10
+python .\services\backend\scripts\consumer.py --topic demo-events --group-id app-consumer --from-beginning --max-messages 10
 ```
 
 Nota: se esegui il codice Python dentro un container nella rete Docker, usa `kafka:9092` come bootstrap server invece di `localhost:9094`.
@@ -125,9 +125,9 @@ Nota: se esegui il codice Python dentro un container nella rete Docker, usa `kaf
 
 ## Dashboard React
 
-- Path progetto: `services/frontend-dashboard`
+- Path progetto: `services/frontend`
 - URL sviluppo: `http://localhost:5173`
-- Endpoint API configurabili in `services/frontend-dashboard/.env.example`:
+- Endpoint API configurabili in `services/frontend/.env.example`:
   - `VITE_API_BASE_URL`
   - `VITE_EVENTS_PATH`
 
@@ -135,7 +135,7 @@ Se l'API non e' ancora disponibile, il dashboard mostra automaticamente dati moc
 
 ## Backend Express
 
-- Path progetto: `services/backend-api`
+- Path progetto: `services/backend`
 - URL sviluppo: `http://localhost:3001`
 - Endpoint principali:
   - `GET /health`

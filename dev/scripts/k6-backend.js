@@ -4,7 +4,7 @@ import { Counter } from "k6/metrics";
 
 const requestFailures = new Counter("request_failures");
 
-const BASE_URL = __ENV.BASE_URL || "http://backend-api:3001";
+const BASE_URL = __ENV.BASE_URL || "http://backend:3001";
 const ENDPOINT_MODE = (__ENV.ENDPOINT_MODE || "events").toLowerCase();
 
 function randomInt(min, max) {

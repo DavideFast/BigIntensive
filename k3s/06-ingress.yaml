@@ -12,7 +12,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: frontend-dashboard
+                name: frontend
                 port:
                   number: 5173
     - host: bigintensive.local
@@ -22,7 +22,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: frontend-dashboard
+                name: frontend
                 port:
                   number: 5173
     - host: api.bigintensive.local
@@ -32,7 +32,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: backend-api
+                name: backend
                 port:
                   number: 3001
     - host: kafka-ui.bigintensive.local

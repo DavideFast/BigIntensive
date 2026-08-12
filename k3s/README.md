@@ -4,8 +4,8 @@ Questa cartella contiene la base Kubernetes per avviare BigIntensive su k3s senz
 
 Il cluster gestisce:
 
-- `backend-api`
-- `frontend-dashboard`
+- `backend`
+- `frontend`
 - `citus-coordinator`
 - `citus-worker-1`
 - `citus-worker-2`
@@ -65,15 +65,15 @@ Poi verifica dal server che entrambi i nodi siano presenti:
 sudo kubectl get nodes -o wide
 ```
 
-Nota pratica: nel setup attuale backend e frontend usano immagini locali (`bigintensive/...:local`). Lo script `scripts/deploy-k3s-local.sh` etichetta automaticamente il nodo server e forza quei due deployment a restare li'. Questo evita errori `ImagePullBackOff` sul nodo agent finche' non configuri un registry condiviso.
+Nota pratica: nel setup attuale backend e frontend usano immagini locali (`bigintensive/...:local`). Lo script `k3s/deploy-k3s-local.sh` etichetta automaticamente il nodo server e forza quei due deployment a restare li'. Questo evita errori `ImagePullBackOff` sul nodo agent finche' non configuri un registry condiviso.
 
 ## Passo 2: prepara le immagini
 
 Dal root del repository builda le immagini del backend e del frontend:
 
 ```powershell
-docker build -f backend-api/Dockerfile -t bigintensive/backend-api:local .
-docker build -f frontend-dashboard/Dockerfile -t bigintensive/frontend-dashboard:local .
+docker build -f services/backend/Dockerfile -t bigintensive/backend:local services/backend
+docker build -f services/frontend/Dockerfile -t bigintensive/frontend:local services/frontend
 ```
 
 Se il cluster e' locale e usa lo stesso motore container, le immagini devono comunque essere visibili ai nodi k3s. Hai due opzioni:
@@ -84,14 +84,14 @@ Se il cluster e' locale e usa lo stesso motore container, le immagini devono com
 In alternativa, dalla root della repo puoi usare lo script automatico:
 
 ```bash
-chmod +x scripts/deploy-k3s-local.sh
-./scripts/deploy-k3s-local.sh
+chmod +x k3s/deploy-k3s-local.sh
+./k3s/deploy-k3s-local.sh
 ```
 
 `chmod +x` serve solo a rendere eseguibile il file `.sh` su Linux. In alternativa puoi lanciarlo senza cambiare permessi:
 
 ```bash
-bash scripts/deploy-k3s-local.sh
+bash k3s/deploy-k3s-local.sh
 ```
 
 Lo script applica i manifest, builda backend/frontend, importa le immagini in k3s e riavvia i deployment app.
@@ -101,10 +101,10 @@ Nel caso a due VM, esegui questo script sulla VM server, non sull'agent.
 ## Passo 3: applica i manifest
 
 ```powershell
-kubectl apply -f k3s/bigintensive-k3s.yaml
+bash k3s/deploy-all.sh
 ```
 
-Questo crea il namespace, i secret, i servizi, i deployment/statefulset e il job di bootstrap Citus.
+Questo applica i manifest modulari e crea namespace, secret, servizi, deployment/statefulset e job di bootstrap Citus.
 
 ## Passo 4: controlla che i pod salgano
 
@@ -128,7 +128,7 @@ Se vuoi rilanciarlo dopo una modifica ai dati, cancellalo e riapplicalo:
 
 ```powershell
 kubectl delete job citus-bootstrap -n bigintensive
-kubectl apply -f k3s/bigintensive-k3s.yaml
+kubectl apply -f k3s/01-citus.yaml
 ```
 
 ## Passo 6: esponi i servizi nel browser
@@ -158,7 +158,7 @@ Aprire direttamente `http://192.168.1.50` non basta, perche' l'Ingress instrada 
 Controlla prima la health del backend:
 
 ```powershell
-kubectl port-forward -n bigintensive svc/backend-api 3001:3001
+kubectl port-forward -n bigintensive svc/backend 3001:3001
 ```
 
 Poi apri:
@@ -177,7 +177,7 @@ Poi apri:
 
 - Se compare `node password rejected`, ripulisci l'agent e rilancia il join con `--with-node-id`.
 
-- Se il browser mostra `Blocked request. This host is not allowed`, aggiorna la repo sulla VM server e rilancia `bash scripts/deploy-k3s-local.sh` per ricostruire il frontend con la configurazione Vite aggiornata.
+- Se il browser mostra `Blocked request. This host is not allowed`, aggiorna la repo sulla VM server e rilancia `bash k3s/deploy-k3s-local.sh` per ricostruire il frontend con la configurazione Vite aggiornata.
 
 - Per controllare dove stanno girando i pod nel cluster a due nodi:
 

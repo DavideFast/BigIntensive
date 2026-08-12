@@ -3,7 +3,7 @@ param(
   [string]$Mode = "events",
   [int]$Vus = 80,
   [string]$Duration = "60s",
-  [string]$BaseUrl = "http://backend-api:3001"
+  [string]$BaseUrl = "http://backend:3001"
 )
 
 $ErrorActionPreference = "Stop"
@@ -13,10 +13,10 @@ $devRoot = Resolve-Path (Join-Path $scriptDir "..")
 $composeFile = Join-Path $devRoot "docker-compose.yml"
 Set-Location $devRoot
 
-$backendContainerIdRaw = docker compose -f $composeFile ps -q backend-api
+$backendContainerIdRaw = docker compose -f $composeFile ps -q backend
 $backendContainerId = if ($backendContainerIdRaw) { $backendContainerIdRaw.Trim() } else { "" }
 if (-not $backendContainerId) {
-  Write-Error "backend-api container not running. Start the dev stack first with 'docker compose up -d' from the dev folder."
+  Write-Error "backend container not running. Start the dev stack first with 'docker compose up -d' from the dev folder."
   exit 1
 }
 

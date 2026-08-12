@@ -9,8 +9,8 @@ k3s/
 ├── 00-namespace-and-secrets.yaml    → Namespace, Secrets, ConfigMaps
 ├── 01-citus.yaml                    → Citus PostgreSQL (Coordinator + 2 Workers)
 ├── 02-kafka.yaml                    → Kafka KRaft + Kafka UI
-├── 03-backend-api.yaml              → Backend API Deployment
-├── 04-frontend-dashboard.yaml       → Frontend React Dashboard
+├── 03-backend.yaml                  → Backend API Deployment
+├── 04-frontend.yaml                 → Frontend React Dashboard
 ├── 05-spark-and-jupyter.yaml        → Spark Native k8s + Jupyter
 ├── 06-ingress.yaml                  → Traefik Ingress Routes
 ├── 07-clickhouse.yaml               → ClickHouse + ClickHouse Keeper
@@ -126,11 +126,11 @@ http://192.168.1.X:8888      → Jupyter (port-based)
 - You want to change storage size (default: 10GB)
 - You want different Kafka version (default: 3.7.0)
 
-### 03-backend-api.yaml (~70 lines)
+### 03-backend.yaml (~70 lines)
 
 **Contains:**
 
-- Backend-API Deployment
+- Backend Deployment
 - Connected to Citus, Kafka
 - Health check probes
 - NodeSelector to run on server node with local images
@@ -142,11 +142,11 @@ http://192.168.1.X:8888      → Jupyter (port-based)
 - You want multiple replicas
 - You want to add more environment variables
 
-### 04-frontend-dashboard.yaml (~50 lines)
+### 04-frontend.yaml (~50 lines)
 
 **Contains:**
 
-- Frontend-Dashboard Deployment
+- Frontend Deployment
 - React app with Vite dev server
 - NodeSelector to run on server node
 - Service on port 5173
@@ -230,7 +230,7 @@ sudo k3s kubectl logs -f citus-coordinator-0 -n bigintensive
 sudo k3s kubectl logs -f deployment/jupyter -n bigintensive
 
 # Backend API
-sudo k3s kubectl logs -f deployment/backend-api -n bigintensive
+sudo k3s kubectl logs -f deployment/backend -n bigintensive
 ```
 
 ### Port Forward (for local testing)
@@ -240,7 +240,7 @@ sudo k3s kubectl logs -f deployment/backend-api -n bigintensive
 sudo k3s kubectl port-forward -n bigintensive svc/jupyter 8888:8888
 
 # Forward Backend to localhost:3001
-sudo k3s kubectl port-forward -n bigintensive svc/backend-api 3001:3001
+sudo k3s kubectl port-forward -n bigintensive svc/backend 3001:3001
 
 # Forward Citus to localhost:5432
 sudo k3s kubectl port-forward -n bigintensive svc/citus-coordinator 5432:5432
@@ -254,7 +254,7 @@ sudo k3s kubectl delete namespace bigintensive
 
 # Or delete selectively
 sudo k3s kubectl delete -f 05-spark-and-jupyter.yaml
-sudo k3s kubectl delete -f 04-frontend-dashboard.yaml
+sudo k3s kubectl delete -f 04-frontend.yaml
 ```
 
 ## Monitoring
@@ -339,14 +339,14 @@ If you want to build and use custom images:
 
 ```bash
 # Build backend
-cd backend-api
-docker build -t bigintensive/backend-api:local .
+cd services/backend
+docker build -t bigintensive/backend:local .
 
 # Import to k3s
-docker save bigintensive/backend-api:local | sudo k3s ctr images import -
+docker save bigintensive/backend:local | sudo k3s ctr images import -
 
 # Deploy
-sudo k3s kubectl set image deployment/backend-api backend-api=bigintensive/backend-api:local -n bigintensive
+sudo k3s kubectl set image deployment/backend backend=bigintensive/backend:local -n bigintensive
 ```
 
 ## Next Steps

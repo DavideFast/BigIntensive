@@ -16,7 +16,7 @@ export function createDeployLoadtestRouter({ dockerRuntime, k6ScriptPath, k6Shar
     }
 
     const { endpointMode, parsedVus, parsedDuration } = validation;
-    const baseUrl = String(base_url || "http://backend-api:3001").trim();
+    const baseUrl = String(base_url || "http://backend:3001").trim();
 
     if (!dockerRuntime) {
       return res.status(500).json({

@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend-api
+  name: backend
   namespace: bigintensive
 spec:
   type: ClusterIP
   selector:
-    app: backend-api
+    app: backend
   ports:
     - name: http
       port: 3001
@@ -15,21 +15,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend-api
+  name: backend
   namespace: bigintensive
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: backend-api
+      app: backend
   template:
     metadata:
       labels:
-        app: backend-api
+        app: backend
     spec:
       containers:
-        - name: backend-api
-          image: davidefast/backend-esame_big_intensive:latest
+        - name: backend
+          image: davidefast/bigintensive-backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3001

@@ -4,8 +4,8 @@ set -euo pipefail
 
 NAMESPACE="bigintensive"
 MANIFEST_PATH="k3s/bigintensive-k3s.yaml"
-BACKEND_IMAGE="bigintensive/backend-api:local"
-FRONTEND_IMAGE="bigintensive/frontend-dashboard:local"
+BACKEND_IMAGE="bigintensive/backend:local"
+FRONTEND_IMAGE="bigintensive/frontend:local"
 LOCAL_IMAGES_LABEL="bigintensive.io/local-images=true"
 
 if [[ ! -f "$MANIFEST_PATH" ]]; then
@@ -81,14 +81,14 @@ sudo docker save "$BACKEND_IMAGE" | sudo k3s ctr -n k8s.io images import -
 sudo docker save "$FRONTEND_IMAGE" | sudo k3s ctr -n k8s.io images import -
 
 echo "Verifica immagini importate (namespace k8s.io)..."
-sudo k3s ctr -n k8s.io images ls | grep -E 'bigintensive/(backend-api|frontend-dashboard).*local' || {
+sudo k3s ctr -n k8s.io images ls | grep -E 'bigintensive/(backend|frontend).*local' || {
   echo "Immagini non trovate nel namespace containerd k8s.io."
   exit 1
 }
 
 echo "Riavvio deployment applicativi..."
-sudo k3s kubectl rollout restart deployment/backend-api -n "$NAMESPACE"
-sudo k3s kubectl rollout restart deployment/frontend-dashboard -n "$NAMESPACE"
+sudo k3s kubectl rollout restart deployment/backend -n "$NAMESPACE"
+sudo k3s kubectl rollout restart deployment/frontend -n "$NAMESPACE"
 
 echo "Stato pod nel namespace $NAMESPACE:"
 sudo k3s kubectl get pods -n "$NAMESPACE"

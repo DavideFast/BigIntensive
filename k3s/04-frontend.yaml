@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: frontend-dashboard
+  name: frontend
   namespace: bigintensive
 spec:
   type: ClusterIP
   selector:
-    app: frontend-dashboard
+    app: frontend
   ports:
     - name: http
       port: 5173
@@ -15,21 +15,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend-dashboard
+  name: frontend
   namespace: bigintensive
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: frontend-dashboard
+      app: frontend
   template:
     metadata:
       labels:
-        app: frontend-dashboard
+        app: frontend
     spec:
       containers:
-        - name: frontend-dashboard
-          image: davidefast/frontend-esame_big_intensive:latest
+        - name: frontend
+          image: davidefast/bigintensive-frontend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 5173
