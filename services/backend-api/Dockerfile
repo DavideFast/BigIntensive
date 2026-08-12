@@ -11,8 +11,8 @@ WORKDIR /app/backend-api
 RUN npm ci
 
 COPY backend-api /app/backend-api
-COPY test /app/scripts/python
-COPY test /app/scripts/load
+COPY ../script-backend /app/scripts/python
+COPY ../script-backend /app/scripts/load
 
 RUN pip3 install --no-cache-dir --break-system-packages -r /app/scripts/python/requirements.txt
 

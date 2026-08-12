@@ -1,7 +1,7 @@
 import argparse
 from kafka import KafkaConsumer
 
-from kafka_common import kafka_bootstrap_servers, kafka_default_topic
+from BigIntensive.test.kafka_common import kafka_bootstrap_servers, kafka_default_topic
 
 
 def build_parser() -> argparse.ArgumentParser:
