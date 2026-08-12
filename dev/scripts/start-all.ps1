@@ -36,7 +36,7 @@ if ($backendPort -eq '3001') {
   $backendPortInUse = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue
   if ($null -ne $backendPortInUse) {
     $backendPort = '53001'
-    Write-Host 'Port 3001 is already in use; using 53001 for backend-api.'
+    Write-Host 'Port 3001 is already in use; using 53001 for backend.'
   }
 }
 $env:BACKEND_PORT = $backendPort
@@ -46,7 +46,7 @@ if ($frontendPort -eq '5173') {
   $frontendPortInUse = Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue
   if ($null -ne $frontendPortInUse) {
     $frontendPort = '55173'
-    Write-Host 'Port 5173 is already in use; using 55173 for frontend-dashboard.'
+    Write-Host 'Port 5173 is already in use; using 55173 for frontend.'
   }
 }
 $env:FRONTEND_PORT = $frontendPort

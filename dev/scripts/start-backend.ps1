@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$backendRoot = Resolve-Path (Join-Path $scriptDir "..\backend-api")
+$backendRoot = Resolve-Path (Join-Path $scriptDir "..\..\services\backend")
 
 Set-Location $backendRoot
 

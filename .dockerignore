@@ -7,9 +7,9 @@
 postgres/
 kafka/data/
 
-backend-api/node_modules/
-frontend-dashboard/node_modules/
-frontend-dashboard/dist/
+services/backend/node_modules/
+services/frontend/node_modules/
+services/frontend/dist/
 
 **/*.log
 **/*.tmp

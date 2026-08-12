@@ -71,10 +71,10 @@ echo "Applico manifest Kubernetes..."
 sudo k3s kubectl apply -f "$MANIFEST_PATH"
 
 echo "Build immagine backend..."
-sudo docker build -f backend-api/Dockerfile -t "$BACKEND_IMAGE" .
+sudo docker build -f services/backend/Dockerfile -t "$BACKEND_IMAGE" services/backend
 
 echo "Build immagine frontend..."
-sudo docker build -f frontend-dashboard/Dockerfile -t "$FRONTEND_IMAGE" .
+sudo docker build -f services/frontend/Dockerfile -t "$FRONTEND_IMAGE" services/frontend
 
 echo "Import immagini in containerd di k3s..."
 sudo docker save "$BACKEND_IMAGE" | sudo k3s ctr -n k8s.io images import -

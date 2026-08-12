@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$dashboardRoot = Resolve-Path (Join-Path $scriptDir "..\frontend-dashboard")
+$dashboardRoot = Resolve-Path (Join-Path $scriptDir "..\..\services\frontend")
 
 Set-Location $dashboardRoot
 
