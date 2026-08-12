@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-# This script deploys the BigIntensive application to a local k3s cluster and builds the backend and frontend Docker images, importing them into the k3s containerd runtime.
+# This script deploys the BigIntensive application to a local k3s cluster and builds the backend and frontend Docker images,
+# importing them into the k3s containerd runtime.
 set -euo pipefail
 
 NAMESPACE="bigintensive"
