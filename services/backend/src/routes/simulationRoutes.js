@@ -119,7 +119,7 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript, kaf
     if (!pythonRuntime) {
       return res.status(500).json({
         error: "Python runtime not found",
-        details: "Install Python and ensure python/py is in PATH, or set PYTHON_BIN in backend-api/.env",
+        details: "Install Python and ensure python/py is in PATH, or set PYTHON_BIN in backend/.env",
       });
     }
 

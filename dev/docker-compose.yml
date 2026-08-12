@@ -181,7 +181,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - k6-shared:/k6-shared
-      - ./scripts/k6-backend.js:/app/backend-api/scripts/k6-backend.js:ro
+      - ./scripts/k6-backend.js:/app/backend/scripts/k6-backend.js:ro
     networks:
       - spark-net
 

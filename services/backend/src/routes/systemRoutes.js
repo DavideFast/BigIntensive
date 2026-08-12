@@ -6,7 +6,7 @@ export function createSystemRouter() {
   router.get("/health", (req, res) => {
     res.json({
       status: "ok",
-      service: "bigintensive-backend-api",
+      service: "bigintensive-backend",
       timestamp: new Date().toISOString(),
     });
   });

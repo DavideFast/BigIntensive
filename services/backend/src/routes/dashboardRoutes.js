@@ -377,7 +377,7 @@ export function createDashboardRouter({ pool, clickhouseConfig } = {}) {
             notes,
             source
           )
-          VALUES ($1, $2, $3, $4, $5, $6, 'frontend-dashboard')
+          VALUES ($1, $2, $3, $4, $5, $6, 'frontend')
           `,
           [payload.athlete, athleteId, payload.sessionType, payload.duration, payload.intensity, payload.notes],
         );
@@ -394,7 +394,7 @@ export function createDashboardRouter({ pool, clickhouseConfig } = {}) {
             phase: null,
             target_load: null,
             focus: null,
-            source: "frontend-dashboard",
+            source: "frontend",
           },
         ]);
       }
@@ -454,7 +454,7 @@ export function createDashboardRouter({ pool, clickhouseConfig } = {}) {
             focus,
             source
           )
-          VALUES ($1, $2, 'weekly-plan', $3, $4, $5, 'frontend-dashboard')
+          VALUES ($1, $2, 'weekly-plan', $3, $4, $5, 'frontend')
           `,
           [payload.athlete, athleteId, payload.phase, payload.targetLoad, payload.focus],
         );
