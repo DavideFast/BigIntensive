@@ -181,6 +181,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - k6-shared:/k6-shared
+      - ./scripts/k6-backend.js:/app/backend-api/scripts/k6-backend.js:ro
     networks:
       - spark-net
 
@@ -206,7 +207,7 @@ services:
       - backend-api
     working_dir: /scripts/load
     volumes:
-      - ../services/backend/scripts:/scripts/load
+      - ./scripts/k6-backend.js:/scripts/load/k6-backend.js:ro
     networks:
       - spark-net
     entrypoint: ["k6"]
