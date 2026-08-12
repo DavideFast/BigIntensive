@@ -161,6 +161,12 @@ Per un controllo automatico rapido di stato deploy, rollout e servizi:
 bash k3s/validate-deploy.sh
 ```
 
+Se vuoi fare deploy e controlli in un solo comando:
+
+```bash
+bash k3s/validate-deploy.sh --deploy-first
+```
+
 Controlla prima la health del backend:
 
 ```powershell

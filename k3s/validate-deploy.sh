@@ -2,9 +2,22 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NAMESPACE="${NAMESPACE:-bigintensive}"
 KUBECTL_CMD="${KUBECTL_CMD:-sudo k3s kubectl}"
 ROLLOUT_TIMEOUT="${ROLLOUT_TIMEOUT:-180s}"
+DEPLOY_FIRST="false"
+
+usage() {
+  echo "Usage: bash k3s/validate-deploy.sh [--deploy-first]"
+}
+
+if [[ "${1:-}" == "--deploy-first" ]]; then
+  DEPLOY_FIRST="true"
+elif [[ -n "${1:-}" ]]; then
+  usage
+  exit 2
+fi
 
 PASS_COUNT=0
 WARN_COUNT=0
@@ -124,7 +137,19 @@ print_summary() {
   exit 0
 }
 
+run_deploy_if_requested() {
+  if [[ "$DEPLOY_FIRST" != "true" ]]; then
+    return
+  fi
+
+  echo "Running deploy-all before validation"
+  bash "$SCRIPT_DIR/deploy-all.sh"
+  pass "Deploy completed successfully"
+}
+
 echo "Running deployment validation for namespace '$NAMESPACE'"
+
+run_deploy_if_requested
 
 check_namespace
 check_rollout backend
