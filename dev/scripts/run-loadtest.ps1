@@ -9,10 +9,11 @@ param(
 $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$projectRoot = Resolve-Path (Join-Path $scriptDir "..\..")
-Set-Location $projectRoot
+$devRoot = Resolve-Path (Join-Path $scriptDir "..")
+$composeFile = Join-Path $devRoot "docker-compose.yml"
+Set-Location $devRoot
 
-$backendContainerIdRaw = docker compose ps -q backend-api
+$backendContainerIdRaw = docker compose -f $composeFile ps -q backend-api
 $backendContainerId = if ($backendContainerIdRaw) { $backendContainerIdRaw.Trim() } else { "" }
 if (-not $backendContainerId) {
   Write-Error "backend-api container not running. Start the dev stack first with 'docker compose up -d' from the dev folder."
@@ -39,4 +40,4 @@ $cmd = @(
   "/scripts/load/k6-backend.js"
 )
 
-docker compose @cmd
+docker compose -f $composeFile @cmd
