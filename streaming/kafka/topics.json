@@ -1,0 +1,61 @@
+{
+  "defaultPartitions": 3,
+  "defaultReplicationFactor": 1,
+  "topics": [
+    {
+      "name": "demo-events",
+      "partitions": 3,
+      "replicationFactor": 1,
+      "config": {
+        "cleanup.policy": "delete",
+        "retention.ms": "604800000"
+      }
+    },
+    {
+      "name": "heart-rate-events",
+      "partitions": 6,
+      "replicationFactor": 1,
+      "config": {
+        "cleanup.policy": "delete",
+        "retention.ms": "604800000",
+        "segment.bytes": "1073741824"
+      }
+    },
+    {
+      "name": "workout-events",
+      "partitions": 3,
+      "replicationFactor": 1,
+      "config": {
+        "cleanup.policy": "delete",
+        "retention.ms": "1209600000"
+      }
+    },
+    {
+      "name": "smartwatch-status",
+      "partitions": 3,
+      "replicationFactor": 1,
+      "config": {
+        "cleanup.policy": "delete",
+        "retention.ms": "259200000"
+      }
+    },
+    {
+      "name": "spark-analytics",
+      "partitions": 3,
+      "replicationFactor": 1,
+      "config": {
+        "cleanup.policy": "delete",
+        "retention.ms": "604800000"
+      }
+    },
+    {
+      "name": "system-events",
+      "partitions": 3,
+      "replicationFactor": 1,
+      "config": {
+        "cleanup.policy": "delete",
+        "retention.ms": "259200000"
+      }
+    }
+  ]
+}
