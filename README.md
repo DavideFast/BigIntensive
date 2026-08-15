@@ -4,18 +4,21 @@ Questo repository contiene l'applicazione BigIntensive e la sua infrastruttura K
 
 La strada consigliata e' il cluster k3s in [k3s/README.md](k3s/README.md). La vecchia orchestrazione Docker Compose resta nel repository solo come riferimento storico.
 
-## Cosa include
+## What is FitnessHub
 
-- 1 Spark Master
-- 2 Spark Worker
-- 1 Jupyter Notebook server integrato con Spark
-- 1 Citus Coordinator (PostgreSQL distribuito)
-- 2 Citus Worker
-- 1 Kafka broker (KRaft)
-- 1 Kafka UI
-- 1 Backend Express leggero (API eventi)
-- Notebook iniziale: `notebooks/quickstart.ipynb`
-- Job PySpark di esempio in `streaming/spark/jobs`
+This prokect aim to simulate a fitness application that permit to store workout sessions and running sessions. Every choice has been made considering an a
+application with 500'000+ users.
+This project is composed by the following components:
+
+- k3s cluster as orchestrator
+- React frontend
+- Express backend
+- Postgresql database
+- Clickhouse database
+- Kafka message broker
+- Spark streaming jobs
+- Jupyter notebook for data analysis
+- Other scripts for testing and data generation
 
 ## Architettura rapida
 
