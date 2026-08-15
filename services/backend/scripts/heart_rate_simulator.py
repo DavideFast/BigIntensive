@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import random
 from datetime import datetime
 
@@ -68,9 +69,19 @@ class HeartRateSimulator:
             return "z4_threshold"
         return "z5_vo2max"
 
+    def _advance_position(self, lat: float, lon: float, speed_kmh: float, dt_s: float, t_norm: float) -> tuple[float, float]:
+        # Percorso ad anello: la rotta compie un giro completo nell'arco della sessione
+        bearing = math.radians(360.0 * t_norm)
+        step_m = speed_kmh / 3.6 * dt_s
+        new_lat = lat + (step_m * math.cos(bearing)) / 111_320.0
+        new_lon = lon + (step_m * math.sin(bearing)) / (111_320.0 * math.cos(math.radians(lat)))
+        return new_lat, new_lon
+
     def generate_samples(self, sample_rate_hz: int = 1) -> list[dict]:
         samples: list[dict] = []
         num_samples = max(1, int(self.duration_ms / 1000 * sample_rate_hz))
+        dt_s = 1.0 / max(1, sample_rate_hz)
+        lat, lon = 42.9556, 12.7031  # partenza a Foligno
 
         for i in range(num_samples):
             t_norm = i / max(1, num_samples - 1)
@@ -85,11 +96,14 @@ class HeartRateSimulator:
                 "heart_rate_bpm": bpm,
                 "heart_rate_zone": self._zone(bpm),
                 "cadence_spm": cadence_spm,
-                "speed_kmh": speed_kmh,
                 "altitude_m": altitude_m,
+                "latitude": round(lat + random.uniform(-0.00002, 0.00002), 6),
+                "longitude": round(lon + random.uniform(-0.00002, 0.00002), 6),
                 "timestamp": datetime.utcnow().isoformat() + "Z",
                 "sample_index": i,
             }
             samples.append(sample)
+
+            lat, lon = self._advance_position(lat, lon, speed_kmh, dt_s, t_norm)
 
         return samples
