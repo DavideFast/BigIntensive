@@ -30,7 +30,7 @@ app.use(express.json());
 app.use(createSystemRouter());
 
 // ========================= LETTURE CITUS ESEMPIO  ============================
-app.get("/api/v1/readCitus", (req, res) => {
+app.get("/api/v1/readPostgresql", (req, res) => {
   const query = "SELECT * FROM allenamenti WHERE atleta_id = 1 LIMIT 10";
   context.pool.query(query, (err, result) => {
     if (err) {
@@ -41,7 +41,7 @@ app.get("/api/v1/readCitus", (req, res) => {
   });
 });
 
-app.get("/api/v1/writeCitus", (req, res) => {
+app.get("/api/v1/writePostgresql", (req, res) => {
   const query = `INSERT INTO allenamenti (atleta_id, sessione_id, frequenza_cardiaca, velocita, timestamp)
                  VALUES (1, 1, 120, 10.5, '2024-06-05 12:00:00')`;
   context.pool.query(query, (err, result) => {
@@ -49,6 +49,7 @@ app.get("/api/v1/writeCitus", (req, res) => {
       console.error("Errore query PostgreSQL:", err.message);
       return res.status(500).json({ success: false, error: err.message });
     }
+  });
 });
 
 // ========================= LETTURE CLICKHOUSE ESEMPIO  ============================
