@@ -20,7 +20,7 @@ This project is composed by the following components:
 - Jupyter notebook for data analysis
 - Other scripts for testing and data generation
 
-![Architettura rapida](Schema progetto Big Intensive Data Application.png)
+![Architettura rapida](./Schema progetto Big Intensive Data Application.png)
 
 ## Architettura rapida
 
