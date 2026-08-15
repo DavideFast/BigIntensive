@@ -12,5 +12,6 @@ public record HeartRateSample(
          double longitude,
          String timestamp,
          int sample_index,
-         long session_id) {
+         long session_id,
+         String event_type) {
 }

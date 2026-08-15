@@ -277,9 +277,31 @@ export function createSimulationRouter({ pythonRuntime, resolvePythonScript, kaf
       });
     }
 
+    // Marcatore di fine trasmissione: i consumer lo usano per liberare lo stato della sessione
+    let endMarkerPublished = true;
+    try {
+      await kafkaProducer.sendJsonBatch({
+        topic: session.topic,
+        events: [
+          {
+            athlete_id: String(closed.athlete_id),
+            session_id: closed.session_id,
+            event_type: "session_end",
+            sample_index: Number(closed.samples_sent) || 0,
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      });
+    } catch (err) {
+      // La sessione e gia chiusa a DB: un fallimento qui non deve invalidare la richiesta
+      console.error("Session end marker publish error:", err.message);
+      endMarkerPublished = false;
+    }
+
     return res.json({
       status: "ended",
       session: closed,
+      end_marker_published: endMarkerPublished,
       next_action: {
         type: "run_analysis",
         hint: `spark-submit spark/apps/smartwatch_analysis_from_clickhouse.py --athlete-id ${closed.athlete_id} --session-id ${closed.session_id}`,

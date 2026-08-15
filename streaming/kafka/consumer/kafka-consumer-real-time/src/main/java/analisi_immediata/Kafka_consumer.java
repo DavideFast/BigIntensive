@@ -92,6 +92,15 @@ public class Kafka_consumer {
                         HeartRateSample sample = mapper.readValue(kafkaRecord.value(), HeartRateSample.class);
                         String chiave = sample.athlete_id() + "#" + sample.session_id();
 
+                        // Marcatore di fine trasmissione: permette ai consumer di chiudere la sessione
+                        if ("session_end".equals(sample.event_type())) {
+                            finestre.remove(chiave);
+                            stati.remove(chiave);
+                            System.out.printf("%s sessione %d terminata dopo %d campioni%n",
+                                    sample.athlete_id(), sample.session_id(), sample.sample_index());
+                            continue;
+                        }
+
                         verificaStatoPericoloso(stati, chiave, sample);
 
                         Deque<HeartRateSample> finestra = finestre.computeIfAbsent(chiave, k -> new ArrayDeque<>());
@@ -100,6 +109,7 @@ public class Kafka_consumer {
                             finestra.removeFirst();
                         }
 
+                        // Se non ci sono almeno due campioni non si può calcolare la velocità
                         if (finestra.size() < 2) {
                             System.out.printf("%s idx=%d in attesa di campioni sufficienti%n",
                                     sample.athlete_id(), sample.sample_index());

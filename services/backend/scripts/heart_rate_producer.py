@@ -33,6 +33,16 @@ def send_heart_rate_data(
             producer.send(topic, value=json.dumps(sample).encode("utf-8"))
             time.sleep(1.0)
 
+        # Marcatore di fine trasmissione: permette ai consumer di chiudere la sessione
+        end_marker = {
+            "athlete_id": athlete_id,
+            "session_id": current_session_id,
+            "event_type": "session_end",
+            "sample_index": len(samples),
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+        }
+        producer.send(topic, value=json.dumps(end_marker).encode("utf-8"))
+
         print(f"Sent {len(samples)} heart-rate samples")
 
         if session < repeat - 1:

@@ -27,6 +27,16 @@ app.use(
 app.use(express.json());
 app.use(createSystemRouter());
 
+// ========================= LETTURE CITUS ESEMPIO  ============================
+app.get("/api/v1/readCitus", (req, res) => {});
+
+app.get("/api/v1/writeCitus", (req, res) => {});
+
+// ========================= LETTURE CLICKHOUSE ESEMPIO  ============================
+app.get("/api/v1/readClickhouse", (req, res) => {});
+
+app.get("/api/v1/writeClickhouse", (req, res) => {});
+
 // ========================== SIMULATION ROUTES START =============================
 app.use(
   createSimulationRouter({
