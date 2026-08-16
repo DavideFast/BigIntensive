@@ -19,25 +19,85 @@ DB_CONFIG = {
     "password": "password",
 }
 
+# ------------------------------------------------------------
+# NUMERO ATLETI
+# ------------------------------------------------------------
+
 NUM_ATHLETES = 500_000
 
-# Rilevazioni antropometriche
+
+# ------------------------------------------------------------
+# RILEVAZIONI ANTROPOMETRICHE
+# ------------------------------------------------------------
+
 MIN_ANTHROPOMETRIC = 4
 MAX_ANTHROPOMETRIC = 8
 
-# Allenamenti per atleta
-MIN_WORKOUTS = 150
-MAX_WORKOUTS = 365
 
-# Batch PostgreSQL
+# ------------------------------------------------------------
+# ALLENAMENTI TOTALI PER ATLETA
+#
+# IMPORTANTE:
+# questi valori rappresentano il numero TOTALE
+# di allenamenti nel periodo 2021-2026.
+# ------------------------------------------------------------
+
+MIN_WORKOUTS = 750
+MAX_WORKOUTS = 1500
+
+
+# ------------------------------------------------------------
+# FREQUENZA SETTIMANALE
+#
+# Usata per distribuire gli allenamenti.
+#
+# Il valore effettivo viene comunque adattato al numero
+# totale di allenamenti richiesto.
+# ------------------------------------------------------------
+
+MIN_WORKOUTS_PER_WEEK = 2
+MAX_WORKOUTS_PER_WEEK = 6
+
+
+# ------------------------------------------------------------
+# DIMENSIONE BATCH
+# ------------------------------------------------------------
+
 BATCH_SIZE = 10_000
 
-# Periodo storico
+
+# ------------------------------------------------------------
+# PERIODO
+# ------------------------------------------------------------
+
 START_DATE = date(2021, 1, 1)
 END_DATE = date(2026, 8, 16)
 
-# Seed
+
+# ------------------------------------------------------------
+# SEED
+# ------------------------------------------------------------
+
 SEED = 42
+
+
+# ------------------------------------------------------------
+# SVUOTAMENTO DATABASE
+#
+# False = non cancella dati esistenti
+# True  = cancella le tabelle prima di iniziare
+#
+# ATTENZIONE:
+# se True vengono cancellati anche i dati presenti
+# in riepilogo_corse e training_status_results.
+# ------------------------------------------------------------
+
+CLEAR_EXISTING_DATA = False
+
+
+# ============================================================
+# RANDOM
+# ============================================================
 
 random.seed(SEED)
 
@@ -47,13 +107,16 @@ Faker.seed(SEED)
 
 # ============================================================
 # ESERCIZI
+#
+# NOTA:
+# NON ESISTE PIÙ "tipo_esercizio".
 # ============================================================
 
 ESERCIZI = [
 
-    # -------------------------
+    # ========================================================
     # GAMBE
-    # -------------------------
+    # ========================================================
 
     (
         "Squat con bilanciere",
@@ -105,9 +168,10 @@ ESERCIZI = [
         "Sollevamento dei polpacci"
     ),
 
-    # -------------------------
+
+    # ========================================================
     # PETTO
-    # -------------------------
+    # ========================================================
 
     (
         "Panca piana",
@@ -139,9 +203,10 @@ ESERCIZI = [
         "Aperture ai cavi"
     ),
 
-    # -------------------------
+
+    # ========================================================
     # DORSO
-    # -------------------------
+    # ========================================================
 
     (
         "Trazioni alla sbarra",
@@ -173,9 +238,10 @@ ESERCIZI = [
         "Pullover ai cavi"
     ),
 
-    # -------------------------
+
+    # ========================================================
     # SPALLE
-    # -------------------------
+    # ========================================================
 
     (
         "Military press",
@@ -202,9 +268,10 @@ ESERCIZI = [
         "Trazione ai cavi per deltoidi posteriori"
     ),
 
-    # -------------------------
+
+    # ========================================================
     # BRACCIA
-    # -------------------------
+    # ========================================================
 
     (
         "Curl con bilanciere",
@@ -236,9 +303,10 @@ ESERCIZI = [
         "Dip a corpo libero per petto e tricipiti"
     ),
 
-    # -------------------------
+
+    # ========================================================
     # CORE
-    # -------------------------
+    # ========================================================
 
     (
         "Crunch",
@@ -267,6 +335,7 @@ ESERCIZI = [
 # ============================================================
 
 GRUPPI_ESERCIZI = {
+
     "gambe": [
         "Squat con bilanciere",
         "Squat frontale",
@@ -325,7 +394,7 @@ GRUPPI_ESERCIZI = {
 
 
 # ============================================================
-# PARAMETRI ESERCIZI
+# RANGE CARICHI
 # ============================================================
 
 CARICHI_BASE = {
@@ -375,7 +444,6 @@ CARICHI_BASE = {
 # ============================================================
 
 def random_date(start, end):
-    """Data casuale inclusiva tra start ed end."""
 
     if start > end:
         return None
@@ -387,8 +455,11 @@ def random_date(start, end):
     )
 
 
+# ============================================================
+# DATA DI NASCITA
+# ============================================================
+
 def random_birth_date():
-    """Età compresa tra 18 e 55 anni."""
 
     min_birth = date(
         END_DATE.year - 55,
@@ -409,14 +480,14 @@ def random_birth_date():
 
 
 # ============================================================
-# ANTROPOMETRIA
+# ALTEZZA
 # ============================================================
 
 def generate_height(sex):
 
     if sex == "M":
 
-        height = random.gauss(
+        value = random.gauss(
             178,
             7
         )
@@ -424,11 +495,11 @@ def generate_height(sex):
         return int(
             max(
                 155,
-                min(205, height)
+                min(205, value)
             )
         )
 
-    height = random.gauss(
+    value = random.gauss(
         165,
         7
     )
@@ -436,12 +507,19 @@ def generate_height(sex):
     return int(
         max(
             145,
-            min(195, height)
+            min(195, value)
         )
     )
 
 
-def generate_weight(sex, height):
+# ============================================================
+# PESO
+# ============================================================
+
+def generate_weight(
+    sex,
+    height
+):
 
     if sex == "M":
 
@@ -470,6 +548,10 @@ def generate_weight(sex, height):
     )
 
 
+# ============================================================
+# ANTROPOMETRIA
+# ============================================================
+
 def generate_anthropometric_values(
     sex,
     birth_date
@@ -480,7 +562,9 @@ def generate_anthropometric_values(
         MAX_ANTHROPOMETRIC
     )
 
-    height = generate_height(sex)
+    height = generate_height(
+        sex
+    )
 
     first_date = max(
         START_DATE,
@@ -494,51 +578,44 @@ def generate_anthropometric_values(
     if first_date >= END_DATE:
         return []
 
-    # random.sample evita automaticamente
-    # date duplicate
     total_days = (
         END_DATE - first_date
     ).days
 
-    if total_days < number:
-        number = total_days
+    number = min(
+        number,
+        total_days + 1
+    )
 
-    timestamps = sorted(
+    offsets = sorted(
         random.sample(
-            range(
-                total_days + 1
-            ),
+            range(total_days + 1),
             number
         )
     )
 
-    initial_weight = generate_weight(
+    weight = generate_weight(
         sex,
         height
     )
 
     result = []
 
-    for i, offset in enumerate(timestamps):
+    for index, offset in enumerate(offsets):
 
         measurement_date = (
             first_date +
             timedelta(days=offset)
         )
 
-        if i > 0:
+        if index > 0:
 
-            initial_weight += random.gauss(
+            weight += random.gauss(
                 0,
                 1.2
             )
 
-        weight = (
-            initial_weight +
-            random.gauss(0, 1.5)
-        )
-
-        weight = round(
+        measured_weight = round(
             max(
                 40,
                 min(180, weight)
@@ -549,7 +626,9 @@ def generate_anthropometric_values(
         result.append(
             (
                 height,
-                Decimal(str(weight)),
+                Decimal(
+                    str(measured_weight)
+                ),
                 measurement_date
             )
         )
@@ -558,7 +637,7 @@ def generate_anthropometric_values(
 
 
 # ============================================================
-# GENERAZIONE DI UN ESERCIZIO
+# GENERAZIONE ESERCIZIO
 # ============================================================
 
 def generate_exercise_data(
@@ -566,23 +645,39 @@ def generate_exercise_data(
     sex
 ):
 
+    # --------------------------------------------------------
     # PLANK
+    # --------------------------------------------------------
+
     if exercise_name == "Plank":
 
         return {
             "nome": exercise_name,
-            "serie": random.randint(3, 5),
+            "serie": random.randint(
+                3,
+                5
+            ),
             "durata_secondi": random.choice(
-                [30, 45, 60, 75, 90]
+                [
+                    30,
+                    45,
+                    60,
+                    75,
+                    90
+                ]
             )
         }
 
-    # RANGE CARICO
-    min_weight, max_weight = CARICHI_BASE[
-        exercise_name
-    ]
+    # --------------------------------------------------------
+    # CARICO
+    # --------------------------------------------------------
 
-    # Le donne hanno mediamente carichi inferiori
+    min_weight, max_weight = (
+        CARICHI_BASE[
+            exercise_name
+        ]
+    )
+
     if sex == "F":
 
         min_weight *= 0.70
@@ -595,8 +690,14 @@ def generate_exercise_data(
 
     return {
         "nome": exercise_name,
-        "serie": random.randint(3, 5),
-        "ripetizioni": random.randint(6, 15),
+        "serie": random.randint(
+            3,
+            5
+        ),
+        "ripetizioni": random.randint(
+            6,
+            15
+        ),
         "carico_kg": round(
             weight,
             1
@@ -605,7 +706,7 @@ def generate_exercise_data(
 
 
 # ============================================================
-# ALLENAMENTO
+# GENERAZIONE ALLENAMENTO
 # ============================================================
 
 def generate_strength_workout(
@@ -614,18 +715,26 @@ def generate_strength_workout(
     sex
 ):
 
-    categoria = random.choice([
-        "full_body",
-        "parte_superiore",
-        "parte_inferiore",
-        "ipertrofia",
-        "forza"
-    ])
+    categoria = random.choice(
+        [
+            "full_body",
+            "parte_superiore",
+            "parte_inferiore",
+            "ipertrofia",
+            "forza"
+        ]
+    )
+
+    # --------------------------------------------------------
+    # SELEZIONE GRUPPI
+    # --------------------------------------------------------
 
     if categoria == "full_body":
 
         groups = random.sample(
-            list(GRUPPI_ESERCIZI.keys()),
+            list(
+                GRUPPI_ESERCIZI.keys()
+            ),
             4
         )
 
@@ -655,25 +764,37 @@ def generate_strength_workout(
     else:
 
         groups = random.sample(
-            list(GRUPPI_ESERCIZI.keys()),
-            random.randint(2, 4)
+            list(
+                GRUPPI_ESERCIZI.keys()
+            ),
+            random.randint(
+                2,
+                4
+            )
         )
 
-    candidate_exercises = []
+    # --------------------------------------------------------
+    # ESERCIZI
+    # --------------------------------------------------------
+
+    candidates = []
 
     for group in groups:
 
-        candidate_exercises.extend(
+        candidates.extend(
             GRUPPI_ESERCIZI[group]
         )
 
     number_exercises = random.randint(
         5,
-        min(8, len(candidate_exercises))
+        min(
+            8,
+            len(candidates)
+        )
     )
 
     selected = random.sample(
-        candidate_exercises,
+        candidates,
         number_exercises
     )
 
@@ -687,6 +808,10 @@ def generate_strength_workout(
                 sex
             )
         )
+
+    # --------------------------------------------------------
+    # JSONB
+    # --------------------------------------------------------
 
     struttura = {
 
@@ -715,12 +840,251 @@ def generate_strength_workout(
 
 
 # ============================================================
+# GENERAZIONE DATE ALLENAMENTI
+#
+# Questa è la parte importante:
+#
+# - 750-1500 allenamenti TOTALI
+# - distribuiti per settimana
+# - massimo 6 allenamenti/settimana
+# - massimo 1 allenamento/giorno
+# ============================================================
+
+def generate_workout_dates(
+    training_start,
+    training_end,
+    target_workouts
+):
+
+    if training_start >= training_end:
+
+        return []
+
+    available_days = (
+        training_end -
+        training_start
+    ).days + 1
+
+    # --------------------------------------------------------
+    # Non possiamo superare un allenamento al giorno.
+    # --------------------------------------------------------
+
+    target_workouts = min(
+        target_workouts,
+        available_days
+    )
+
+    # --------------------------------------------------------
+    # Creiamo tutte le settimane.
+    #
+    # Una settimana viene rappresentata come:
+    # lista di date disponibili.
+    # --------------------------------------------------------
+
+    weeks = []
+
+    current = training_start
+
+    while current <= training_end:
+
+        week_end = min(
+            current + timedelta(days=6),
+            training_end
+        )
+
+        days = []
+
+        d = current
+
+        while d <= week_end:
+
+            days.append(d)
+
+            d += timedelta(days=1)
+
+        weeks.append(days)
+
+        current = week_end + timedelta(days=1)
+
+    if not weeks:
+
+        return []
+
+    # --------------------------------------------------------
+    # Distribuzione iniziale.
+    #
+    # Partiamo da un allenamento per settimana e poi
+    # aggiungiamo progressivamente gli altri.
+    # --------------------------------------------------------
+
+    selected_dates = []
+
+    # settimane sufficienti
+    # per almeno 2 allenamenti?
+    minimum_per_week = MIN_WORKOUTS_PER_WEEK
+
+    # --------------------------------------------------------
+    # Prima distribuiamo il target in modo proporzionale
+    # alle settimane disponibili.
+    # --------------------------------------------------------
+
+    number_of_weeks = len(weeks)
+
+    # Frequenza media necessaria
+    average_per_week = (
+        target_workouts /
+        number_of_weeks
+    )
+
+    # --------------------------------------------------------
+    # Costruiamo il numero di allenamenti per ogni settimana.
+    # --------------------------------------------------------
+
+    weekly_counts = [
+        max(
+            1,
+            min(
+                MAX_WORKOUTS_PER_WEEK,
+                int(
+                    average_per_week
+                )
+            )
+        )
+        for _ in weeks
+    ]
+
+    # --------------------------------------------------------
+    # Correzione del totale.
+    # --------------------------------------------------------
+
+    current_total = sum(
+        weekly_counts
+    )
+
+    # Aggiungiamo allenamenti finché raggiungiamo il target.
+    while current_total < target_workouts:
+
+        possible = [
+            i
+            for i, count
+            in enumerate(
+                weekly_counts
+            )
+            if count <
+            min(
+                MAX_WORKOUTS_PER_WEEK,
+                len(weeks[i])
+            )
+        ]
+
+        if not possible:
+            break
+
+        index = random.choice(
+            possible
+        )
+
+        weekly_counts[index] += 1
+
+        current_total += 1
+
+    # --------------------------------------------------------
+    # Togliamo allenamenti se abbiamo superato il target.
+    # --------------------------------------------------------
+
+    while current_total > target_workouts:
+
+        possible = [
+            i
+            for i, count
+            in enumerate(
+                weekly_counts
+            )
+            if count >
+            MIN_WORKOUTS_PER_WEEK
+        ]
+
+        if not possible:
+            break
+
+        index = random.choice(
+            possible
+        )
+
+        weekly_counts[index] -= 1
+
+        current_total -= 1
+
+    # --------------------------------------------------------
+    # Generiamo le date effettive.
+    # --------------------------------------------------------
+
+    for week_index, days in enumerate(weeks):
+
+        count = weekly_counts[
+            week_index
+        ]
+
+        count = min(
+            count,
+            len(days)
+        )
+
+        chosen = random.sample(
+            days,
+            count
+        )
+
+        selected_dates.extend(
+            chosen
+        )
+
+    selected_dates.sort()
+
+    return selected_dates
+
+
+# ============================================================
+# SVUOTA DATABASE
+# ============================================================
+
+def clear_database(conn):
+
+    print(
+        "ATTENZIONE: cancellazione dati..."
+    )
+
+    with conn.cursor() as cur:
+
+        cur.execute(
+            """
+            TRUNCATE TABLE
+                training_status_results,
+                riepilogo_corse,
+                allenamenti,
+                anthropometric_values,
+                esercizi,
+                athletes
+            RESTART IDENTITY CASCADE
+            """
+        )
+
+    conn.commit()
+
+    print(
+        "Database svuotato."
+    )
+
+
+# ============================================================
 # ESERCIZI
 # ============================================================
 
 def insert_exercises(conn):
 
-    print("Inserimento esercizi...")
+    print(
+        "Inserimento esercizi..."
+    )
 
     with conn.cursor() as cur:
 
@@ -747,7 +1111,8 @@ def insert_exercises(conn):
     conn.commit()
 
     print(
-        f"Inseriti {len(ESERCIZI)} esercizi."
+        f"Inseriti "
+        f"{len(ESERCIZI)} esercizi."
     )
 
 
@@ -772,20 +1137,29 @@ def insert_athletes(conn):
         ):
 
             sesso = random.choice(
-                ["M", "F"]
+                [
+                    "M",
+                    "F"
+                ]
             )
 
             if sesso == "M":
 
-                nome = fake.first_name_male()
+                nome = (
+                    fake.first_name_male()
+                )
 
             else:
 
-                nome = fake.first_name_female()
+                nome = (
+                    fake.first_name_female()
+                )
 
             cognome = fake.last_name()
 
-            birth_date = random_birth_date()
+            birth_date = (
+                random_birth_date()
+            )
 
             batch.append(
                 (
@@ -807,7 +1181,7 @@ def insert_athletes(conn):
                 conn.commit()
 
                 print(
-                    f"Atleti inseriti: "
+                    f"Atleti: "
                     f"{athlete_id:,}/"
                     f"{NUM_ATHLETES:,}"
                 )
@@ -823,7 +1197,10 @@ def insert_athletes(conn):
 
             conn.commit()
 
+    # --------------------------------------------------------
     # Aggiorna sequence SERIAL
+    # --------------------------------------------------------
+
     with conn.cursor() as cur:
 
         cur.execute(
@@ -843,10 +1220,15 @@ def insert_athletes(conn):
 
     conn.commit()
 
-    print("Atleti completati.")
+    print(
+        "Atleti completati."
+    )
 
 
-def copy_athletes(cur, batch):
+def copy_athletes(
+    cur,
+    batch
+):
 
     with cur.copy(
         """
@@ -871,10 +1253,13 @@ def copy_athletes(cur, batch):
 # ANTROPOMETRIA
 # ============================================================
 
-def insert_anthropometric_values(conn):
+def insert_anthropometric_values(
+    conn
+):
 
     print(
-        "Generazione dati antropometrici..."
+        "Generazione dati "
+        "antropometrici..."
     )
 
     batch = []
@@ -959,6 +1344,10 @@ def insert_anthropometric_values(conn):
 
             conn.commit()
 
+    print(
+        "Antropometria completata."
+    )
+
 
 def copy_anthropometry(
     cur,
@@ -989,12 +1378,27 @@ def copy_anthropometry(
 
 def insert_workouts(conn):
 
+    print()
     print(
-        "Generazione allenamenti "
-        "di palestra..."
+        "Generazione allenamenti..."
     )
 
+    print(
+        f"Range per atleta: "
+        f"{MIN_WORKOUTS} - "
+        f"{MAX_WORKOUTS}"
+    )
+
+    print(
+        "Tipo: SOLO PALESTRA / FORZA"
+    )
+
+    print()
+
     batch = []
+
+    total_workouts = 0
+    processed = 0
 
     with conn.cursor() as cur:
 
@@ -1008,8 +1412,6 @@ def insert_workouts(conn):
             ORDER BY id
             """
         )
-
-        processed = 0
 
         while True:
 
@@ -1026,11 +1428,11 @@ def insert_workouts(conn):
                 sex
             ) in rows:
 
-                # Numero allenamenti
-                num_workouts = random.randint(
-                    MIN_WORKOUTS,
-                    MAX_WORKOUTS
-                )
+                # ------------------------------------------------
+                # Inizio attività.
+                #
+                # L'atleta non può allenarsi prima dei 18 anni.
+                # ------------------------------------------------
 
                 training_start = max(
                     START_DATE,
@@ -1042,36 +1444,33 @@ def insert_workouts(conn):
                 )
 
                 if training_start >= END_DATE:
+
                     continue
 
-                # Creiamo un insieme di date
-                # per impedire più allenamenti
-                # nello stesso giorno.
-                available_days = (
-                    END_DATE -
-                    training_start
-                ).days + 1
+                # ------------------------------------------------
+                # Numero totale di allenamenti.
+                # ------------------------------------------------
 
-                num_workouts = min(
-                    num_workouts,
-                    available_days
+                target_workouts = random.randint(
+                    MIN_WORKOUTS,
+                    MAX_WORKOUTS
                 )
 
-                workout_offsets = sorted(
-                    random.sample(
-                        range(
-                            available_days
-                        ),
-                        num_workouts
+                # ------------------------------------------------
+                # Generazione delle date.
+                #
+                # Distribuzione settimanale.
+                # ------------------------------------------------
+
+                workout_dates = (
+                    generate_workout_dates(
+                        training_start,
+                        END_DATE,
+                        target_workouts
                     )
                 )
 
-                for offset in workout_offsets:
-
-                    workout_date = (
-                        training_start +
-                        timedelta(days=offset)
-                    )
+                for workout_date in workout_dates:
 
                     workout = (
                         generate_strength_workout(
@@ -1085,6 +1484,12 @@ def insert_workouts(conn):
                         workout
                     )
 
+                    total_workouts += 1
+
+                    # ------------------------------------------------
+                    # SALVATAGGIO A BLOCCHI
+                    # ------------------------------------------------
+
                     if len(batch) >= BATCH_SIZE:
 
                         copy_workouts(
@@ -1096,13 +1501,22 @@ def insert_workouts(conn):
 
                         batch.clear()
 
+                        print(
+                            f"Allenamenti inseriti: "
+                            f"{total_workouts:,}"
+                        )
+
             processed += len(rows)
 
             print(
-                f"Allenamenti: "
+                f"Atleti processati: "
                 f"{processed:,}/"
                 f"{NUM_ATHLETES:,}"
             )
+
+        # --------------------------------------------------------
+        # Ultimo batch
+        # --------------------------------------------------------
 
         if batch:
 
@@ -1113,8 +1527,39 @@ def insert_workouts(conn):
 
             conn.commit()
 
+            batch.clear()
+
+    # ------------------------------------------------------------
+    # Aggiorna sequence
+    # ------------------------------------------------------------
+
+    with conn.cursor() as cur:
+
+        cur.execute(
+            """
+            SELECT setval(
+                pg_get_serial_sequence(
+                    'allenamenti',
+                    'id'
+                ),
+                (
+                    SELECT MAX(id)
+                    FROM allenamenti
+                )
+            )
+            """
+        )
+
+    conn.commit()
+
+    print()
     print(
         "Allenamenti completati."
+    )
+
+    print(
+        f"Totale allenamenti: "
+        f"{total_workouts:,}"
     )
 
 
@@ -1149,77 +1594,127 @@ def copy_workouts(
 def main():
 
     print()
-    print("=" * 65)
+    print("=" * 70)
     print("GENERATORE DATASET ATLETI")
-    print("=" * 65)
+    print("=" * 70)
 
     print(
-        f"Atleti:              "
+        f"Atleti:                 "
         f"{NUM_ATHLETES:,}"
     )
 
     print(
-        "Allenamenti:         "
-        "SOLO PALESTRA"
+        f"Allenamenti per atleta: "
+        f"{MIN_WORKOUTS} - "
+        f"{MAX_WORKOUTS}"
     )
 
     print(
-        "Riepilogo corse:     "
-        "NON GENERATO"
+        f"Allenamenti/settimana:  "
+        f"{MIN_WORKOUTS_PER_WEEK} - "
+        f"{MAX_WORKOUTS_PER_WEEK}"
     )
 
     print(
-        "Training status:     "
-        "NON GENERATO"
+        "Tipo allenamento:       SOLO FORZA"
     )
 
     print(
-        "Tipo allenamento:    "
-        "forza"
+        "Corsa:                   NO"
     )
 
     print(
-        f"Seed:                "
+        "Training status:         NO"
+    )
+
+    print(
+        f"Periodo:                "
+        f"{START_DATE} → {END_DATE}"
+    )
+
+    print(
+        f"Batch:                   "
+        f"{BATCH_SIZE:,}"
+    )
+
+    print(
+        f"Seed:                    "
         f"{SEED}"
     )
 
-    print("=" * 65)
+    print("=" * 70)
     print()
 
     with psycopg.connect(
         **DB_CONFIG
     ) as conn:
 
-        # 1
-        insert_exercises(conn)
+        # ----------------------------------------------------
+        # SVUOTAMENTO OPZIONALE
+        # ----------------------------------------------------
 
-        # 2
-        insert_athletes(conn)
+        if CLEAR_EXISTING_DATA:
 
-        # 3
+            clear_database(
+                conn
+            )
+
+        # ----------------------------------------------------
+        # 1. ESERCIZI
+        # ----------------------------------------------------
+
+        insert_exercises(
+            conn
+        )
+
+        # ----------------------------------------------------
+        # 2. ATLETI
+        # ----------------------------------------------------
+
+        insert_athletes(
+            conn
+        )
+
+        # ----------------------------------------------------
+        # 3. ANTROPOMETRIA
+        # ----------------------------------------------------
+
         insert_anthropometric_values(
             conn
         )
 
-        # 4
-        insert_workouts(conn)
+        # ----------------------------------------------------
+        # 4. ALLENAMENTI
+        # ----------------------------------------------------
+
+        insert_workouts(
+            conn
+        )
 
     print()
-    print("=" * 65)
+    print("=" * 70)
     print("GENERAZIONE COMPLETATA")
-    print("=" * 65)
+    print("=" * 70)
     print()
+
     print("Tabelle popolate:")
     print("  ✓ athletes")
     print("  ✓ anthropometric_values")
     print("  ✓ allenamenti")
     print("  ✓ esercizi")
+
     print()
+
     print("Tabelle NON popolate:")
     print("  - riepilogo_corse")
     print("  - training_status_results")
+
     print()
 
+
+# ============================================================
+# AVVIO
+# ============================================================
 
 if __name__ == "__main__":
     main()
