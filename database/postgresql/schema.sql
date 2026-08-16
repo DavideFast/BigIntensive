@@ -21,7 +21,7 @@ CREATE TABLE anthropometric_values  (
 -- Tabella allenamenti
 CREATE TABLE allenamenti (
     id SERIAL PRIMARY KEY,
-    athlete_id INT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE CASCADE,
+    athlete_id INT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE ,
     data_allenamento DATE NOT NULL,
     tipo_allenamento VARCHAR(50) CHECK (tipo_allenamento IN ('forza', 'endurance', 'mobilità')),
     durata_minuti INT CHECK (durata_minuti > 0),
@@ -32,7 +32,7 @@ CREATE TABLE allenamenti (
 -- Riepilogo corse
 CREATE TABLE riepilogo_corse (
     id SERIAL PRIMARY KEY,
-    athlete_id INT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE CASCADE,
+    athlete_id INT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE ,
     data_corsa DATE NOT NULL,
     distanza_km DECIMAL(5, 2) CHECK (distanza_km > 0),
     durata_minuti INT CHECK (durata_minuti > 0),
@@ -54,7 +54,7 @@ CREATE TABLE esercizi (
 
 CREATE TABLE training_status_results (
     id SERIAL PRIMARY KEY,
-    athlete_id INT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE CASCADE,
+    athlete_id INT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE,
     result_date DATE NOT NULL,
     valore DECIMAL(5, 2),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
