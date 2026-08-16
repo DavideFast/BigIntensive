@@ -12,7 +12,7 @@ import httpx
 # ============================================================
 
 ENDPOINT_URL = (
-    "http://localhost:8000/api/v1/pushToKafka"
+    "http://localhost:3001/api/v1/pushToKafka"
 )
 
 NUM_ATHLETES = 20_000
