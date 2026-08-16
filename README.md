@@ -11,13 +11,13 @@ application with 500'000+ users.
 This project is composed by the following components:
 
 - k3s cluster as orchestrator
-- React frontend
-- Express backend
-- Postgresql database
-- Clickhouse database
-- Kafka message broker
-- Spark streaming jobs
-- Jupyter notebook for data analysis
+- React frontend (port 5173)
+- Express backend (port 3001)
+- Postgresql database (port 5432)
+- Clickhouse database (port 8123)
+- Kafka message broker (port 9092)
+- Spark streaming jobs (port 7077)
+- Jupyter notebook for data analysis (port 8888)
 - Other scripts for testing and data generation
 
 ![Architettura rapida](./Schema-progetto-Big-Intensive-Data-Application.png)
