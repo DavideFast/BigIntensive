@@ -111,7 +111,7 @@ def get_last_allenamento_id(ch):
     result = ch.query(
         """
         SELECT max(allenamento_id)
-        FROM sport.allenamenti_raw
+        FROM sport.allenamenti
         """
     )
 
