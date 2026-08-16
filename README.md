@@ -50,7 +50,7 @@ It store all the data about user information and gym workouts. Citus extension i
 
 ### Clickhouse
 
-It store all the data about gym workouts and running sessions. It's used for analytics and data analysis. It is a practice known as ELT or ETL.
+It store all the data about gym workouts and running sessions. It's used for analytics and data analysis. It is a practice known as ELT.
 
 ### Kafka
 
