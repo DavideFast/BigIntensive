@@ -657,6 +657,11 @@ def generate_exercise_data(
                 3,
                 5
             ),
+            "recupero_secondi": random.choice([
+                20,
+                40,
+                60,
+    ]),
             "durata_secondi": random.choice(
                 [
                     30,
@@ -698,6 +703,14 @@ def generate_exercise_data(
             6,
             15
         ),
+        "recupero_secondi": random.choice([
+        60,
+        75,
+        90,
+        120,
+        150,
+        180
+    ]),
         "carico_kg": round(
             weight,
             1
