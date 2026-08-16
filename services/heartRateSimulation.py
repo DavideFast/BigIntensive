@@ -1,8 +1,3 @@
-ChatGPT ha detto:
-Sì. Ti lascio la versione definitiva, con sessioni indipendenti, durata 15–120 minuti, partenze sfalsate, evento end e pausa prima della sessione successiva.
-
-Ho anche corretto un punto importante rispetto alla versione precedente: non tutti i 20.000 atleti sono necessariamente attivi contemporaneamente. Questo è coerente con il comportamento reale che hai descritto. Il numero di eventi/s sarà quindi variabile.
-
 import asyncio
 import math
 import random
@@ -17,7 +12,7 @@ import httpx
 # ============================================================
 
 ENDPOINT_URL = (
-    "http://localhost:8000/api/running/samples"
+    "http://localhost:8000/api/v1/pushToKafka"
 )
 
 NUM_ATHLETES = 20_000

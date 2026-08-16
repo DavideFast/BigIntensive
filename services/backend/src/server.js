@@ -107,6 +107,7 @@ app.get("/api/v1/readClickhouse", async (req, res) => {
   res.json({ success: true, count: data.length, data: data });
 });
 
+app.post("/api/v1/pushToKafka", async (req, res) => {});
 // ========================== SIMULATION ROUTES START =============================
 app.use(
   createSimulationRouter({
