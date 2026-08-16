@@ -42,27 +42,6 @@ app.get("/api/v1/readPostgresql", (req, res) => {
 });
 
 app.get("/api/v1/writePostgresql", (req, res) => {
-  const query = `INSERT INTO allenamenti (atleta_id, sessione_id, frequenza_cardiaca, velocita, timestamp)
-                 VALUES (1, 1, 120, 10.5, '2024-06-05 12:00:00')`;
-  context.pool.query(query, (err, result) => {
-    if (err) {
-      console.error("Errore query PostgreSQL:", err.message);
-      return res.status(500).json({ success: false, error: err.message });
-    }
-  });
-});
-
-// ========================= LETTURE CLICKHOUSE ESEMPIO  ============================
-app.get("/api/v1/readClickhouse", async (req, res) => {
-  const valore = await createClickhouseClient.query({
-    query: "SELECT * FROM allenamenti WHERE atleta_id = 1 LIMIT 10",
-    format: "JSONEachRow",
-  });
-  const data = await valore.json();
-  res.json({ success: true, count: data.length, data: data });
-});
-
-app.post("/api/v1/writeClickhouse", async (req, res) => {
   const allenamento = {
     allenamento: {
       data: "2026-08-15",
@@ -109,8 +88,20 @@ app.post("/api/v1/writeClickhouse", async (req, res) => {
       ],
     },
   };
+  const query = `INSERT INTO allenamenti (atleta_id, sessione_id, frequenza_cardiaca, velocita, timestamp)
+                 VALUES (1, 1, 120, 10.5, '2024-06-05 12:00:00')`;
+  context.pool.query(query, (err, result) => {
+    if (err) {
+      console.error("Errore query PostgreSQL:", err.message);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+});
+
+// ========================= LETTURE CLICKHOUSE ESEMPIO  ============================
+app.get("/api/v1/readClickhouse", async (req, res) => {
   const valore = await createClickhouseClient.query({
-    query: "INSERT INTO allenamenti (atleta_id, sessione_id, frequenza_cardiaca, velocita, timestamp) VALUES (1, 1, 120, 10.5, '2024-06-05 12:00:00')",
+    query: "SELECT * FROM allenamenti WHERE atleta_id = 1 LIMIT 10",
     format: "JSONEachRow",
   });
   const data = await valore.json();
