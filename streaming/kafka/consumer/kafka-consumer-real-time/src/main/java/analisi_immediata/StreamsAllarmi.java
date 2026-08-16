@@ -28,8 +28,7 @@ public class StreamsAllarmi {
     private static final int SECONDI_IMMOBILE = 30;
     private static final double RAGGIO_TERRA_M = 6_371_000.0;
 
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     /** Stato persistito nello state store, serializzato come JSON. */
     public record StatoSessione(double latitudine, double longitudine, int indice, boolean allarmeInviato) {
@@ -38,19 +37,9 @@ public class StreamsAllarmi {
     private static double distanzaMetri(double lat1, double lon1, double lat2, double lon2) {
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
                 * Math.sin(dLon / 2) * Math.sin(dLon / 2);
         return 2 * RAGGIO_TERRA_M * Math.asin(Math.min(1.0, Math.sqrt(a)));
-    }
-
-    private static String chiaveDa(String json) {
-        try {
-            JsonNode nodo = MAPPER.readTree(json);
-            return nodo.path("athlete_id").asText() + "#" + nodo.path("session_id").asLong();
-        } catch (Exception e) {
-            return "sconosciuto";
-        }
     }
 
     private static final class RilevatoreImmobilita implements Processor<String, String, String, String> {
@@ -84,8 +73,7 @@ public class StreamsAllarmi {
                 return;
             }
 
-            double spostamento = distanzaMetri(precedente.latitudine(), precedente.longitudine(),
-                    sample.latitude(), sample.longitude());
+            double spostamento = distanzaMetri(precedente.latitudine(), precedente.longitudine(),sample.latitude(), sample.longitude());
 
             if (spostamento > SOGLIA_MOVIMENTO_M) {
                 salvaStato(record.key(), new StatoSessione(sample.latitude(), sample.longitude(), sample.sample_index(), false));
@@ -94,12 +82,10 @@ public class StreamsAllarmi {
 
             int fermoDaSecondi = sample.sample_index() - precedente.indice();
             if (fermoDaSecondi >= SECONDI_IMMOBILE && !precedente.allarmeInviato()) {
-                salvaStato(record.key(), new StatoSessione(precedente.latitudine(), precedente.longitudine(),
-                        precedente.indice(), true));
+                salvaStato(record.key(), new StatoSessione(precedente.latitudine(), precedente.longitudine(),precedente.indice(), true));
 
                 String messaggio = String.format("Atleta %s fermo da %d s in posizione %.6f, %.6f (bpm %.0f)",
-                        sample.athlete_id(), fermoDaSecondi, sample.latitude(), sample.longitude(),
-                        sample.heart_rate_bpm());
+                        sample.athlete_id(), fermoDaSecondi, sample.latitude(), sample.longitude(),sample.heart_rate_bpm());
 
                 AllarmeNotifier.invia(messaggio);
                 context.forward(record.withValue(messaggio));
@@ -128,25 +114,27 @@ public class StreamsAllarmi {
     }
 
     public static void main(String[] args) {
+
+        // Configurazione di Kafka Streams
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "rilevatore-immobilita");
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
 
+        // Creazione dello state store persistente
         StoreBuilder<KeyValueStore<String, String>> store = Stores.keyValueStoreBuilder(
                 Stores.persistentKeyValueStore(NOME_STORE), Serdes.String(), Serdes.String());
 
+        //Creazione della pipeline di elaborazione dei messaggi
         StreamsBuilder builder = new StreamsBuilder();
         builder.addStateStore(store);
 
-        KStream<String, String> sorgente = builder.stream(TOPIC_INGRESSO,
-                Consumed.with(Serdes.String(), Serdes.String()));
-
-        // I messaggi arrivano senza chiave: va ricalcolata e ridistribuita per allineare le partizioni allo store
-        sorgente.selectKey((chiave, valore) -> chiaveDa(valore))
-                .repartition(Repartitioned.with(Serdes.String(), Serdes.String()))
-                .process(RilevatoreImmobilita::new, NOME_STORE);
+        // Lettura dei messaggi dal topic di ingresso
+        KStream<String, String> sorgente = builder.stream(TOPIC_INGRESSO, Consumed.with(Serdes.String(), Serdes.String()));
+        
+        // I messaggi arrivano con la chiave: va ricalcolata e ridistribuita per allineare le partizioni allo store
+        sorgente.process(RilevatoreImmobilita::new, NOME_STORE);
 
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
         Runtime.getRuntime().addShutdownHook(new Thread(streams::close));

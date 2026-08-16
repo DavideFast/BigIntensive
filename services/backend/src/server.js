@@ -10,6 +10,13 @@ import { createSparkJobsRouter } from "./routes/sparkJobsRoutes.js";
 import { createServerContext } from "./bootstrap/serverContext.js";
 import { createClickhouseClient } from "./db/pool.js";
 import { createDbPool } from "./db/pool.js";
+const { Kafka } = require("kafkajs");
+
+const kafka = new Kafka({
+  clientId: "my-express-api",
+  brokers: ["localhost:9092"],
+});
+const producer = kafka.producer();
 
 dotenv.config();
 const context = createServerContext(import.meta.url);
@@ -107,7 +114,26 @@ app.get("/api/v1/readClickhouse", async (req, res) => {
   res.json({ success: true, count: data.length, data: data });
 });
 
-app.post("/api/v1/pushToKafka", async (req, res) => {});
+app.post("/api/v1/pushToKafka", async (req, res) => {
+  try {
+    await producer.send({
+      topic: "my-topic",
+      messages: [{ key: req.body.atleta_id.toString() + "-" + req.body.sessione_id.toString(), value: JSON.stringify(req.body) }],
+    });
+
+    res.status(202).json({
+      success: true,
+      message: "Evento inviato a Kafka",
+    });
+  } catch (error) {
+    console.error("Errore Kafka:", error);
+
+    res.status(500).json({
+      success: false,
+      error: "Impossibile inviare l'evento a Kafka",
+    });
+  }
+});
 // ========================== SIMULATION ROUTES START =============================
 app.use(
   createSimulationRouter({
@@ -164,9 +190,19 @@ app.use(
 );
 
 // ============================ AVVIO ===============================
-app.listen(context.port, () => {
-  console.log(`Backend API listening on http://localhost:${context.port}`);
-});
+
+async function start() {
+  await producer.connect();
+
+  app.listen(context.port, () => {
+    console.log(`Backend API listening on http://localhost:${context.port}`);
+  });
+}
+
+start().catch(console.error);
+// app.listen(context.port, () => {
+//   console.log(`Backend API listening on http://localhost:${context.port}`);
+// });
 
 process.on("SIGINT", async () => {
   await context.kafkaProducer.disconnect();
