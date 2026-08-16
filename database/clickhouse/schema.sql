@@ -11,7 +11,9 @@ CREATE TABLE IF NOT EXISTS running_samples (
   temperature DECIMAL(4, 2),
   cadence INT CHECK (cadence >= 0),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+)ENGINE = MergeTree
+ORDER BY (timestamp, athlete_id, session_id)
+PARTITION BY toYYYYMM(timestamp);
 
 
 -- Workout sessions
@@ -24,4 +26,6 @@ CREATE TABLE IF NOT EXISTS allenamenti (
     recupero_allenamento int NOT NULL CHECK (recupero_allenamento >= 0),
     peso_allenamento DECIMAL(5, 2) CHECK (peso_allenamento >= 0),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+)ENGINE = MergeTree
+ORDER BY (data_allenamento, athlete_id, allenamento_id)
+PARTITION BY toYYYYMM(data_allenamento);
