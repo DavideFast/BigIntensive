@@ -30,3 +30,15 @@ CREATE TABLE IF NOT EXISTS allenamenti (
 )ENGINE = MergeTree
 ORDER BY (data_allenamento, athlete_id, allenamento_id)
 PARTITION BY toYYYYMM(data_allenamento);
+
+CREATE TABLE IF NOT EXISTS allenamenti_raw
+(
+    allenamento_id UInt64,
+    athlete_id UInt64,
+    data_allenamento DateTime,
+    struttura_allenamento String,
+    created_at DateTime
+)
+ENGINE = MergeTree
+ORDER BY allenamento_id
+PARTITION BY toYYYYMM(data_allenamento);

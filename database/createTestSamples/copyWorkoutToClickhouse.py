@@ -1,4 +1,5 @@
 import time
+import json
 from datetime import datetime
 
 import psycopg
@@ -32,19 +33,14 @@ CLICKHOUSE_CONFIG = {
 
 
 # ============================================================
-# CONFIGURAZIONE ETL
+# CONFIGURAZIONE BATCH
 # ============================================================
 
-# Numero di allenamenti PostgreSQL letti per volta
+# Numero di allenamenti letti per volta da PostgreSQL
 POSTGRES_BATCH_SIZE = 10_000
 
-# Numero massimo di righe ClickHouse accumulate prima
-# di fare un INSERT.
-#
-# ATTENZIONE:
-# 10.000 allenamenti possono diventare molte più righe
-# dopo l'espansione delle serie.
-CLICKHOUSE_BATCH_SIZE = 100_000
+# Numero di righe inviate per volta a ClickHouse
+CLICKHOUSE_BATCH_SIZE = 50_000
 
 
 # ============================================================
@@ -74,12 +70,12 @@ def connect_clickhouse():
 
 
 # ============================================================
-# CREAZIONE TABELLA CLICKHOUSE
+# CREAZIONE TABELLA RAW
 # ============================================================
 
-def create_clickhouse_table(ch):
+def create_raw_table(ch):
 
-    print("Controllo database e tabella ClickHouse...")
+    print("Controllo tabella allenamenti_raw...")
 
     ch.command(
         """
@@ -89,38 +85,25 @@ def create_clickhouse_table(ch):
 
     ch.command(
         """
-        CREATE TABLE IF NOT EXISTS sport.allenamenti
+        CREATE TABLE IF NOT EXISTS sport.allenamenti_raw
         (
             allenamento_id UInt64,
             athlete_id UInt64,
-
             data_allenamento DateTime,
-
-            serie_allenamento UInt8,
-            ripetizioni_allenamento UInt8,
-            recupero_allenamento UInt8,
-
-            peso_allenamento Decimal(5, 2),
-
-            created_at DateTime DEFAULT now()
+            struttura_allenamento String,
+            created_at DateTime
         )
         ENGINE = MergeTree
-
         PARTITION BY toYYYYMM(data_allenamento)
-
-        ORDER BY (
-            data_allenamento,
-            athlete_id,
-            allenamento_id
-        )
+        ORDER BY allenamento_id
         """
     )
 
-    print("Tabella ClickHouse pronta.")
+    print("Tabella allenamenti_raw pronta.")
 
 
 # ============================================================
-# RECUPERA ULTIMO ALLENAMENTO SINCRONIZZATO
+# RECUPERO ULTIMO ID PRESENTE IN CLICKHOUSE
 # ============================================================
 
 def get_last_allenamento_id(ch):
@@ -128,7 +111,7 @@ def get_last_allenamento_id(ch):
     result = ch.query(
         """
         SELECT max(allenamento_id)
-        FROM sport.allenamenti
+        FROM sport.allenamenti_raw
         """
     )
 
@@ -141,115 +124,35 @@ def get_last_allenamento_id(ch):
 
 
 # ============================================================
-# CONVERSIONE JSON → RIGHE CLICKHOUSE
+# CONVERSIONE JSONB → STRINGA JSON
 # ============================================================
 
-def convert_workout_to_rows(
-    workout_id,
-    athlete_id,
-    workout_date,
-    workout_structure,
-    created_at
-):
+def json_to_string(value):
 
-    rows = []
+    if value is None:
+        return "{}"
 
-    # --------------------------------------------------------
-    # Controllo struttura JSON
-    # --------------------------------------------------------
+    # Psycopg normalmente restituisce già un dict
+    # per una colonna JSONB.
+    if isinstance(value, dict):
 
-    if not workout_structure:
-
-        return rows
-
-    if "esercizi" not in workout_structure:
-
-        return rows
-
-    exercises = workout_structure["esercizi"]
-
-    # --------------------------------------------------------
-    # Ogni esercizio
-    # --------------------------------------------------------
-
-    for exercise in exercises:
-
-        nome_esercizio = exercise.get("nome", "")
-
-        numero_serie = exercise.get(
-            "serie",
-            0
+        return json.dumps(
+            value,
+            ensure_ascii=False,
+            separators=(",", ":")
         )
 
-        ripetizioni = exercise.get(
-            "ripetizioni",
-            0
-        )
+    # Caso in cui venga restituita una stringa
+    if isinstance(value, str):
 
-        recupero = exercise.get(
-            "recupero_secondi",
-            0
-        )
+        return value
 
-        peso = exercise.get(
-            "carico_kg",
-            0
-        )
-
-        # ----------------------------------------------------
-        # Plank
-        #
-        # Nel generatore il plank non ha ripetizioni/carico.
-        # Lo gestiamo comunque senza rompere l'ETL.
-        # ----------------------------------------------------
-
-        if numero_serie is None:
-            numero_serie = 0
-
-        if ripetizioni is None:
-            ripetizioni = 0
-
-        if recupero is None:
-            recupero = 0
-
-        if peso is None:
-            peso = 0
-
-        # ----------------------------------------------------
-        # Una riga per ogni serie
-        # ----------------------------------------------------
-
-        for serie_numero in range(
-            1,
-            numero_serie + 1
-        ):
-
-            rows.append(
-                (
-                    int(workout_id),
-
-                    int(athlete_id),
-
-                    workout_date,
-
-                    nome_esercizio,
-
-                    serie_numero,
-
-                    int(ripetizioni),
-
-                    int(recupero),
-
-                    round(
-                        float(peso),
-                        2
-                    ),
-
-                    created_at
-                )
-            )
-
-    return rows
+    # Fallback
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        separators=(",", ":")
+    )
 
 
 # ============================================================
@@ -265,18 +168,14 @@ def insert_clickhouse_batch(
         return
 
     ch.insert(
-        "sport.allenamenti",
+        "sport.allenamenti_raw",
         rows,
 
         column_names=[
             "allenamento_id",
             "athlete_id",
             "data_allenamento",
-            "nome_esercizio",
-            "serie_allenamento",
-            "ripetizioni_allenamento",
-            "recupero_allenamento",
-            "peso_allenamento",
+            "struttura_allenamento",
             "created_at"
         ]
     )
@@ -293,26 +192,22 @@ def sync_allenamenti(
 
     print()
     print("=" * 70)
-    print("SINCRONIZZAZIONE ALLENAMENTI")
+    print("SINCRONIZZAZIONE POSTGRESQL → CLICKHOUSE RAW")
     print("=" * 70)
 
     # --------------------------------------------------------
-    # Ultimo ID già presente
+    # Recuperiamo l'ultimo ID già trasferito
     # --------------------------------------------------------
 
-    last_id = get_last_allenamento_id(
-        ch
-    )
+    last_id = get_last_allenamento_id(ch)
 
     print(
-        f"Ultimo allenamento ClickHouse: "
+        f"Ultimo allenamento presente in ClickHouse: "
         f"{last_id:,}"
     )
 
     total_workouts = 0
     total_rows = 0
-
-    clickhouse_rows = []
 
     # --------------------------------------------------------
     # Cursor PostgreSQL
@@ -322,11 +217,9 @@ def sync_allenamenti(
 
         while True:
 
-            print()
-            print(
-                f"Lettura PostgreSQL "
-                f"da ID > {last_id:,}"
-            )
+            # ------------------------------------------------
+            # Leggiamo solamente i nuovi record
+            # ------------------------------------------------
 
             cur.execute(
                 """
@@ -350,15 +243,22 @@ def sync_allenamenti(
             workouts = cur.fetchall()
 
             # ------------------------------------------------
-            # Nessun altro dato
+            # Non ci sono nuovi dati
             # ------------------------------------------------
 
             if not workouts:
 
+                print()
+                print(
+                    "Nessun nuovo allenamento da trasferire."
+                )
+
                 break
 
+            rows = []
+
             # ------------------------------------------------
-            # Convertiamo gli allenamenti
+            # Preparazione batch
             # ------------------------------------------------
 
             for (
@@ -369,93 +269,90 @@ def sync_allenamenti(
                 created_at
             ) in workouts:
 
-                rows = convert_workout_to_rows(
-                    workout_id,
-                    athlete_id,
-                    workout_date,
-                    workout_structure,
-                    created_at
+                json_string = json_to_string(
+                    workout_structure
                 )
 
-                clickhouse_rows.extend(
-                    rows
+                rows.append(
+                    (
+                        int(workout_id),
+
+                        int(athlete_id),
+
+                        workout_date,
+
+                        json_string,
+
+                        created_at
+                    )
                 )
 
-                total_workouts += 1
+                # ------------------------------------------------
+                # Se raggiungiamo il limite del batch ClickHouse
+                # ------------------------------------------------
 
-                # --------------------------------------------
-                # Quando raggiungiamo il batch CH
-                # --------------------------------------------
-
-                if len(clickhouse_rows) >= CLICKHOUSE_BATCH_SIZE:
+                if len(rows) >= CLICKHOUSE_BATCH_SIZE:
 
                     print(
-                        f"  Inserimento "
-                        f"{len(clickhouse_rows):,} "
-                        f"righe in ClickHouse..."
+                        f"Inserimento di "
+                        f"{len(rows):,} "
+                        f"allenamenti in ClickHouse..."
                     )
 
                     insert_clickhouse_batch(
                         ch,
-                        clickhouse_rows
+                        rows
                     )
 
-                    total_rows += len(
-                        clickhouse_rows
-                    )
+                    total_rows += len(rows)
 
-                    clickhouse_rows.clear()
-
-                    print(
-                        f"  Righe ClickHouse "
-                        f"totali: "
-                        f"{total_rows:,}"
-                    )
+                    rows.clear()
 
             # ------------------------------------------------
-            # Tutti gli allenamenti del batch sono stati
-            # trasformati.
+            # Inseriamo il restante batch
+            # ------------------------------------------------
+
+            if rows:
+
+                print(
+                    f"Inserimento di "
+                    f"{len(rows):,} "
+                    f"allenamenti in ClickHouse..."
+                )
+
+                insert_clickhouse_batch(
+                    ch,
+                    rows
+                )
+
+                total_rows += len(rows)
+
+                rows.clear()
+
+            # ------------------------------------------------
+            # Aggiorniamo il checkpoint logico
             #
-            # L'ultimo ID diventa il nuovo checkpoint.
+            # L'ultimo ID viene aggiornato SOLO dopo che
+            # l'intero batch è stato inserito con successo.
             # ------------------------------------------------
 
             last_id = workouts[-1][0]
 
-            print(
-                f"Allenamenti elaborati: "
-                f"{total_workouts:,}"
-            )
+            total_workouts += len(workouts)
 
             print(
-                f"Ultimo ID elaborato: "
+                f"Ultimo ID trasferito: "
                 f"{last_id:,}"
             )
 
-    # --------------------------------------------------------
-    # Ultimo batch ClickHouse
-    # --------------------------------------------------------
+            print(
+                f"Allenamenti trasferiti in questa esecuzione: "
+                f"{total_workouts:,}"
+            )
 
-    if clickhouse_rows:
-
-        print(
-            f"Inserimento ultimo batch: "
-            f"{len(clickhouse_rows):,} righe..."
-        )
-
-        insert_clickhouse_batch(
-            ch,
-            clickhouse_rows
-        )
-
-        total_rows += len(
-            clickhouse_rows
-        )
-
-        clickhouse_rows.clear()
-
-    # --------------------------------------------------------
+    # ========================================================
     # RISULTATO
-    # --------------------------------------------------------
+    # ========================================================
 
     print()
     print("=" * 70)
@@ -463,17 +360,12 @@ def sync_allenamenti(
     print("=" * 70)
 
     print(
-        f"Allenamenti PostgreSQL elaborati: "
+        f"Allenamenti trasferiti: "
         f"{total_workouts:,}"
     )
 
     print(
-        f"Righe ClickHouse generate: "
-        f"{total_rows:,}"
-    )
-
-    print(
-        f"Ultimo ID: "
+        f"Ultimo ID trasferito: "
         f"{last_id:,}"
     )
 
@@ -491,7 +383,7 @@ def main():
     print()
     print("=" * 70)
     print("POSTGRESQL → CLICKHOUSE")
-    print("ETL ALLENAMENTI")
+    print("MODALITÀ ELT - RAW")
     print("=" * 70)
 
     print(
@@ -505,14 +397,21 @@ def main():
     try:
 
         # ----------------------------------------------------
-        # Connessioni
+        # PostgreSQL
         # ----------------------------------------------------
 
-        print(
-            "Connessione PostgreSQL..."
-        )
+        print()
+        print("Connessione PostgreSQL...")
 
         pg = connect_postgres()
+
+        print(
+            "PostgreSQL connesso."
+        )
+
+        # ----------------------------------------------------
+        # ClickHouse
+        # ----------------------------------------------------
 
         print(
             "Connessione ClickHouse..."
@@ -520,11 +419,15 @@ def main():
 
         ch = connect_clickhouse()
 
+        print(
+            "ClickHouse connesso."
+        )
+
         # ----------------------------------------------------
-        # Tabella ClickHouse
+        # Tabella RAW
         # ----------------------------------------------------
 
-        create_clickhouse_table(
+        create_raw_table(
             ch
         )
 
@@ -537,28 +440,55 @@ def main():
             ch
         )
 
+    except KeyboardInterrupt:
+
+        print()
+        print("=" * 70)
+        print("INTERRUZIONE MANUALE")
+        print("=" * 70)
+
+        print(
+            "Lo script è stato interrotto."
+        )
+
     except Exception as e:
 
         print()
         print("=" * 70)
-        print("ERRORE DURANTE LA SINCRONIZZAZIONE")
+        print("ERRORE")
         print("=" * 70)
 
         print(
-            type(e).__name__,
-            ":",
-            e
+            f"{type(e).__name__}: {e}"
         )
 
         raise
 
     finally:
 
+        # ----------------------------------------------------
+        # Chiusura PostgreSQL
+        # ----------------------------------------------------
+
         if pg is not None:
+
             pg.close()
 
+            print(
+                "Connessione PostgreSQL chiusa."
+            )
+
+        # ----------------------------------------------------
+        # Chiusura ClickHouse
+        # ----------------------------------------------------
+
         if ch is not None:
+
             ch.close()
+
+            print(
+                "Connessione ClickHouse chiusa."
+            )
 
     elapsed = (
         time.time() -
@@ -567,7 +497,7 @@ def main():
 
     print()
     print("=" * 70)
-    print("OPERAZIONE TERMINATA")
+    print("FINE")
     print("=" * 70)
 
     print(
