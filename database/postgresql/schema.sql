@@ -29,6 +29,17 @@ CREATE TABLE allenamenti (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Riepilogo corse
+CREATE TABLE riepilogo_corse (
+    id SERIAL PRIMARY KEY,
+    athlete_id INT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE CASCADE,
+    data_corsa DATE NOT NULL,
+    distanza_km DECIMAL(5, 2) CHECK (distanza_km > 0),
+    durata_minuti INT CHECK (durata_minuti > 0),
+    velocita_media DECIMAL(5, 2) CHECK (velocita_media > 0),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Tabella esercizi
 
 CREATE TABLE esercizi (

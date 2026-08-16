@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS weekly_cardio_aggregates (
 SELECT create_reference_table('athletes');
 SELECT create_reference_table('exercises');
 SELECT create_reference_table('smartwatch_sessions');
-SELECT create_reference_table('injury_history');
+-- SELECT create_reference_table('injury_history');
 SELECT create_reference_table('training_status_results');
 SELECT create_reference_table('feature_importance_results');
 SELECT create_reference_table('exercise_correlations');
