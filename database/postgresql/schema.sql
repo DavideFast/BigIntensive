@@ -10,7 +10,7 @@ CREATE TABLE athletes (
 
 -- Tabella valori antropometrici
 CREATE TABLE anthropometric_values  (
-    athlete_id INT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE CASCADE,
+    athlete_id INT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE,
     altezza_cm INT CHECK (altezza_cm > 50 AND altezza_cm < 300),
     peso_kg DECIMAL(5, 2) CHECK (peso_kg > 10 AND peso_kg < 500),
     data_rilevazione DATE NOT NULL,
