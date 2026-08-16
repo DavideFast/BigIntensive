@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS running_samples (
   altitude DECIMAL(5, 2),
   temperature DECIMAL(4, 2),
   cadence UInt8,
+  event_type String,
   created_at DateTime DEFAULT now()
 )ENGINE = MergeTree
 ORDER BY (timestamp, athlete_id, session_id)
