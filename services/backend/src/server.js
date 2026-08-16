@@ -29,7 +29,7 @@ app.use(
 app.use(express.json());
 app.use(createSystemRouter());
 
-// ========================= LETTURE CITUS ESEMPIO  ============================
+// =========================== READ/WRITE DATABASE  ==============================
 app.get("/api/v1/readPostgresql", (req, res) => {
   const query = "SELECT * FROM allenamenti WHERE atleta_id = 1 LIMIT 10";
   context.pool.query(query, (err, result) => {
@@ -98,7 +98,6 @@ app.get("/api/v1/writePostgresql", (req, res) => {
   });
 });
 
-// ========================= LETTURE CLICKHOUSE ESEMPIO  ============================
 app.get("/api/v1/readClickhouse", async (req, res) => {
   const valore = await createClickhouseClient.query({
     query: "SELECT * FROM allenamenti WHERE atleta_id = 1 LIMIT 10",

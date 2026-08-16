@@ -41,21 +41,6 @@ CREATE TABLE IF NOT EXISTS smartwatch_sessions (
   end_reason TEXT
 );
 
--- INJURY_HISTORY: dati infortuni per training ML su prevenzione
-CREATE TABLE IF NOT EXISTS injury_history (
-  injury_id SERIAL PRIMARY KEY,
-  athlete_id INT NOT NULL REFERENCES athletes(athlete_id) ON DELETE CASCADE,
-  injury_date DATE NOT NULL,
-  injury_type VARCHAR(100) NOT NULL,
-  severity VARCHAR(20) NOT NULL CHECK (severity IN ('light', 'moderate', 'severe')),
-  recovery_days INT NOT NULL,
-  pre_injury_acwr DECIMAL(5, 2),
-  pre_injury_hrv DECIMAL(5, 3),
-  pre_injury_load INT,
-  notes TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- TRAINING_STATUS_RESULTS: output Job 1 (multi-window cardio analysis)
 CREATE TABLE IF NOT EXISTS training_status_results (
   result_id SERIAL PRIMARY KEY,
