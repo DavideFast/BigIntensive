@@ -1,17 +1,3 @@
-ChatGPT ha detto:
-Certo. Se tipo_esercizio non esiste più nella tabella esercizi, lo eliminiamo completamente dal generatore.
-
-Quindi assumo che la tabella sia ora:
-
-CREATE TABLE esercizi (
-    id SERIAL PRIMARY KEY,
-    nome_esercizio VARCHAR(150) NOT NULL,
-    descrizione TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-Ti propongo una versione più adatta ai 500.000 atleti, con generazione a batch e senza popolare riepilogo_corse e training_status_results.
-
 import random
 import json
 from datetime import date, timedelta
@@ -40,8 +26,8 @@ MIN_ANTHROPOMETRIC = 4
 MAX_ANTHROPOMETRIC = 8
 
 # Allenamenti per atleta
-MIN_WORKOUTS = 10
-MAX_WORKOUTS = 40
+MIN_WORKOUTS = 150
+MAX_WORKOUTS = 365
 
 # Batch PostgreSQL
 BATCH_SIZE = 10_000
