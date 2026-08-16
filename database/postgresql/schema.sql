@@ -45,7 +45,6 @@ CREATE TABLE riepilogo_corse (
 CREATE TABLE esercizi (
     id SERIAL PRIMARY KEY,
     nome_esercizio VARCHAR(150) NOT NULL,
-    tipo_esercizio VARCHAR(50) CHECK (tipo_esercizio IN ('forza', 'endurance', 'mobilità')),
     descrizione TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
