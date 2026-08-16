@@ -174,6 +174,8 @@ def convert_workout_to_rows(
 
     for exercise in exercises:
 
+        nome_esercizio = exercise.get("nome", "")
+
         numero_serie = exercise.get(
             "serie",
             0
@@ -230,6 +232,8 @@ def convert_workout_to_rows(
 
                     workout_date,
 
+                    nome_esercizio,
+
                     serie_numero,
 
                     int(ripetizioni),
@@ -268,6 +272,7 @@ def insert_clickhouse_batch(
             "allenamento_id",
             "athlete_id",
             "data_allenamento",
+            "nome_esercizio",
             "serie_allenamento",
             "ripetizioni_allenamento",
             "recupero_allenamento",

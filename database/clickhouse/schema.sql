@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS allenamenti (
     allenamento_id UInt64,
     athlete_id UInt64 ,
     data_allenamento DateTime NOT NULL,
-    esercizio_id UInt64 NOT NULL,
+    nome_esercizio String NOT NULL,
     serie_allenamento UInt8 NOT NULL,
     ripetizioni_allenamento UInt8 NOT NULL,
     recupero_allenamento UInt8 NOT NULL,
