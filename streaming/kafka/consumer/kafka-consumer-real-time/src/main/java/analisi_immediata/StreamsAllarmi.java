@@ -27,8 +27,8 @@ public class StreamsAllarmi {
     private static final double SOGLIA_MOVIMENTO_M = 10.0;
     private static final int SECONDI_IMMOBILE = 30;
     private static final double RAGGIO_TERRA_M = 6_371_000.0;
-
     private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
 
     /** Stato persistito nello state store, serializzato come JSON. */
     public record StatoSessione(double latitudine, double longitudine, int indice, boolean allarmeInviato) {
@@ -55,6 +55,8 @@ public class StreamsAllarmi {
 
         @Override
         public void process(Record<String, String> record) {
+
+            // Provo a vedere se l'evento che arriva ha una struttura JSON corretta
             HeartRateSample sample;
             try {
                 sample = MAPPER.readValue(record.value(), HeartRateSample.class);
@@ -62,26 +64,31 @@ public class StreamsAllarmi {
                 return; // messaggio malformato: scartato senza fermare la topologia
             }
 
+            //Se il campo event_type è "session_end" allora elimino lo stato della sessione e non faccio altro
             if ("session_end".equals(sample.event_type())) {
                 store.delete(record.key());
                 return;
             }
 
+            //Se non c'è uno stato precedente lo creo e esco
             StatoSessione precedente = leggiStato(record.key());
             if (precedente == null) {
                 salvaStato(record.key(), new StatoSessione(sample.latitude(), sample.longitude(), sample.sample_index(), false));
                 return;
             }
 
+            // Calcolo lo spostamento tra la posizione precedente e quella dell'evento corrente
             double spostamento = distanzaMetri(precedente.latitudine(), precedente.longitudine(),sample.latitude(), sample.longitude());
 
+            // Se lo spostamento è maggiore della soglia, aggiorno lo stato e non faccio altro
             if (spostamento > SOGLIA_MOVIMENTO_M) {
                 salvaStato(record.key(), new StatoSessione(sample.latitude(), sample.longitude(), sample.sample_index(), false));
                 return;
             }
 
+            // Calcolo da quanto tempo l'atleta è fermo
             int fermoDaSecondi = sample.sample_index() - precedente.indice();
-            if (fermoDaSecondi >= SECONDI_IMMOBILE && !precedente.allarmeInviato()) {
+            if (fermoDaSecondi >= SECONDI_IMMOBILE && !precedente.allarmeInviato() && sample.heart_rate_bpm() > 180) {
                 salvaStato(record.key(), new StatoSessione(precedente.latitudine(), precedente.longitudine(),precedente.indice(), true));
 
                 String messaggio = String.format("Atleta %s fermo da %d s in posizione %.6f, %.6f (bpm %.0f)",
@@ -133,11 +140,16 @@ public class StreamsAllarmi {
         // Lettura dei messaggi dal topic di ingresso
         KStream<String, String> sorgente = builder.stream(TOPIC_INGRESSO, Consumed.with(Serdes.String(), Serdes.String()));
         
-        // I messaggi arrivano con la chiave: va ricalcolata e ridistribuita per allineare le partizioni allo store
+        // Processamento dei messaggi con il rilevatore di immobilità
         sorgente.process(RilevatoreImmobilita::new, NOME_STORE);
 
+        // Avvio del flusso di elaborazione
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
+
+        // Gestione della chiusura dell'applicazione
         Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
+
+        //Avvio del flusso di elaborazione
         streams.start();
     }
 }
