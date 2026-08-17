@@ -95,8 +95,8 @@ app.get("/api/v1/writePostgresql", (req, res) => {
       ],
     },
   };
-  const query = `INSERT INTO allenamenti (atleta_id, sessione_id, frequenza_cardiaca, velocita, timestamp)
-                 VALUES (1, 1, 120, 10.5, '2024-06-05 12:00:00')`;
+  const query = `INSERT INTO allenamenti (atleta_id, sessione_id, frequenza_cardiaca, velocita, timestamp,struttura_allenamento)
+                 VALUES (1, 1, 120, 10.5, '2024-06-05 12:00:00', '${JSON.stringify(allenamento)}')`;
   context.pool.query(query, (err, result) => {
     if (err) {
       console.error("Errore query PostgreSQL:", err.message);
@@ -107,7 +107,7 @@ app.get("/api/v1/writePostgresql", (req, res) => {
 
 app.get("/api/v1/readClickhouse", async (req, res) => {
   const valore = await createClickhouseClient.query({
-    query: "SELECT * FROM allenamenti WHERE atleta_id = 1 LIMIT 10",
+    query: "SELECT * FROM running_samples WHERE sessione_id = (SELECT session_id FROM running_samples WHERE athlete_id = 1 LIMIT 1)",
     format: "JSONEachRow",
   });
   const data = await valore.json();
