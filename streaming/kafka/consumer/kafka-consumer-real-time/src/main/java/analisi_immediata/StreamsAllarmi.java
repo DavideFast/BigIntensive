@@ -17,6 +17,8 @@ import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 /** Rilevamento immobilita con Kafka Streams: lo stato sopravvive a riavvii e rebalance. */
@@ -28,6 +30,8 @@ public class StreamsAllarmi {
     private static final int SECONDI_IMMOBILE = 30;
     private static final double RAGGIO_TERRA_M = 6_371_000.0;
     private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private static final List<HeartRateSample> campioni = new ArrayList<>();
+    private static final int MAX_CAMPIONI = 1000;
 
 
     /** Stato persistito nello state store, serializzato come JSON. */
@@ -53,13 +57,32 @@ public class StreamsAllarmi {
             this.store = context.getStateStore(NOME_STORE);
         }
 
+        public void flushBatch(long timestamp) {
+            if (!campioni.isEmpty()) {
+                databaseBulkInsert(campioni, timestamp);
+                campioni.clear();
+            }
+        }
+
+        private void databaseBulkInsert(List<HeartRateSample> samples, long timestamp) {
+            // Simulazione di un inserimento batch nel database
+            System.out.printf("Inserimento batch di %d campioni nel database al timestamp %d%n", samples.size(), timestamp);
+        }
+
         @Override
         public void process(Record<String, String> record) {
-
+            
             // Provo a vedere se l'evento che arriva ha una struttura JSON corretta
             HeartRateSample sample;
             try {
                 sample = MAPPER.readValue(record.value(), HeartRateSample.class);
+                campioni.add(sample);
+                if (campioni.size() > MAX_CAMPIONI) {
+                    flushBatch(context.currentStreamTimeMs());
+                }
+                if (campioni.size() > MAX_CAMPIONI) {
+                    campioni.remove(0);
+                }
             } catch (Exception e) {
                 return; // messaggio malformato: scartato senza fermare la topologia
             }
