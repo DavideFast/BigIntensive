@@ -1,8 +1,11 @@
 # BigIntensive
 
-Questo repository contiene l'applicazione BigIntensive e la sua infrastruttura Kubernetes-first.
+This is a project for the "Big Intensive Application and Big Data Exams" of the Studies University of Perugia.
 
-La strada consigliata e' il cluster k3s in [k3s/README.md](k3s/README.md). La vecchia orchestrazione Docker Compose resta nel repository solo come riferimento storico.
+This project gives:
+
+- Kubernetes deployment [k3s/README.md](k3s/README.md).
+- Docker compose deployment (testing)
 
 ## What is FitnessHub
 
