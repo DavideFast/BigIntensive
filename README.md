@@ -69,6 +69,15 @@ It allow to show the Spark reports.
 
 It is used as orchestrator to manage all the components of the project and scale them if necessary.
 
+## Developed functionality
+
+- Producer Kafka (backend)
+- Consumer Kafka (kafka stream)
+- Job Spark (find the correlation matrix among all exercises)
+- Job Spark (find the training status)
+- Job Spark (find performance among all other athletes)
+- Job Spark (check if running volume is potentially dangerous)
+
 ## Quale percorso usare
 
 - Deploy completo k3s (raccomandato): `bash k3s/deploy-all.sh`
