@@ -95,12 +95,12 @@ public class StreamsAllarmi {
             }
         }
 
-        private void databaseSummary(double velocitaMedia, double velocitaMax, double frequenzaCardiacaMedia, double frequenzaCardiacaMax, double cadenzaMedia, HeartRateSample sample, long timestamp) {
+        private void databaseSummary(double velocitaMedia, double velocitaMax, double frequenzaCardiacaMedia, double frequenzaCardiacaMax, double cadenzaMedia, double distanzaTotale, int campioni, HeartRateSample sample, long timestamp) {
             String url = "jdbc:postgresql://localhost:5432/default";
             String user = "default";
             String password = "";
             try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, password)) {
-                String sql = "INSERT INTO session_summary (athlete_id, velocita_media, velocita_max, frequenza_cardiaca_media, frequenza_cardiaca_max, cadenza_media, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO session_summary (athlete_id, velocita_media, velocita_max, frequenza_cardiaca_media, frequenza_cardiaca_max, cadenza_media, distanza_totale, campioni, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
                     stmt.setString(1, sample.athlete_id());
                     stmt.setDouble(2, velocitaMedia);
@@ -108,7 +108,9 @@ public class StreamsAllarmi {
                     stmt.setDouble(4, frequenzaCardiacaMedia);
                     stmt.setDouble(5, frequenzaCardiacaMax);
                     stmt.setDouble(6, cadenzaMedia);
-                    stmt.setLong(7, timestamp);
+                    stmt.setDouble(7, distanzaTotale);
+                    stmt.setInt(8, campioni * 5);
+                    stmt.setLong(8, timestamp);
                     stmt.executeUpdate();
                 }
             
@@ -128,6 +130,8 @@ public class StreamsAllarmi {
                 frequenzaCardiacaMedia += sample.heart_rate_bpm();
                 frequenzaCardiacaMax = Math.max(frequenzaCardiacaMax, sample.heart_rate_bpm());
                 cadenzaMedia += sample.cadence_spm();
+                campioniRicevuti++;
+                
 
                 campioni.add(sample);
                 if (campioni.size() > MAX_CAMPIONI) {
@@ -142,10 +146,11 @@ public class StreamsAllarmi {
 
             //Se il campo event_type è "session_end" allora elimino lo stato della sessione e non faccio altro
             if ("session_end".equals(sample.event_type())) {
-                velocitaMedia = velocitaMedia / (sample.sample_index() + 1);
-                cadenzaMedia = cadenzaMedia / (sample.sample_index() + 1);
-                frequenzaCardiacaMedia = frequenzaCardiacaMedia / (sample.sample_index() + 1);
-                databaseSummary(velocitaMedia, velocitaMax, frequenzaCardiacaMedia, frequenzaCardiacaMax, cadenzaMedia, sample, context.currentStreamTimeMs());
+                velocitaMedia = velocitaMedia / campioniRicevuti;
+                cadenzaMedia = cadenzaMedia / campioniRicevuti;
+                frequenzaCardiacaMedia = frequenzaCardiacaMedia / campioniRicevuti;
+                distanzaTotale = distanzaTotale / campioniRicevuti;
+                databaseSummary(velocitaMedia, velocitaMax, frequenzaCardiacaMedia, frequenzaCardiacaMax, cadenzaMedia, distanzaTotale, campioniRicevuti,  sample, context.currentStreamTimeMs());
                 store.delete(record.key());
                 return;
             }
@@ -159,7 +164,7 @@ public class StreamsAllarmi {
 
             // Calcolo lo spostamento tra la posizione precedente e quella dell'evento corrente
             double spostamento = distanzaMetri(precedente.latitudine(), precedente.longitudine(),sample.latitude(), sample.longitude());
-
+            distanzaTotale += spostamento;
             double velocitaTratto = spostamento / (sample.sample_index() - precedente.indice());
             velocitaMedia = velocitaMedia + velocitaTratto;
             velocitaMax = Math.max(velocitaMax, velocitaTratto);
