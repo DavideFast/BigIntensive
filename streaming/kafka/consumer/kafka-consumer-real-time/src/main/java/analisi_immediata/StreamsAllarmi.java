@@ -72,15 +72,49 @@ public class StreamsAllarmi {
         }
 
         private void databaseBulkInsert(List<HeartRateSample> samples, long timestamp) {
-            // Simulazione di un inserimento batch nel database
-            System.out.printf("Inserimento batch di %d campioni nel database al timestamp %d%n", samples.size(), timestamp);
+            String url = "jdbc:clickhouse://localhost:8123/default";
+            String user = "default";
+            String password = "";
+            try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, password)) {
+                String sql = "INSERT INTO heart_rate_samples (athlete_id, sample_index, latitude, longitude, heart_rate_bpm, cadence_spm, event_type) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    for (HeartRateSample sample : samples) {
+                        stmt.setString(1, sample.athlete_id());
+                        stmt.setInt(2, sample.sample_index());
+                        stmt.setDouble(3, sample.latitude());
+                        stmt.setDouble(4, sample.longitude());
+                        stmt.setDouble(5, sample.heart_rate_bpm());
+                        stmt.setDouble(6, sample.cadence_spm());
+                        stmt.setString(7, sample.event_type());
+                        stmt.addBatch();
+                    }
+                    stmt.executeBatch();
+                }
+            } catch (java.sql.SQLException e) {
+                System.err.println("Errore durante l'inserimento batch nel database: " + e.getMessage());
+            }
         }
 
         private void databaseSummary(double velocitaMedia, double velocitaMax, double frequenzaCardiacaMedia, double frequenzaCardiacaMax, double cadenzaMedia, HeartRateSample sample, long timestamp) {
-            // Simulazione di un inserimento di riepilogo nel database
-            System.out.printf("Riepilogo al timestamp %d: velocità media %.2f m/s, velocità max %.2f m/s, frequenza cardiaca media %.2f bpm, frequenza cardiaca max %.2f bpm, cadenza media %.2f spm%n",
-                    timestamp, velocitaMedia, velocitaMax, frequenzaCardiacaMedia, frequenzaCardiacaMax, cadenzaMedia);
+            String url = "jdbc:postgresql://localhost:5432/default";
+            String user = "default";
+            String password = "";
+            try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, password)) {
+                String sql = "INSERT INTO session_summary (athlete_id, velocita_media, velocita_max, frequenza_cardiaca_media, frequenza_cardiaca_max, cadenza_media, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.setString(1, sample.athlete_id());
+                    stmt.setDouble(2, velocitaMedia);
+                    stmt.setDouble(3, velocitaMax);
+                    stmt.setDouble(4, frequenzaCardiacaMedia);
+                    stmt.setDouble(5, frequenzaCardiacaMax);
+                    stmt.setDouble(6, cadenzaMedia);
+                    stmt.setLong(7, timestamp);
+                    stmt.executeUpdate();
+                }
             
+            } catch (java.sql.SQLException e) {
+                System.err.println("Errore durante l'inserimento del riepilogo nel database: " + e.getMessage());
+            }
         }
 
         @Override
