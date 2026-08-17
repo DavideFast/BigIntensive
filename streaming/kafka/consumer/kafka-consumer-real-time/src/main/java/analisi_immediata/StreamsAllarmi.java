@@ -31,6 +31,13 @@ public class StreamsAllarmi {
     private static final double RAGGIO_TERRA_M = 6_371_000.0;
     private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private static final List<HeartRateSample> campioni = new ArrayList<>();
+    private static double distanzaTotale= 0.0;
+    private static double velocitaMedia= 0.0;
+    private static double velocitaMax= 0.0;
+    private static double frequenzaCardiacaMedia= 0.0;
+    private static double frequenzaCardiacaMax= 0.0;
+    private static double cadenzaMedia= 0.0;
+    private static int campioniRicevuti = 0;
     private static final int MAX_CAMPIONI = 1000;
 
 
@@ -69,6 +76,13 @@ public class StreamsAllarmi {
             System.out.printf("Inserimento batch di %d campioni nel database al timestamp %d%n", samples.size(), timestamp);
         }
 
+        private void databaseSummary(double velocitaMedia, double velocitaMax, double frequenzaCardiacaMedia, double frequenzaCardiacaMax, double cadenzaMedia, HeartRateSample sample, long timestamp) {
+            // Simulazione di un inserimento di riepilogo nel database
+            System.out.printf("Riepilogo al timestamp %d: velocità media %.2f m/s, velocità max %.2f m/s, frequenza cardiaca media %.2f bpm, frequenza cardiaca max %.2f bpm, cadenza media %.2f spm%n",
+                    timestamp, velocitaMedia, velocitaMax, frequenzaCardiacaMedia, frequenzaCardiacaMax, cadenzaMedia);
+            
+        }
+
         @Override
         public void process(Record<String, String> record) {
             
@@ -76,6 +90,11 @@ public class StreamsAllarmi {
             HeartRateSample sample;
             try {
                 sample = MAPPER.readValue(record.value(), HeartRateSample.class);
+
+                frequenzaCardiacaMedia += sample.heart_rate_bpm();
+                frequenzaCardiacaMax = Math.max(frequenzaCardiacaMax, sample.heart_rate_bpm());
+                cadenzaMedia += sample.cadence_spm();
+
                 campioni.add(sample);
                 if (campioni.size() > MAX_CAMPIONI) {
                     flushBatch(context.currentStreamTimeMs());
@@ -89,6 +108,10 @@ public class StreamsAllarmi {
 
             //Se il campo event_type è "session_end" allora elimino lo stato della sessione e non faccio altro
             if ("session_end".equals(sample.event_type())) {
+                velocitaMedia = velocitaMedia / (sample.sample_index() + 1);
+                cadenzaMedia = cadenzaMedia / (sample.sample_index() + 1);
+                frequenzaCardiacaMedia = frequenzaCardiacaMedia / (sample.sample_index() + 1);
+                databaseSummary(velocitaMedia, velocitaMax, frequenzaCardiacaMedia, frequenzaCardiacaMax, cadenzaMedia, sample, context.currentStreamTimeMs());
                 store.delete(record.key());
                 return;
             }
@@ -102,6 +125,10 @@ public class StreamsAllarmi {
 
             // Calcolo lo spostamento tra la posizione precedente e quella dell'evento corrente
             double spostamento = distanzaMetri(precedente.latitudine(), precedente.longitudine(),sample.latitude(), sample.longitude());
+
+            double velocitaTratto = spostamento / (sample.sample_index() - precedente.indice());
+            velocitaMedia = velocitaMedia + velocitaTratto;
+            velocitaMax = Math.max(velocitaMax, velocitaTratto);
 
             // Se lo spostamento è maggiore della soglia, aggiorno lo stato e non faccio altro
             if (spostamento > SOGLIA_MOVIMENTO_M) {
