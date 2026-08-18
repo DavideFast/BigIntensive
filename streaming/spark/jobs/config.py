@@ -13,6 +13,10 @@ CLICKHOUSE_PROPS = {
     "password": os.getenv("CLICKHOUSE_PASSWORD", ""),
     "driver": "com.clickhouse.jdbc.ClickHouseDriver",
 }
+CLICKHOUSE_TABLE = os.getenv("CLICKHOUSE_TABLE", "running_samples")
+CLICKHOUSE_USER = os.getenv("CLICKHOUSE_USER", "default")
+CLICKHOUSE_PASSWORD = os.getenv("CLICKHOUSE_PASSWORD", "")
+
 
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:19092")
 KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "heart-rate-events")
