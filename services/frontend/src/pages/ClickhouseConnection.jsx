@@ -16,9 +16,6 @@ const options = {
     },
   },
   scales: {
-    x: {
-      type: "category",
-    },
     y: {
       type: "linear",
     },
@@ -52,7 +49,10 @@ export default function CorrelationPage() {
     <section aria-label="Dati corsa">
       <h2>Sessione di corsa</h2>
       <p className="panel-subtitle">Sessione corsa ottenuta prelevando i dati da clickhouse</p>
-      <div className="table-wrap correlation-table-wrap"></div>
+      <div className="table-wrap correlation-table-wrap">
+        <Line options={options} data={{ labels: rows.map((row) => row.timestamp), datasets: [{ label: "Velocità", data: rows.map((row) => row.velocita), borderColor: "rgb(75, 192, 192)", backgroundColor: "rgba(75, 192, 192, 0.5)" }] }} />
+        <Line options={options} data={{ labels: rows.map((row) => row.timestamp), datasets: [{ label: "Frequenza cardiaca", data: rows.map((row) => row.frequenza_cardiaca), borderColor: "rgb(255, 99, 132)", backgroundColor: "rgba(255, 99, 132, 0.5)" }] }} />
+      </div>
     </section>
   );
 }
