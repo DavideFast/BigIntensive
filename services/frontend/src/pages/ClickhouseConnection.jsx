@@ -22,7 +22,7 @@ const options = {
   },
 };
 
-export default function CorrelationPage() {
+export default function ClickhouseConnectionPage() {
   const [rows, setRows] = useState([]);
 
   useEffect(() => {
