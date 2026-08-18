@@ -1,14 +1,57 @@
+import { useEffect, useState } from "react";
+
 export default function PostgresConnectionPage() {
   const [rows, setRows] = useState([]);
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+    const url = "/api/v1/readPostgresql";
+    fetch(url)
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        if (!data.success) {
+          throw new Error(`Errore nella richiesta: ${data.error}`);
+        }
+        return data;
+      })
+      .then((data) => {
+        setRows(data.data || []);
+      })
+      .catch((err) => {
+        console.error("Errore nel fetch dei dati degli allenamenti:", err);
+      });
+  }, []);
 
   return (
-    <section aria-label="Dati matrice di correlazione">
+    <section aria-label="Dati workouts">
       <h2>Esempio di allenamento</h2>
-      <p className="panel-subtitle">Confronto tra variabili di training load e indicatori di recupero. Celle verdi indicano associazione positiva, rosse associazione negativa.</p>
-
-      <div className="table-wrap correlation-table-wrap"></div>
+      <p className="panel-subtitle">Allenamento recente</p>
+      <div className="table-wrap workouts-wrap">
+        <p>{rows}</p>
+      </div>
+      <button
+        onClick={() => {
+          fetch("/api/v1/writePostgresql")
+            .then((response) => response.json())
+            .then((data) => {
+              if (!data.success) {
+                throw new Error(`Errore nella richiesta: ${data.error}`);
+              }
+              return data;
+            })
+            .then((data) => {
+              console.log("Dati scritti nel database PostgreSQL:", data);
+              alert("Dati scritti nel database PostgreSQL. Controlla la console per i dettagli.");
+            })
+            .catch((err) => {
+              console.error("Errore nel fetch dei dati degli allenamenti:", err);
+              alert(`Errore nel fetch dei dati degli allenamenti: ${err.message}`);
+            });
+        }}
+      >
+        Scrivi Allenamento di esempio
+      </button>
     </section>
   );
 }
