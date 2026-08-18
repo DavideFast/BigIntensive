@@ -14,8 +14,15 @@ CLICKHOUSE_PROPS = {
     "driver": "com.clickhouse.jdbc.ClickHouseDriver",
 }
 CLICKHOUSE_TABLE = os.getenv("CLICKHOUSE_TABLE", "running_samples")
-CLICKHOUSE_USER = os.getenv("CLICKHOUSE_USER", "default")
-CLICKHOUSE_PASSWORD = os.getenv("CLICKHOUSE_PASSWORD", "")
+
+
+POSTGRES_URL = os.getenv("POSTGRES_JDBC_URL", "jdbc:postgresql://postgres:5432/bigintensive")
+POSTGRES_PROPS = {
+    "user": os.getenv("POSTGRES_USER", "postgres"),
+    "password": os.getenv("POSTGRES_PASSWORD", "postgres"),
+    "driver": "org.postgresql.Driver",
+}
+POSTGRES_TABLE = os.getenv("POSTGRES_TABLE", "antropometric_data")
 
 
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:19092")

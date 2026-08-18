@@ -2,7 +2,7 @@ import os
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, avg, count, stddev, percentile_approx
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
-from config import CLICKHOUSE_URL, CLICKHOUSE_PROPS, CLICKHOUSE_TABLE, CLICKHOUSE_USER, CLICKHOUSE_PASSWORD
+from config import CLICKHOUSE_URL, CLICKHOUSE_PROPS, CLICKHOUSE_TABLE, POSTGRES_URL, POSTGRES_PROPS, POSTGRES_TABLE
 
 spark = (
     SparkSession.builder.appName("running-population-analysis")
@@ -26,9 +26,20 @@ payload_schema = StructType(
     ]
 )
 
-df = spark.read.format("jdbc").option("url", CLICKHOUSE_URL).option("dbtable", CLICKHOUSE_TABLE).option("user", CLICKHOUSE_USER).option("password", CLICKHOUSE_PASSWORD).load()
+payload_schema = StructType(
+    [
+        StructField("athlete_id", StringType(), True),
+        StructField("peso", IntegerType(), True),
+        StructField("altezza", DoubleType(), True),
+    ]
+)
+
+df = spark.read.format("jdbc").option("url", CLICKHOUSE_URL).option("dbtable", CLICKHOUSE_TABLE).option("user", CLICKHOUSE_PROPS["user"]).option("password", CLICKHOUSE_PROPS["password"]).load()
+
+df_postgres = spark.read.format("jdbc").option("url", POSTGRES_URL).option("dbtable", POSTGRES_TABLE).option("user", POSTGRES_PROPS["user"]).option("password", POSTGRES_PROPS["password"]).load()
 
 df.show(5)
+df_postgres.show(5)
 
 df_ordinato = df.orderBy(col("athlete_id")).orderBy(col("session_id")).orderBy(col("sample_index"))
 
@@ -47,3 +58,8 @@ df_pulito_null = df_pulito.filter(
     col("longitude").isNotNull())
 
 df_pulito_null.show(5)
+
+df_merged = df_pulito_null.join(df_postgres, on="athlete_id", how="inner")
+
+# Calcolo i volumi nei vari anni
+df_volume = df_merged.groupBy("athlete_id", "session_id").agg(count("sample_index").alias("volume"))
