@@ -22,7 +22,7 @@ POSTGRES_PROPS = {
     "password": os.getenv("POSTGRES_PASSWORD", "postgres"),
     "driver": "org.postgresql.Driver",
 }
-POSTGRES_TABLE = os.getenv("POSTGRES_TABLE", "antropometric_data")
+POSTGRES_TABLE = os.getenv("POSTGRES_TABLE", "anthropometric_values")
 
 
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:19092")
