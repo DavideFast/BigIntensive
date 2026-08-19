@@ -2,9 +2,11 @@ from curses import window
 from math import radians, sin, cos, sqrt, atan2
 import os
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, avg, count, lag
+from pyspark.sql.functions import col, avg, count, lag, countDistinct, first, row_number
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
 from pyspark.sql.window import Window
+from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.stat import Correlation
 from config import CLICKHOUSE_URL, CLICKHOUSE_PROPS, CLICKHOUSE_TABLE, POSTGRES_URL, POSTGRES_PROPS, POSTGRES_TABLE
 
 
@@ -93,14 +95,41 @@ df_deriva_cardiaca = df_merged \
     .withColumn("c", 2 * atan2(sqrt(col("a")), sqrt(1 - col("a")))) \
     .withColumn("distanza", R * col("c")) \
     .withColumn("velocita_puntuale", col("distanza") / 5) \
-    .withColumn("velocita_media_media", avg("velocita_puntuale").over(finestra_temporale_5min)) \
+    .withColumn("velocita_media", avg("velocita_puntuale").over(finestra_temporale_5min)) \
     .withColumn("frequenza_cardiaca_media", avg("heart_rate_bpm").over(finestra_temporale_5min)) \
     .withColumn("Efficienza_puntuale", col("velocita_puntuale") / col("frequenza_cardiaca_media")) \
     .withColumn("Efficienza_puntuale_iniziale", first("Efficienza_puntuale").over(finestra_temporale)) \
 
 df_deriva_cardiaca = df_deriva_cardiaca.withColumn("Deriva_cardiaca_percentuale", (col("Efficienza_puntuale")- col("Efficienza_puntuale_iniziale")) / col("Efficienza_puntuale_iniziale") * 100)
 
-print("Deriva cardiaca calcolata con successo.")
-df_deriva_cardiaca.filter("second(timestamp) % 5 = 0 and minute(timestamp) % 15 = 0") \
-    .select("timestamp", "athlete_id", "session_id", "heart_rate_bpm", "cadence_spm", "speed_kmh", "altitude_m", "temperature_c",  "peso_kg", "altezza_m", "BMI", "velocita_puntuale", "velocita_media_media", "frequenza_cardiaca_media", "Efficienza_puntuale", "Deriva_cardiaca_percentuale") \
-    .show(truncate=False)
+# Troviamo la velocità che causa la deriva cardiaca più alta per ogni atleta e sessione
+
+finestra_sessione_tempo = Window.partitionBy("athlete_id", "session_id").orderBy("timestamp")
+df_crisi_ordinate = df_deriva_cardiaca \
+                .filter(col("Deriva_cardiaca_percentuale") > 5) \
+               .withColumn("riga_crisi", row_number().over(finestra_sessione_tempo))
+
+primo_punto_di_crisi_per_sessione = df_crisi_ordinate \
+    .filter(col("riga_crisi") == 1) \
+    .select("timestamp", "velocita_media", "Deriva_cardiaca_percentuale", "athlete_id", "session_id", "peso_kg", "altezza_m", "BMI")
+
+df_conteggio_corse = primo_punto_di_crisi_per_sessione.groupBy("athlete_id").agg(countDistinct("session_id").alias("numero_corse"))
+df_preanalisi = primo_punto_di_crisi_per_sessione.join(df_conteggio_corse, ["athlete_id"], how="left")
+
+
+# Vediamo se c'è correlazione rispetto all'altezza, al peso o al BMI
+colonne_da_analizzare = ["peso_kg", "altezza_m", "BMI", "velocita_media","numero_corse"]
+
+df_ml = df_preanalisi.select(colonne_da_analizzare).na.drop()
+
+assembler = VectorAssembler(inputCols=colonne_da_analizzare, outputCol="features")
+df_ml = assembler.transform(df_ml)
+
+matrice_correlazione = Correlation.corr(df_ml, "features","pearson").head()[0]
+
+print("Matrice di correlazione:")
+print(matrice_correlazione)
+
+
+
+
