@@ -45,7 +45,7 @@ spec:
 
       containers:
         - name: kafka-consumer
-          image: kafka-consumer-realtime:latest
+          image: davidefast/consumer-kafka:latest
           imagePullPolicy: IfNotPresent
 
           resources:
