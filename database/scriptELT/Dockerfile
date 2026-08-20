@@ -8,8 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia gli script ELT
-COPY copyWorkoutToClickhouse.py .
-COPY requirements.txt . 2>/dev/null || true
+COPY scriptELT/copyWorkoutToClickhouse.py .
+COPY clickhouse/script.sql ./script.sql
 
 # Installa dipendenze Python
 RUN pip install --no-cache-dir \

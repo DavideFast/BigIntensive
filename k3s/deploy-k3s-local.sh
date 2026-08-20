@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 
-# This script deploys the BigIntensive application to a local k3s cluster and builds the backend and frontend Docker images,
-# importing them into the k3s containerd runtime.
+# This script builds the local application images, imports them into k3s containerd,
+# and deploys the Kubernetes manifests.
 set -euo pipefail
 
 NAMESPACE="bigintensive"
 DEPLOY_ALL_SCRIPT="k3s/deploy-all.sh"
 BACKEND_IMAGE="bigintensive/backend:local"
 FRONTEND_IMAGE="bigintensive/frontend:local"
+CONSUMER_IMAGE="bigintensive/kafka-consumer:local"
+ELT_IMAGE="bigintensive/elt-copy-workout:local"
 LOCAL_IMAGES_LABEL="bigintensive.io/local-images=true"
 
 if [[ ! -f "$DEPLOY_ALL_SCRIPT" ]]; then
@@ -69,25 +71,40 @@ sudo k3s kubectl label node "$CURRENT_NODE_NAME" "$LOCAL_IMAGES_LABEL" --overwri
 echo "Verifica nodo k3s..."
 sudo k3s kubectl get nodes
 
-echo "Applico manifest Kubernetes modulari..."
-bash "$DEPLOY_ALL_SCRIPT"
-
 echo "Build immagine backend..."
 sudo docker build -f services/backend/Dockerfile -t "$BACKEND_IMAGE" services/backend
 
 echo "Build immagine frontend..."
 sudo docker build -f services/frontend/Dockerfile -t "$FRONTEND_IMAGE" services/frontend
 
+echo "Build immagine Kafka consumer..."
+sudo docker build -f streaming/kafka/consumer/Dockerfile -t "$CONSUMER_IMAGE" streaming/kafka/consumer
+
+echo "Build immagine ELT..."
+sudo docker build -f database/scriptELT/Dockerfile -t "$ELT_IMAGE" database
+
 echo "Import immagini in containerd di k3s..."
 sudo docker save "$BACKEND_IMAGE" | sudo k3s ctr -n k8s.io images import -
 sudo docker save "$FRONTEND_IMAGE" | sudo k3s ctr -n k8s.io images import -
+sudo docker save "$CONSUMER_IMAGE" | sudo k3s ctr -n k8s.io images import -
+sudo docker save "$ELT_IMAGE" | sudo k3s ctr -n k8s.io images import -
 
 echo "Verifica immagini importate (namespace k8s.io)..."
-sudo k3s ctr -n k8s.io images ls | grep -E 'bigintensive/(backend|frontend).*local' || {
+sudo k3s ctr -n k8s.io images ls | grep -E 'bigintensive/(backend|frontend|kafka-consumer|elt-copy-workout).*local' || {
   echo "Immagini non trovate nel namespace containerd k8s.io."
   exit 1
 }
 
+echo "Applico manifest Kubernetes modulari..."
+bash "$DEPLOY_ALL_SCRIPT"
+
+echo "Allineo i deployment alle immagini locali..."
+sudo k3s kubectl set image deployment/backend backend="$BACKEND_IMAGE" -n "$NAMESPACE"
+sudo k3s kubectl set image deployment/frontend frontend="$FRONTEND_IMAGE" -n "$NAMESPACE"
+sudo k3s kubectl set image deployment/kafka-consumer-realtime kafka-consumer="$CONSUMER_IMAGE" -n "$NAMESPACE"
+sudo k3s kubectl set image cronjob/elt-copy-workout elt-copy-workout="$ELT_IMAGE" -n "$NAMESPACE"
+sudo k3s kubectl patch deployment/backend -n "$NAMESPACE" --type=strategic -p '{"spec":{"template":{"spec":{"containers":[{"name":"backend","imagePullPolicy":"IfNotPresent"}]}}}}'
+sudo k3s kubectl patch deployment/frontend -n "$NAMESPACE" --type=strategic -p '{"spec":{"template":{"spec":{"containers":[{"name":"frontend","imagePullPolicy":"IfNotPresent"}]}}}}'
 echo "Riavvio deployment applicativi..."
 sudo k3s kubectl rollout restart deployment/backend -n "$NAMESPACE"
 sudo k3s kubectl rollout restart deployment/frontend -n "$NAMESPACE"

@@ -16,7 +16,7 @@ SPARK_MASTER=${SPARK_MASTER:-"spark://spark-master:7077"}
 SPARK_DRIVER_MEMORY=${SPARK_DRIVER_MEMORY:-"2g"}
 SPARK_EXECUTOR_MEMORY=${SPARK_EXECUTOR_MEMORY:-"2g"}
 SPARK_EXECUTOR_CORES=${SPARK_EXECUTOR_CORES:-"2"}
-SPARK_NUM_EXECUTORS=${SPARK_NUM_EXECUTORS:-"4"}
+SPARK_JARS_DIR=${SPARK_JARS_DIR:-"/opt/spark/jars"}
 
 # Database Configuration
 CLICKHOUSE_JDBC_URL=${CLICKHOUSE_JDBC_URL:-"jdbc:clickhouse://clickhouse:8123/bigintensive"}
@@ -33,7 +33,7 @@ echo "Configuration:"
 echo "  Spark Master: $SPARK_MASTER"
 echo "  Driver Memory: $SPARK_DRIVER_MEMORY"
 echo "  Executor Memory: $SPARK_EXECUTOR_MEMORY"
-echo "  Executors: $SPARK_NUM_EXECUTORS"
+echo "  JDBC jars: $SPARK_JARS_DIR"
 echo ""
 echo "Job: $JOB_DIR/RunningPopolationAnalysis.py"
 echo ""
@@ -45,16 +45,33 @@ if ! command -v spark-submit &> /dev/null; then
     exit 1
 fi
 
+JDBC_JARS=""
+for jar in \
+    "$SPARK_JARS_DIR/postgresql-42.7.2.jar" \
+    "$SPARK_JARS_DIR/clickhouse-jdbc-0.6.3-all.jar"; do
+    if [ -f "$jar" ]; then
+        if [ -n "$JDBC_JARS" ]; then
+            JDBC_JARS="$JDBC_JARS,$jar"
+        else
+            JDBC_JARS="$jar"
+        fi
+    fi
+done
+
+if [ -z "$JDBC_JARS" ]; then
+    echo "❌ JDBC drivers not found in $SPARK_JARS_DIR"
+    echo "Set SPARK_JARS_DIR or run this script inside the Spark image."
+    exit 1
+fi
+
 # Submit the job
 spark-submit \
     --master "$SPARK_MASTER" \
     --driver-memory "$SPARK_DRIVER_MEMORY" \
     --executor-memory "$SPARK_EXECUTOR_MEMORY" \
     --executor-cores "$SPARK_EXECUTOR_CORES" \
-    --num-executors "$SPARK_NUM_EXECUTORS" \
     --conf "spark.sql.shuffle.partitions=200" \
-    --conf "spark.driver.extraClassPath=/usr/local/spark/jars/*" \
-    --jars "/usr/local/spark/jars/clickhouse-jdbc-*.jar,/usr/local/spark/jars/postgresql-*.jar" \
+    --jars "$JDBC_JARS" \
     --py-files "$JOB_DIR/config.py" \
     "$JOB_DIR/RunningPopolationAnalysis.py"
 

@@ -19,6 +19,7 @@ k3s/
 ├── 07-clickhouse.yaml
 ├── 08-trainingstatus-cronjob.yaml
 ├── 09-kafka-consumer.yaml
+├── 10-elt-copy-workout.yaml
 ├── deploy-all.sh
 └── deploy-k3s-local.sh
 ```
@@ -49,6 +50,9 @@ k3s/
   - Deployment with 2 replicas for HA.
   - Service for metrics exposure.
   - Liveness and readiness probes.
+- `10-elt-copy-workout.yaml`
+  - Hourly CronJob that copies PostgreSQL workouts to ClickHouse staging.
+  - Executes the ClickHouse transformation from `database/clickhouse/script.sql`.
 
 ## Apply order
 
@@ -65,6 +69,7 @@ The expected order is fixed and implemented by `deploy-all.sh`:
 9. `07-clickhouse.yaml`
 10. `08-trainingstatus-cronjob.yaml`
 11. `09-kafka-consumer.yaml` (requires Kafka, PostgreSQL, ClickHouse ready)
+12. `10-elt-copy-workout.yaml` (requires PostgreSQL and ClickHouse ready)
 
 ## Advanced operations
 

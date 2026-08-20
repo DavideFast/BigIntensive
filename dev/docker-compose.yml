@@ -232,8 +232,8 @@ services:
   # ELT Script: Copy Workout from PostgreSQL to ClickHouse
   elt-copy-workout:
     build:
-      context: ../database/scriptELT
-      dockerfile: Dockerfile
+      context: ../database
+      dockerfile: scriptELT/Dockerfile
     container_name: elt-copy-workout
     depends_on:
       - postgres

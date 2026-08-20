@@ -6,13 +6,13 @@ metadata:
   name: kafka-consumer-config
   namespace: bigintensive
 data:
-  KAFKA_BOOTSTRAP_SERVERS: "kafka-service:19092"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:19092"
   KAFKA_TOPIC: "heart-rate-events"
-  CLICKHOUSE_HOST: "clickhouse-service"
+  CLICKHOUSE_HOST: "clickhouse"
   CLICKHOUSE_PORT: "8123"
   CLICKHOUSE_DB: "bigintensive"
   CLICKHOUSE_USER: "default"
-  POSTGRES_HOST: "postgresql-service"
+  POSTGRES_HOST: "postgres"
   POSTGRES_PORT: "5432"
   POSTGRES_DB: "bigintensive"
   POSTGRES_USER: "postgres"
@@ -44,140 +44,140 @@ spec:
         runAsUser: 1000
 
       containers:
-      - name: kafka-consumer
-        image: kafka-consumer-realtime:latest
-        imagePullPolicy: IfNotPresent
-        
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
-            cpu: "500m"
+        - name: kafka-consumer
+          image: kafka-consumer-realtime:latest
+          imagePullPolicy: IfNotPresent
 
-        env:
-        - name: KAFKA_BOOTSTRAP_SERVERS
-          valueFrom:
-            configMapKeyRef:
-              name: kafka-consumer-config
-              key: KAFKA_BOOTSTRAP_SERVERS
-        - name: KAFKA_TOPIC
-          valueFrom:
-            configMapKeyRef:
-              name: kafka-consumer-config
-              key: KAFKA_TOPIC
-        - name: CLICKHOUSE_URL
-          value: "jdbc:clickhouse://$(CLICKHOUSE_HOST):$(CLICKHOUSE_PORT)/$(CLICKHOUSE_DB)"
-        - name: CLICKHOUSE_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: kafka-consumer-config
-              key: CLICKHOUSE_HOST
-        - name: CLICKHOUSE_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: kafka-consumer-config
-              key: CLICKHOUSE_PORT
-        - name: CLICKHOUSE_DB
-          valueFrom:
-            configMapKeyRef:
-              name: kafka-consumer-config
-              key: CLICKHOUSE_DB
-        - name: CLICKHOUSE_USER
-          valueFrom:
-            configMapKeyRef:
-              name: kafka-consumer-config
-              key: CLICKHOUSE_USER
-        - name: CLICKHOUSE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: bigintensive-secrets
-              key: clickhouse-password
-        - name: POSTGRES_URL
-          value: "jdbc:postgresql://$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)"
-        - name: POSTGRES_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: kafka-consumer-config
-              key: POSTGRES_HOST
-        - name: POSTGRES_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: kafka-consumer-config
-              key: POSTGRES_PORT
-        - name: POSTGRES_DB
-          valueFrom:
-            configMapKeyRef:
-              name: kafka-consumer-config
-              key: POSTGRES_DB
-        - name: POSTGRES_USER
-          valueFrom:
-            configMapKeyRef:
-              name: kafka-consumer-config
-              key: POSTGRES_USER
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: bigintensive-secrets
-              key: postgres-password
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
 
-        livenessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -c
-            - ps aux | grep "[S]treamsAllarmi" || exit 1
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-consumer-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            - name: KAFKA_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-consumer-config
+                  key: KAFKA_TOPIC
+            - name: CLICKHOUSE_URL
+              value: "jdbc:clickhouse://clickhouse:8123/bigintensive"
+            - name: CLICKHOUSE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-consumer-config
+                  key: CLICKHOUSE_HOST
+            - name: CLICKHOUSE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-consumer-config
+                  key: CLICKHOUSE_PORT
+            - name: CLICKHOUSE_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-consumer-config
+                  key: CLICKHOUSE_DB
+            - name: CLICKHOUSE_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-consumer-config
+                  key: CLICKHOUSE_USER
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bigintensive-secrets
+                  key: CLICKHOUSE_PASSWORD
+            - name: POSTGRES_URL
+              value: "jdbc:postgresql://postgres:5432/bigintensive"
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-consumer-config
+                  key: POSTGRES_HOST
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-consumer-config
+                  key: POSTGRES_PORT
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-consumer-config
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-consumer-config
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bigintensive-secrets
+                  key: POSTGRES_PASSWORD
 
-        readinessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -c
-            - ps aux | grep "[S]treamsAllarmi" || exit 1
-          initialDelaySeconds: 20
-          periodSeconds: 5
-          timeoutSeconds: 5
-          failureThreshold: 2
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - ps aux | grep "[S]treamsAllarmi" || exit 1
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
 
-        volumeMounts:
-        - name: state-store
-          mountPath: /var/lib/kafka-streams
-        - name: logs
-          mountPath: /var/log/kafka-consumer
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - ps aux | grep "[S]treamsAllarmi" || exit 1
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 2
+
+          volumeMounts:
+            - name: state-store
+              mountPath: /var/lib/kafka-streams
+            - name: logs
+              mountPath: /var/log/kafka-consumer
 
       volumes:
-      - name: state-store
-        emptyDir:
-          sizeLimit: 500Mi
-      - name: logs
-        emptyDir:
-          sizeLimit: 100Mi
+        - name: state-store
+          emptyDir:
+            sizeLimit: 500Mi
+        - name: logs
+          emptyDir:
+            sizeLimit: 100Mi
 
       # Affinity policy to ensure consumer is spread across nodes
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - kafka-consumer
-              topologyKey: kubernetes.io/hostname
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - kafka-consumer
+                topologyKey: kubernetes.io/hostname
 
       # Tolerations per supportare node taints se presenti
       tolerations:
-      - key: "workload"
-        operator: "Equal"
-        value: "streaming"
-        effect: "NoSchedule"
+        - key: "workload"
+          operator: "Equal"
+          value: "streaming"
+          effect: "NoSchedule"
 
 ---
 apiVersion: v1
@@ -193,7 +193,7 @@ spec:
   selector:
     app: kafka-consumer
   ports:
-  - name: metrics
-    port: 8888
-    targetPort: 8888
-    protocol: TCP
+    - name: metrics
+      port: 8888
+      targetPort: 8888
+      protocol: TCP

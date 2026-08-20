@@ -183,6 +183,36 @@ def insert_clickhouse_batch(
 
 
 # ============================================================
+# TRASFORMAZIONE RAW → TABELLA FINALE
+# ============================================================
+
+def transform_raw_data(ch):
+
+    print("Esecuzione trasformazione allenamenti_raw → allenamenti...")
+
+    with open("script.sql", encoding="utf-8") as sql_file:
+        sql = "\n".join(
+            line
+            for line in sql_file
+            if not line.lstrip().startswith("--")
+        )
+
+    statements = [
+        statement.strip()
+        for statement in sql.split(";")
+        if statement.strip()
+    ]
+
+    for statement in statements:
+        if statement.lstrip().upper().startswith("SELECT"):
+            ch.query(statement)
+        else:
+            ch.command(statement)
+
+    print("Trasformazione ClickHouse completata.")
+
+
+# ============================================================
 # SINCRONIZZAZIONE
 # ============================================================
 
@@ -440,6 +470,9 @@ def main():
             pg,
             ch
         )
+
+        # Trasformiamo la staging RAW nella tabella finale dopo il trasferimento.
+        transform_raw_data(ch)
 
 
     except KeyboardInterrupt:
