@@ -206,6 +206,29 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # Heart Rate Simulator - Genera dati fake per test/demo
+  heart-rate-simulator:
+    build:
+      context: ../services
+      dockerfile: Dockerfile.simulator
+    container_name: heart-rate-simulator
+    depends_on:
+      - backend
+    environment:
+      - ENDPOINT_URL=http://backend:3001/api/v1/pushToKafka
+      - NUM_ATHLETES=${NUM_ATHLETES:-20000}
+      - SAMPLE_INTERVAL=${SAMPLE_INTERVAL:-5.0}
+    networks:
+      - spark-net
+    restart: unless-stopped
+    profiles:
+      - simulator
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   k6:
     image: grafana/k6:0.53.0
     container_name: bigintensive-k6
