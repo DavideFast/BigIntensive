@@ -1,7 +1,7 @@
 # ClickHouse Distributed Database (2 shard, 1 replica per shard)
 # Pragmatic setup for 2 nodes: 1 Keeper + 2 ClickHouse pods
 # ClickHouse Keeper (nativo, moderno, sostituisce Zookeeper)
-# Tables: workout_metrics, sensor_data
+# Tables: running_samples, allenamenti, allenamenti_raw
 
 ---
 # ClickHouse Keeper ConfigMap
@@ -366,6 +366,58 @@ spec:
       name: native
 
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clickhouse-schema
+  namespace: bigintensive
+data:
+  schema.sql: |
+    CREATE DATABASE IF NOT EXISTS bigintensive;
+    USE bigintensive;
+
+    CREATE TABLE IF NOT EXISTS running_samples (
+      sample_id UInt64,
+      athlete_id UInt64,
+      session_id UInt64,
+      timestamp DateTime DEFAULT now(),
+      heart_rate UInt8,
+      latitude DECIMAL(9, 6),
+      longitude DECIMAL(9, 6),
+      altitude DECIMAL(5, 2),
+      temperature DECIMAL(4, 2),
+      cadence UInt8,
+      event_type String,
+      created_at DateTime DEFAULT now()
+    ) ENGINE = MergeTree
+    ORDER BY (timestamp, athlete_id, session_id)
+    PARTITION BY toYYYYMM(timestamp);
+
+    CREATE TABLE IF NOT EXISTS allenamenti (
+      allenamento_id UInt64,
+      athlete_id UInt64,
+      data_allenamento DateTime NOT NULL,
+      nome_esercizio String NOT NULL,
+      serie_allenamento UInt8 NOT NULL,
+      ripetizioni_allenamento UInt8 NOT NULL,
+      recupero_allenamento UInt8 NOT NULL,
+      peso_allenamento DECIMAL(5, 2),
+      created_at DateTime DEFAULT now()
+    ) ENGINE = MergeTree
+    ORDER BY (data_allenamento, athlete_id, allenamento_id)
+    PARTITION BY toYYYYMM(data_allenamento);
+
+    CREATE TABLE IF NOT EXISTS allenamenti_raw (
+      allenamento_id UInt64,
+      athlete_id UInt64,
+      data_allenamento DateTime,
+      struttura_allenamento String,
+      created_at DateTime
+    ) ENGINE = MergeTree
+    ORDER BY allenamento_id
+    PARTITION BY toYYYYMM(data_allenamento);
+
+---
 # ClickHouse Init Job (crea tabelle)
 apiVersion: batch/v1
 kind: Job
@@ -402,40 +454,18 @@ spec:
                 exit 1
               fi
 
-              # Create database
-              clickhouse-client --host clickhouse-0.clickhouse.bigintensive.svc.cluster.local --port 9000 --query "CREATE DATABASE IF NOT EXISTS bigintensive ON CLUSTER bigintensive_cluster"
-
-              # Create workout_metrics table (replicated)
-              clickhouse-client --host clickhouse-0.clickhouse.bigintensive.svc.cluster.local --port 9000 --query "
-                CREATE TABLE IF NOT EXISTS bigintensive.workout_metrics ON CLUSTER bigintensive_cluster (
-                  athlete_id UInt32,
-                  workout_id UInt32,
-                  timestamp DateTime,
-                  power Float32,
-                  heart_rate UInt16,
-                  cadence UInt16,
-                  speed Float32,
-                  distance Float32
-                ) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')
-                ORDER BY (timestamp, athlete_id)
-                PARTITION BY toYYYYMM(timestamp)
-                TTL timestamp + INTERVAL 1 YEAR DELETE
-              "
-
-              # Create sensor_data table (replicated)
-              clickhouse-client --host clickhouse-0.clickhouse.bigintensive.svc.cluster.local --port 9000 --query "
-                CREATE TABLE IF NOT EXISTS bigintensive.sensor_data ON CLUSTER bigintensive_cluster (
-                  sensor_id UInt32,
-                  timestamp DateTime,
-                  value Float32,
-                  sensor_type String
-                ) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')
-                ORDER BY (timestamp, sensor_id)
-                PARTITION BY toYYYYMM(timestamp)
-                TTL timestamp + INTERVAL 1 YEAR DELETE
-              "
+              for host in clickhouse-0.clickhouse.bigintensive.svc.cluster.local clickhouse-1.clickhouse.bigintensive.svc.cluster.local; do
+                clickhouse-client --host "$host" --port 9000 --multiquery < /schema/schema.sql
+              done
 
               echo "ClickHouse initialization completed!"
           env:
             - name: CLICKHOUSE_HOST
               value: clickhouse-0.clickhouse.bigintensive.svc.cluster.local
+          volumeMounts:
+            - name: schema
+              mountPath: /schema
+      volumes:
+        - name: schema
+          configMap:
+            name: clickhouse-schema

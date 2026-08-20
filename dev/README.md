@@ -38,7 +38,6 @@ cd "d:\Programmazione\GitHub\BigIntensive"
 - `01 - create-kafka-topics-local.ps1`: crea i topic Kafka definiti in `streaming/kafka/topics.json`
 - `02 - start-backend.ps1`: avvia Express API
 - `03 - start-dashboard.ps1`: avvia il frontend React
-- `not-launch-init-citus.ps1`: inizializzazione manuale del database Citus, da usare solo in casi specifici
 
 ## Test e diagnostica
 

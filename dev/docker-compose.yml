@@ -123,12 +123,29 @@ services:
     networks:
       - spark-net
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.1
+    container_name: clickhouse
+    ports:
+      - "${CLICKHOUSE_HTTP_PORT:-8123}:8123"
+      - "${CLICKHOUSE_NATIVE_PORT:-9000}:9000"
+    environment:
+      CLICKHOUSE_DB: bigintensive
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ../database/clickhouse/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    networks:
+      - spark-net
+
   backend:
     image: davidefast/bigintensive-backend:latest
     container_name: backend
     depends_on:
       - postgres
       - kafka
+      - clickhouse
     environment:
       - PORT=3001
       - CORS_ORIGIN=http://localhost:${FRONTEND_PORT:-5173}
@@ -184,3 +201,4 @@ networks:
 volumes:
   k6-shared:
   postgres-data:
+  clickhouse-data:

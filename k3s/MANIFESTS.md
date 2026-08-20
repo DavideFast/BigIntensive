@@ -23,7 +23,7 @@ k3s/
 ## Ownership by file
 
 - `00-namespace-and-secrets.yaml`
-  - Namespace, secrets, configmaps, bootstrap SQL config.
+  - Namespace, secrets and shared application ConfigMap.
 - `01-postgresql.yaml`
   - PostgreSQL service, StatefulSet, persistent volume and schema init ConfigMap.
 - `02-kafka.yaml`

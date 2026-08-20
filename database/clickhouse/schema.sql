@@ -1,3 +1,6 @@
+CREATE DATABASE IF NOT EXISTS bigintensive;
+USE bigintensive;
+
 -- Running samples
 CREATE TABLE IF NOT EXISTS running_samples (
   sample_id UInt64,
