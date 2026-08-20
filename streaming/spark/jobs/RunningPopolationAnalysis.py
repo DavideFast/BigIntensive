@@ -1,6 +1,5 @@
-from math import radians, sin, cos, sqrt, atan2
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, avg,  lag, countDistinct, first, row_number, to_date
+from pyspark.sql.functions import col, avg,  lag, countDistinct, first, row_number, to_date, radians, sin, cos, sqrt, atan2
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
 from pyspark.sql.window import Window
 from pyspark.ml.feature import VectorAssembler
@@ -72,7 +71,7 @@ def main():
 
 
 
-    df_merged = df_pulito_null.join(df_postgres_aggiustato, (df_pulito_null["athlete_id"] == df_postgres_aggiustato["athlete_id"]) & (to_date(col["timestamp"]) == col["data_rilevazione"]), how="inner")
+    df_merged = df_pulito_null.join(df_postgres_aggiustato, (df_pulito_null["athlete_id"] == df_postgres_aggiustato["athlete_id"]) & (to_date(col("timestamp")) == col("data_rilevazione")), how="inner")
 
     # Calcolo deriva cardiaca puntuale per valore antropometrico
 
