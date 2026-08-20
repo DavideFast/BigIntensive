@@ -1,5 +1,6 @@
 import time
 import json
+import os
 from datetime import datetime
 
 import psycopg
@@ -11,11 +12,11 @@ import clickhouse_connect
 # ============================================================
 
 POSTGRES_CONFIG = {
-    "host": "localhost",
-    "port": 5432,
-    "dbname": "nome_database",
-    "user": "postgres",
-    "password": "password",
+    "host": os.getenv("POSTGRES_HOST", "localhost"),
+    "port": int(os.getenv("POSTGRES_PORT", "5432")),
+    "dbname": os.getenv("POSTGRES_DB", "bigintensive"),
+    "user": os.getenv("POSTGRES_USER", "postgres"),
+    "password": os.getenv("POSTGRES_PASSWORD", "postgres"),
 }
 
 
@@ -24,11 +25,11 @@ POSTGRES_CONFIG = {
 # ============================================================
 
 CLICKHOUSE_CONFIG = {
-    "host": "localhost",
-    "port": 8123,
-    "username": "default",
-    "password": "password",
-    "database": "sport",
+    "host": os.getenv("CLICKHOUSE_HOST", "localhost"),
+    "port": int(os.getenv("CLICKHOUSE_PORT", "8123")),
+    "username": os.getenv("CLICKHOUSE_USER", "default"),
+    "password": os.getenv("CLICKHOUSE_PASSWORD", ""),
+    "database": os.getenv("CLICKHOUSE_DB", "bigintensive"),
 }
 
 
@@ -79,13 +80,13 @@ def create_raw_table(ch):
 
     ch.command(
         """
-        CREATE DATABASE IF NOT EXISTS sport
+        CREATE DATABASE IF NOT EXISTS bigintensive
         """
     )
 
     ch.command(
         """
-        CREATE TABLE IF NOT EXISTS sport.allenamenti_raw
+        CREATE TABLE IF NOT EXISTS bigintensive.allenamenti_raw
         (
             allenamento_id UInt64,
             athlete_id UInt64,
@@ -111,7 +112,7 @@ def get_last_allenamento_id(ch):
     result = ch.query(
         """
         SELECT max(allenamento_id)
-        FROM sport.allenamenti
+        FROM bigintensive.allenamenti
         """
     )
 
@@ -168,7 +169,7 @@ def insert_clickhouse_batch(
         return
 
     ch.insert(
-        "sport.allenamenti_raw",
+        "bigintensive.allenamenti_raw",
         rows,
 
         column_names=[

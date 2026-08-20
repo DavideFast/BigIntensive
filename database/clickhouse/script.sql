@@ -2,20 +2,20 @@
 -- CONFIGURAZIONE
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS sport;
+CREATE DATABASE IF NOT EXISTS bigintensive;
 
 
 -- ============================================================
 -- TABELLA FINALE
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS sport.allenamenti
+CREATE TABLE IF NOT EXISTS bigintensive.allenamenti
 (
     allenamento_id UInt64,
     athlete_id UInt64,
     data_allenamento DateTime,
 
-    esercizio LowCardinality(String),
+    nome_esercizio LowCardinality(String),
 
     serie_allenamento UInt8,
     ripetizioni_allenamento UInt8,
@@ -43,19 +43,19 @@ SELECT
     count() AS allenamenti_da_processare,
     min(allenamento_id) AS primo_id,
     max(allenamento_id) AS ultimo_id
-FROM sport.allenamenti_raw;
+    FROM bigintensive.allenamenti_raw;
 
 
 -- ============================================================
 -- TRASFORMAZIONE
 -- ============================================================
 
-INSERT INTO sport.allenamenti
+INSERT INTO bigintensive.allenamenti
 (
     allenamento_id,
     athlete_id,
     data_allenamento,
-    esercizio,
+    nome_esercizio,
     serie_allenamento,
     ripetizioni_allenamento,
     recupero_allenamento,
@@ -70,7 +70,7 @@ SELECT
 
     r.data_allenamento,
 
-    exercise.1 AS esercizio,
+    exercise.1 AS nome_esercizio,
 
     serie_numero AS serie_allenamento,
 
@@ -98,7 +98,7 @@ SELECT
 
     r.created_at
 
-FROM sport.allenamenti_raw AS r
+FROM bigintensive.allenamenti_raw AS r
 
 ARRAY JOIN
     arrayMap(
@@ -133,14 +133,14 @@ ARRAY JOIN
 
 SELECT
     count() AS righe_generate
-FROM sport.allenamenti;
+FROM bigintensive.allenamenti;
 
 
 -- ============================================================
 -- SVUOTAMENTO STAGING
 -- ============================================================
 
-TRUNCATE TABLE sport.allenamenti_raw;
+TRUNCATE TABLE bigintensive.allenamenti_raw;
 
 
 -- ============================================================
@@ -149,4 +149,4 @@ TRUNCATE TABLE sport.allenamenti_raw;
 
 SELECT
     count() AS raw_rimanenti
-FROM sport.allenamenti_raw;
+FROM bigintensive.allenamenti_raw;
