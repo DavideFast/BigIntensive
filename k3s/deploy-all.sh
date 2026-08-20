@@ -80,6 +80,7 @@ apply_manifest "$SCRIPT_DIR/07-clickhouse.yaml" "ClickHouse & ClickHouse Keeper"
 apply_manifest "$SCRIPT_DIR/08-trainingstatus-cronjob.yaml" "Training Status CronJob"
 apply_manifest "$SCRIPT_DIR/09-kafka-consumer.yaml" "Kafka Consumer"
 apply_manifest "$SCRIPT_DIR/10-elt-copy-workout.yaml" "PostgreSQL to ClickHouse ELT"
+apply_manifest "$SCRIPT_DIR/11-smartwatch-simulator.yaml" "Smartwatch Simulator"
 
 echo -e "${GREEN}========================================"
 echo "✓ All resources deployed successfully!"
