@@ -97,22 +97,6 @@ check_no_bad_pods() {
   fi
 }
 
-check_citus_bootstrap_job() {
-  if ! $KUBECTL_CMD get job citus-bootstrap -n "$NAMESPACE" >/dev/null 2>&1; then
-    warn "Job 'citus-bootstrap' not found"
-    return
-  fi
-
-  local succeeded
-  succeeded="$($KUBECTL_CMD get job citus-bootstrap -n "$NAMESPACE" -o jsonpath='{.status.succeeded}' 2>/dev/null || true)"
-
-  if [[ "$succeeded" == "1" ]]; then
-    pass "Job 'citus-bootstrap' completed"
-  else
-    warn "Job 'citus-bootstrap' not completed yet"
-  fi
-}
-
 check_ingress() {
   if $KUBECTL_CMD get ingress bigintensive-web -n "$NAMESPACE" >/dev/null 2>&1; then
     pass "Ingress 'bigintensive-web' exists"

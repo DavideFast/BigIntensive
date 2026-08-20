@@ -9,14 +9,13 @@ This document is a technical appendix for the current modular Kubernetes manifes
 ```text
 k3s/
 ├── 00-namespace-and-secrets.yaml
-├── 01-citus.yaml
+├── 01-postgresql.yaml
 ├── 02-kafka.yaml
 ├── 03-backend.yaml
 ├── 04-frontend.yaml
 ├── 05-spark-and-jupyter.yaml
 ├── 06-ingress.yaml
 ├── 07-clickhouse.yaml
-├── 08-trainingstatus-cronjob.yaml
 ├── deploy-all.sh
 └── deploy-k3s-local.sh
 ```
@@ -25,8 +24,8 @@ k3s/
 
 - `00-namespace-and-secrets.yaml`
   - Namespace, secrets, configmaps, bootstrap SQL config.
-- `01-citus.yaml`
-  - Citus coordinator/workers, headless services, bootstrap job.
+- `01-postgresql.yaml`
+  - PostgreSQL service, StatefulSet, persistent volume and schema init ConfigMap.
 - `02-kafka.yaml`
   - Kafka (KRaft) and Kafka UI.
 - `03-backend.yaml`
@@ -39,22 +38,19 @@ k3s/
   - Traefik ingress routes for frontend, API, Kafka UI, Jupyter.
 - `07-clickhouse.yaml`
   - ClickHouse and ClickHouse Keeper resources.
-- `08-trainingstatus-cronjob.yaml`
-  - Nightly cronjob for training status flow (currently suspended).
 
 ## Apply order
 
 The expected order is fixed and implemented by `deploy-all.sh`:
 
 1. `00-namespace-and-secrets.yaml`
-2. `01-citus.yaml`
+2. `01-postgresql.yaml`
 3. `02-kafka.yaml`
 4. `03-backend.yaml`
 5. `04-frontend.yaml`
 6. `05-spark-and-jupyter.yaml`
 7. `06-ingress.yaml`
 8. `07-clickhouse.yaml`
-9. `08-trainingstatus-cronjob.yaml`
 
 ## Advanced operations
 

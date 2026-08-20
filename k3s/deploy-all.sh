@@ -69,7 +69,7 @@ pre_deploy_cleanup
 
 # Apply in order
 apply_manifest "$SCRIPT_DIR/00-namespace-and-secrets.yaml" "Namespace, Secrets & ConfigMaps"
-apply_manifest "$SCRIPT_DIR/01-citus.yaml" "Citus PostgreSQL Cluster"
+apply_manifest "$SCRIPT_DIR/01-postgresql.yaml" "PostgreSQL Database"
 apply_manifest "$SCRIPT_DIR/02-kafka.yaml" "Kafka & Kafka UI"
 apply_manifest "$SCRIPT_DIR/02b-kafka-topics.yaml" "Kafka Topic Bootstrap Job"
 apply_manifest "$SCRIPT_DIR/03-backend.yaml" "Backend"
@@ -77,7 +77,6 @@ apply_manifest "$SCRIPT_DIR/04-frontend.yaml" "Frontend"
 apply_manifest "$SCRIPT_DIR/05-spark-and-jupyter.yaml" "Spark & Jupyter"
 apply_manifest "$SCRIPT_DIR/06-ingress.yaml" "Ingress Routes"
 apply_manifest "$SCRIPT_DIR/07-clickhouse.yaml" "ClickHouse & ClickHouse Keeper"
-apply_manifest "$SCRIPT_DIR/08-trainingstatus-cronjob.yaml" "Training Status Nightly CronJob"
 
 echo -e "${GREEN}========================================"
 echo "✓ All resources deployed successfully!"

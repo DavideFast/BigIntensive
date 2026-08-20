@@ -32,7 +32,7 @@ export function createServerContext(importMetaUrl) {
     sparkComposeService: process.env.SPARK_COMPOSE_SERVICE || "spark-master",
     sparkMasterUrl: process.env.SPARK_MASTER_URL || "spark://spark-master:7077",
     sparkAppsDir: process.env.SPARK_APPS_DIR || "/opt/spark-apps",
-    sparkCitusJdbcUrl: process.env.SPARK_CITUS_JDBC_URL || "jdbc:postgresql://citus-coordinator:5432/bigintensive",
+    sparkCitusJdbcUrl: process.env.SPARK_POSTGRES_JDBC_URL || "jdbc:postgresql://postgres:5432/bigintensive",
     sparkClickhouseJdbcUrl: process.env.SPARK_CLICKHOUSE_JDBC_URL || "jdbc:clickhouse://clickhouse:8123/bigintensive",
     sparkKafkaBootstrapServers: process.env.SPARK_KAFKA_BOOTSTRAP_SERVERS || "kafka:19092",
     sparkKafkaTopic: process.env.SPARK_KAFKA_TOPIC || "heart-rate-events",
