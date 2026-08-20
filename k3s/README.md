@@ -8,9 +8,7 @@ Il cluster gestisce:
 
 - `backend`
 - `frontend`
-- `citus-coordinator`
-- `citus-worker-1`
-- `citus-worker-2`
+- `postgres`
 - `kafka`
 - `kafka-ui`
 
@@ -104,7 +102,7 @@ Nel caso a due VM, esegui questo script sulla VM server, non sull'agent.
 bash k3s/deploy-all.sh
 ```
 
-Questo applica i manifest modulari e crea namespace, secret, servizi, deployment/statefulset e job di bootstrap Citus.
+Questo applica i manifest modulari e crea namespace, secret, servizi, deployment/statefulset e schema PostgreSQL.
 
 ## Passo 4: controlla che i pod salgano
 
@@ -114,21 +112,13 @@ kubectl get pods -n bigintensive -w
 
 Aspettati inizialmente `ContainerCreating` sui servizi stateful, poi `Running` per i pod applicativi.
 
-## Passo 5: inizializza Citus
+## Passo 5: verifica PostgreSQL
 
-Il job `citus-bootstrap` applica gli script SQL che il progetto già usa in locale.
-
-Per vedere l'esito:
+Lo StatefulSet `postgres` monta `database/postgresql/schema.sql` come script di inizializzazione. Lo script viene eseguito da PostgreSQL solo al primo avvio del volume dati.
 
 ```powershell
-kubectl logs job/citus-bootstrap -n bigintensive
-```
-
-Se vuoi rilanciarlo dopo una modifica ai dati, cancellalo e riapplicalo:
-
-```powershell
-kubectl delete job citus-bootstrap -n bigintensive
-kubectl apply -f k3s/01-citus.yaml
+kubectl get statefulset postgres -n bigintensive
+kubectl logs statefulset/postgres -n bigintensive
 ```
 
 ## Passo 6: esponi i servizi nel browser
