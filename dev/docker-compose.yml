@@ -229,6 +229,37 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # ELT Script: Copy Workout from PostgreSQL to ClickHouse
+  elt-copy-workout:
+    build:
+      context: ../database/scriptELT
+      dockerfile: Dockerfile
+    container_name: elt-copy-workout
+    depends_on:
+      - postgres
+      - clickhouse
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-bigintensive}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - CLICKHOUSE_HOST=clickhouse
+      - CLICKHOUSE_PORT=8123
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-}
+      - CLICKHOUSE_DB=${CLICKHOUSE_DB:-bigintensive}
+    networks:
+      - spark-net
+    restart: on-failure
+    profiles:
+      - elt
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   k6:
     image: grafana/k6:0.53.0
     container_name: bigintensive-k6
