@@ -95,12 +95,12 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: bigintensive-config
-                  key: POSTGRES_USER
+                  key: POSTGRES_PORT
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
                   name: bigintensive-secrets
-                  key: POSTGRES_PASSWORD
+                  key: POSTGRES_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:

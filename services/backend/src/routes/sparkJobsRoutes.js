@@ -53,10 +53,10 @@ function validateTriggerPayload(body) {
   };
 }
 
-function buildSparkSubmitCommand({ job, composeService, sparkMasterUrl, sparkAppsDir, citusJdbcUrl, clickhouseJdbcUrl }) {
+function buildSparkSubmitCommand({ job, composeService, sparkMasterUrl, sparkAppsDir, postgresJdbcUrl, clickhouseJdbcUrl }) {
   const scriptPath = `${sparkAppsDir}/${job.script}`;
   const exportsPrefixRaw = buildEnvPrefix({
-    CITUS_JDBC_URL: citusJdbcUrl,
+    POSTGRES_JDBC_URL: postgresJdbcUrl,
     CLICKHOUSE_JDBC_URL: clickhouseJdbcUrl,
   });
   const exportsPrefix = exportsPrefixRaw ? `${exportsPrefixRaw} ` : "";
@@ -156,7 +156,7 @@ export function createSparkJobsRouter({
     const { job } = validation;
     const jobId = randomUUID();
 
-    const citusJdbcUrl = String(req.body?.citus_jdbc_url || sparkCitusJdbcUrl || "").trim() || null;
+    const postgresJdbcUrl = String(req.body?.postgres_jdbc_url || sparkCitusJdbcUrl || "").trim() || null;
     const clickhouseJdbcUrl = String(req.body?.clickhouse_jdbc_url || sparkClickhouseJdbcUrl || "").trim() || null;
 
     const args = buildSparkSubmitCommand({
@@ -164,7 +164,7 @@ export function createSparkJobsRouter({
       composeService: sparkComposeService,
       sparkMasterUrl,
       sparkAppsDir,
-      citusJdbcUrl,
+      postgresJdbcUrl,
       clickhouseJdbcUrl,
     });
 

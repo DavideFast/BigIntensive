@@ -142,11 +142,10 @@ check_service backend
 check_service frontend
 check_service kafka
 check_service kafka-ui
-check_service citus-coordinator
+check_service postgres
 check_endpoint_ready backend
 check_endpoint_ready frontend
 check_no_bad_pods
-check_citus_bootstrap_job
 check_ingress
 
 print_summary

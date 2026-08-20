@@ -1,5 +1,4 @@
 param(
-  [switch]$SkipCitusInit,
   [switch]$IncludeApp
 )
 
@@ -18,18 +17,18 @@ if (-not (Test-Path $rootEnvFile) -and (Test-Path $rootEnvExample)) {
   Copy-Item $rootEnvExample $rootEnvFile
 }
 
-$citusCoordinatorPort = if ($env:CITUS_COORDINATOR_PORT) { $env:CITUS_COORDINATOR_PORT } else { '5432' }
+$postgresPort = if ($env:POSTGRES_PORT) { $env:POSTGRES_PORT } else { '5432' }
 
-if ($citusCoordinatorPort -eq '5432') {
+if ($postgresPort -eq '5432') {
   $portInUse = Get-NetTCPConnection -LocalPort 5432 -State Listen -ErrorAction SilentlyContinue
 
   if ($null -ne $portInUse) {
-    $citusCoordinatorPort = '55432'
-    Write-Host 'Port 5432 is already in use; using 55432 for the Citus coordinator.'
+    $postgresPort = '55432'
+    Write-Host 'Port 5432 is already in use; using 55432 for PostgreSQL.'
   }
 }
 
-$env:CITUS_COORDINATOR_PORT = $citusCoordinatorPort
+$env:POSTGRES_PORT = $postgresPort
 
 $backendPort = if ($env:BACKEND_PORT) { $env:BACKEND_PORT } else { '3001' }
 if ($backendPort -eq '3001') {
@@ -59,19 +58,11 @@ catch {
   exit 1
 }
 
-Write-Host "Starting full platform (Spark, Jupyter, Citus, Kafka, Backend, Dashboard)..."
+Write-Host "Starting full platform (Spark, Jupyter, PostgreSQL, Kafka, Backend, Dashboard)..."
 docker compose up -d
 
 if ($LASTEXITCODE -ne 0) {
-  throw "docker compose up -d failed; stopping before Citus initialization."
-}
-
-if (-not $SkipCitusInit) {
-  Write-Host "Initializing Citus cluster..."
-  & (Join-Path $scriptDir "init-citus.ps1")
-}
-else {
-  Write-Host "Skipping Citus initialization as requested."
+  throw "docker compose up -d failed."
 }
 
 if ($IncludeApp) {
