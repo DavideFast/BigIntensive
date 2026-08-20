@@ -1,12 +1,5 @@
 import os
 
-CITUS_URL = os.getenv("CITUS_JDBC_URL", "jdbc:postgresql://citus-coordinator:5432/bigintensive")
-CITUS_PROPS = {
-    "user": os.getenv("CITUS_USER", "postgres"),
-    "password": os.getenv("CITUS_PASSWORD", "postgres"),
-    "driver": "org.postgresql.Driver",
-}
-
 CLICKHOUSE_URL = os.getenv("CLICKHOUSE_JDBC_URL", "jdbc:clickhouse://clickhouse:8123/bigintensive")
 CLICKHOUSE_PROPS = {
     "user": os.getenv("CLICKHOUSE_USER", "default"),
