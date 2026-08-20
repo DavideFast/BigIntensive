@@ -23,10 +23,11 @@ def main():
     df.show(5)
     df_postgres.show(5)
 
-    df_postgres_aggiustato = df_postgres.withColumn("BMI", col("peso_kg") / (col("altezza_cm") * col("altezza_cm")/10000))
-
+    
     finestra_temporale = Window.partitionBy("athlete_id", "session_id").orderBy("sample_id")
     finestra_temporale_5min = finestra_temporale.rowsBetween(-60, 0)
+
+    
 
     df_ordinato = df.orderBy(col("athlete_id"), col("session_id"), col("sample_id"))
     df_ordinato.show(5)
@@ -47,14 +48,16 @@ def main():
     df_pulito_null.show(5)
 
 
+    df_postgres_aggiornato = df_postgres.withColumn("BMI", col("peso_kg") / (col("altezza_cm") * col("altezza_cm")/10000))
+    df_postgres_aggiornato.show(5)
 
-
-    df_merged = df_pulito_null.join(df_postgres_aggiustato, (df_pulito_null["athlete_id"] == df_postgres_aggiustato["athlete_id"]) & (to_date(col("timestamp")) == col("data_rilevazione")), how="inner")
-
+    # join posticipato: solo le colonne antropometriche necessarie, dopo i calcoli pesanti sulle window function
+    df_postgres_ridotto = df_postgres_aggiornato.select("athlete_id", "data_rilevazione", "peso_kg", "altezza_cm", "BMI")
+    df_postgres_ridotto.show(5)
     # Calcolo deriva cardiaca puntuale per valore antropometrico
 
     R=6371000  # Raggio della Terra in metri
-    df_deriva_cardiaca = df_merged \
+    df_deriva_cardiaca = df_pulito_null \
         .withColumn("lat_prec", lag("latitude", 1).over(finestra_temporale)) \
         .withColumn("lon_prec", lag("longitude", 1).over(finestra_temporale)) \
         .withColumn("lat_rad", radians(col("latitude"))) \
@@ -70,22 +73,30 @@ def main():
         .withColumn("velocita_media", avg("velocita_puntuale").over(finestra_temporale_5min)) \
         .withColumn("frequenza_cardiaca_media", avg("heart_rate").over(finestra_temporale_5min)) \
         .withColumn("Efficienza_puntuale", col("velocita_puntuale") / col("frequenza_cardiaca_media")) \
-        .withColumn("Efficienza_puntuale_iniziale", first("Efficienza_puntuale").over(finestra_temporale))
-
-    df_deriva_cardiaca = df_deriva_cardiaca.withColumn("Deriva_cardiaca_percentuale", (col("Efficienza_puntuale")- col("Efficienza_puntuale_iniziale")) / col("Efficienza_puntuale_iniziale") * 100)
+        .withColumn("Efficienza_puntuale_iniziale", first("Efficienza_puntuale").over(finestra_temporale)) \
+        .withColumn("Deriva_cardiaca_percentuale", (col("Efficienza_puntuale")- col("Efficienza_puntuale_iniziale")) / col("Efficienza_puntuale_iniziale") * 100)
 
     # Troviamo la velocità che causa la deriva cardiaca più alta per ogni atleta e sessione
 
     finestra_sessione_tempo = Window.partitionBy("athlete_id", "session_id").orderBy("timestamp")
     df_crisi_ordinate = df_deriva_cardiaca \
-                    .filter(col("Deriva_cardiaca_percentuale") > 5) \
+                .filter(col("Deriva_cardiaca_percentuale") > 5) \
                 .withColumn("riga_crisi", row_number().over(finestra_sessione_tempo))
 
     primo_punto_di_crisi_per_sessione = df_crisi_ordinate \
         .filter(col("riga_crisi") == 1) \
-        .select("timestamp", "velocita_media", "Deriva_cardiaca_percentuale", "athlete_id", "session_id", "peso_kg", "altezza_cm", "BMI")
+        .select("timestamp", "velocita_media", "Deriva_cardiaca_percentuale", "athlete_id", "session_id")
+
 
     df_conteggio_corse = primo_punto_di_crisi_per_sessione.groupBy("athlete_id").agg(countDistinct("session_id").alias("numero_corse"))
+    # join con Postgres eseguito qui: una sola riga per sessione, non tutte le righe di crisi
+    primo_punto_di_crisi_per_sessione = primo_punto_di_crisi_per_sessione.join(
+        df_postgres_ridotto,
+        (primo_punto_di_crisi_per_sessione["athlete_id"] == df_postgres_ridotto["athlete_id"]) & (to_date(col("timestamp")) == col("data_rilevazione")),
+        how="inner"
+    ).drop(df_postgres_ridotto["athlete_id"])
+
+    
     df_preanalisi = primo_punto_di_crisi_per_sessione.join(df_conteggio_corse, ["athlete_id"], how="left")
 
 
