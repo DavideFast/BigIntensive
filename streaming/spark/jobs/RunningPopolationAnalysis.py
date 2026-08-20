@@ -16,28 +16,6 @@ def main():
 
     spark.sparkContext.setLogLevel("WARN")
 
-    payload_schema = StructType(
-        [
-            StructField("athlete_id", StringType(), True),
-            StructField("session_id", IntegerType(), True),
-            StructField("heart_rate", DoubleType(), True),
-            StructField("cadence_spm", DoubleType(), True),
-            StructField("altitude_m", DoubleType(), True),
-            StructField("temperature_c", DoubleType(), True),
-            StructField("timestamp", StringType(), True),
-            StructField("GPS", IntegerType(), True),
-            StructField("sample_id", IntegerType(), True),
-        ]
-    )
-
-    payload_schema2 = StructType(
-        [
-            StructField("athlete_id", StringType(), True),
-            StructField("peso", IntegerType(), True),
-            StructField("altezza", DoubleType(), True),
-        ]
-    )
-
     df = spark.read.format("jdbc").option("url", CLICKHOUSE_URL).option("dbtable", CLICKHOUSE_TABLE).option("user", CLICKHOUSE_PROPS["user"]).option("password", CLICKHOUSE_PROPS["password"]).load()
 
     df_postgres = spark.read.format("jdbc").option("url", POSTGRES_URL).option("dbtable", POSTGRES_TABLE).option("user", POSTGRES_PROPS["user"]).option("password", POSTGRES_PROPS["password"]).load()
@@ -92,7 +70,7 @@ def main():
         .withColumn("velocita_media", avg("velocita_puntuale").over(finestra_temporale_5min)) \
         .withColumn("frequenza_cardiaca_media", avg("heart_rate").over(finestra_temporale_5min)) \
         .withColumn("Efficienza_puntuale", col("velocita_puntuale") / col("frequenza_cardiaca_media")) \
-        .withColumn("Efficienza_puntuale_iniziale", first("Efficienza_puntuale").over(finestra_temporale)) \
+        .withColumn("Efficienza_puntuale_iniziale", first("Efficienza_puntuale").over(finestra_temporale))
 
     df_deriva_cardiaca = df_deriva_cardiaca.withColumn("Deriva_cardiaca_percentuale", (col("Efficienza_puntuale")- col("Efficienza_puntuale_iniziale")) / col("Efficienza_puntuale_iniziale") * 100)
 
