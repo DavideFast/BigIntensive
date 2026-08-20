@@ -179,7 +179,7 @@ export function createSparkJobsRouter({
       exitCode: null,
       composeService: sparkComposeService,
       sparkMasterUrl,
-      citusJdbcUrl,
+      postgresJdbcUrl,
       clickhouseJdbcUrl,
       outputTail: "",
     });
