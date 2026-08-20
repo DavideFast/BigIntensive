@@ -72,9 +72,18 @@ public class StreamsAllarmi {
         }
 
         private void databaseBulkInsert(List<HeartRateSample> samples, long timestamp) {
-            String url = "jdbc:clickhouse://localhost:8123/default";
-            String user = "default";
-            String password = "";
+            String url = System.getenv("CLICKHOUSE_URL");
+            if (url == null || url.isEmpty()) {
+                url = "jdbc:clickhouse://localhost:8123/default";
+            }
+            String user = System.getenv("CLICKHOUSE_USER");
+            if (user == null || user.isEmpty()) {
+                user = "default";
+            }
+            String password = System.getenv("CLICKHOUSE_PASSWORD");
+            if (password == null) {
+                password = "";
+            }
             try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, password)) {
                 String sql = "INSERT INTO heart_rate_samples (athlete_id, sample_index, latitude, longitude, heart_rate_bpm, cadence_spm, event_type) VALUES (?, ?, ?, ?, ?, ?, ?)";
                 try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -96,9 +105,18 @@ public class StreamsAllarmi {
         }
 
         private void databaseSummary(double velocitaMedia, double velocitaMax, double frequenzaCardiacaMedia, double frequenzaCardiacaMax, double cadenzaMedia, double distanzaTotale, int campioni, HeartRateSample sample, long timestamp) {
-            String url = "jdbc:postgresql://localhost:5432/default";
-            String user = "default";
-            String password = "";
+            String url = System.getenv("POSTGRES_URL");
+            if (url == null || url.isEmpty()) {
+                url = "jdbc:postgresql://localhost:5432/default";
+            }
+            String user = System.getenv("POSTGRES_USER");
+            if (user == null || user.isEmpty()) {
+                user = "postgres";
+            }
+            String password = System.getenv("POSTGRES_PASSWORD");
+            if (password == null) {
+                password = "postgres";
+            }
             try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, password)) {
                 String sql = "INSERT INTO session_summary (athlete_id, velocita_media, velocita_max, frequenza_cardiaca_media, frequenza_cardiaca_max, cadenza_media, distanza_totale, campioni, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -211,10 +229,15 @@ public class StreamsAllarmi {
 
     public static void main(String[] args) {
 
-        // Configurazione di Kafka Streams
+        // Configurazione di Kafka Streams - Legge da variabili d'ambiente
+        String bootstrapServers = System.getenv("KAFKA_BOOTSTRAP_SERVERS");
+        if (bootstrapServers == null || bootstrapServers.isEmpty()) {
+            bootstrapServers = "localhost:9092";
+        }
+
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "rilevatore-immobilita");
-        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
 

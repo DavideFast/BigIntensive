@@ -180,6 +180,32 @@ services:
     networks:
       - spark-net
 
+  kafka-consumer:
+    build:
+      context: ../streaming/kafka/consumer
+      dockerfile: Dockerfile
+    container_name: kafka-consumer-realtime
+    depends_on:
+      - kafka
+      - postgres
+      - clickhouse
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:19092
+      - CLICKHOUSE_URL=jdbc:clickhouse://clickhouse:8123/bigintensive
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-}
+      - POSTGRES_URL=jdbc:postgresql://postgres:5432/bigintensive
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+    networks:
+      - spark-net
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   k6:
     image: grafana/k6:0.53.0
     container_name: bigintensive-k6

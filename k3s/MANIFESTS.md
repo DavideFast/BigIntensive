@@ -11,11 +11,14 @@ k3s/
 ├── 00-namespace-and-secrets.yaml
 ├── 01-postgresql.yaml
 ├── 02-kafka.yaml
+├── 02b-kafka-topics.yaml
 ├── 03-backend.yaml
 ├── 04-frontend.yaml
 ├── 05-spark-and-jupyter.yaml
 ├── 06-ingress.yaml
 ├── 07-clickhouse.yaml
+├── 08-trainingstatus-cronjob.yaml
+├── 09-kafka-consumer.yaml
 ├── deploy-all.sh
 └── deploy-k3s-local.sh
 ```
@@ -38,6 +41,14 @@ k3s/
   - Traefik ingress routes for frontend, API, Kafka UI, Jupyter.
 - `07-clickhouse.yaml`
   - ClickHouse and ClickHouse Keeper resources.
+- `08-trainingstatus-cronjob.yaml`
+  - Training status CronJob for periodic jobs.
+- `09-kafka-consumer.yaml`
+  - Kafka Consumer Real-Time Analysis (Kafka Streams application).
+  - ConfigMap with environment variables.
+  - Deployment with 2 replicas for HA.
+  - Service for metrics exposure.
+  - Liveness and readiness probes.
 
 ## Apply order
 
@@ -46,11 +57,14 @@ The expected order is fixed and implemented by `deploy-all.sh`:
 1. `00-namespace-and-secrets.yaml`
 2. `01-postgresql.yaml`
 3. `02-kafka.yaml`
-4. `03-backend.yaml`
-5. `04-frontend.yaml`
-6. `05-spark-and-jupyter.yaml`
-7. `06-ingress.yaml`
-8. `07-clickhouse.yaml`
+4. `02b-kafka-topics.yaml`
+5. `03-backend.yaml`
+6. `04-frontend.yaml`
+7. `05-spark-and-jupyter.yaml`
+8. `06-ingress.yaml`
+9. `07-clickhouse.yaml`
+10. `08-trainingstatus-cronjob.yaml`
+11. `09-kafka-consumer.yaml` (requires Kafka, PostgreSQL, ClickHouse ready)
 
 ## Advanced operations
 
