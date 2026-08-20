@@ -23,14 +23,13 @@ def main():
         [
             StructField("athlete_id", StringType(), True),
             StructField("session_id", IntegerType(), True),
-            StructField("heart_rate_bpm", DoubleType(), True),
+            StructField("heart_rate", DoubleType(), True),
             StructField("cadence_spm", DoubleType(), True),
-            StructField("speed_kmh", DoubleType(), True),
             StructField("altitude_m", DoubleType(), True),
             StructField("temperature_c", DoubleType(), True),
             StructField("timestamp", StringType(), True),
             StructField("GPS", IntegerType(), True),
-            StructField("sample_index", IntegerType(), True),
+            StructField("sample_id", IntegerType(), True),
         ]
     )
 
@@ -51,22 +50,22 @@ def main():
 
     df_postgres_aggiustato = df_postgres.withColumn("BMI", col("peso_kg") / (col("altezza_m") * col("altezza_m")))
 
-    finestra_temporale = Window.partitionBy("athlete_id", "session_id").orderBy("sample_index")
+    finestra_temporale = Window.partitionBy("athlete_id", "session_id").orderBy("sample_id")
     finestra_temporale_5s = finestra_temporale.rowsBetween(-1, 0)
     finestra_temporale_5min = finestra_temporale.rowsBetween(-60, 0)
 
-    df_ordinato = df.orderBy(col("athlete_id"), col("session_id"), col("sample_index"))
+    df_ordinato = df.orderBy(col("athlete_id"), col("session_id"), col("sample_id"))
     df_ordinato.show(5)
 
-    df_pulito = df_ordinato.dropDuplicates(["athlete_id", "session_id", "sample_index"])
+    df_pulito = df_ordinato.dropDuplicates(["athlete_id", "session_id", "sample_id"])
 
     df_pulito.show(5)
 
     df_pulito_null = df_pulito.filter(
         col("athlete_id").isNotNull(),
         col("session_id").isNotNull(),
-        col("sample_index").isNotNull(),
-        col("heart_rate_bpm").isNotNull(),
+        col("sample_id").isNotNull(),
+        col("heart_rate").isNotNull(),
         col("latitude").isNotNull(),
         col("longitude").isNotNull(),
         col("timestamp").isNotNull())
@@ -79,7 +78,7 @@ def main():
     df_merged = df_pulito_null.join(df_postgres_aggiustato, (df_pulito_null["athlete_id"] == df_postgres_aggiustato["athlete_id"]) & (df_pulito_null["timestamp"] == df_postgres_aggiustato["data_rilevazione"]), how="inner")
 
     # Calcolo i volumi nei vari anni
-    df_volume = df_merged.groupBy("athlete_id", "session_id").agg(count("sample_index").alias("volume"))
+    df_volume = df_merged.groupBy("athlete_id", "session_id").agg(count("sample_id").alias("volume"))
 
     # Calcolo deriva cardiaca puntuale per valore antropometrico
 
@@ -98,7 +97,7 @@ def main():
         .withColumn("distanza", R * col("c")) \
         .withColumn("velocita_puntuale", col("distanza") / 5) \
         .withColumn("velocita_media", avg("velocita_puntuale").over(finestra_temporale_5min)) \
-        .withColumn("frequenza_cardiaca_media", avg("heart_rate_bpm").over(finestra_temporale_5min)) \
+        .withColumn("frequenza_cardiaca_media", avg("heart_rate").over(finestra_temporale_5min)) \
         .withColumn("Efficienza_puntuale", col("velocita_puntuale") / col("frequenza_cardiaca_media")) \
         .withColumn("Efficienza_puntuale_iniziale", first("Efficienza_puntuale").over(finestra_temporale)) \
 
