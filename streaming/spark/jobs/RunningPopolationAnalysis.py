@@ -1,8 +1,6 @@
-from curses import window
 from math import radians, sin, cos, sqrt, atan2
-import os
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, avg, count, lag, countDistinct, first, row_number
+from pyspark.sql.functions import col, avg,  lag, countDistinct, first, row_number, to_date
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
 from pyspark.sql.window import Window
 from pyspark.ml.feature import VectorAssembler
@@ -33,7 +31,7 @@ def main():
         ]
     )
 
-    payload_schema = StructType(
+    payload_schema2 = StructType(
         [
             StructField("athlete_id", StringType(), True),
             StructField("peso", IntegerType(), True),
@@ -48,10 +46,9 @@ def main():
     df.show(5)
     df_postgres.show(5)
 
-    df_postgres_aggiustato = df_postgres.withColumn("BMI", col("peso_kg") / (col("altezza_m") * col("altezza_m")))
+    df_postgres_aggiustato = df_postgres.withColumn("BMI", col("peso_kg") / (col("altezza_cm") * col("altezza_cm")/10000))
 
     finestra_temporale = Window.partitionBy("athlete_id", "session_id").orderBy("sample_id")
-    finestra_temporale_5s = finestra_temporale.rowsBetween(-1, 0)
     finestra_temporale_5min = finestra_temporale.rowsBetween(-60, 0)
 
     df_ordinato = df.orderBy(col("athlete_id"), col("session_id"), col("sample_id"))
@@ -75,10 +72,7 @@ def main():
 
 
 
-    df_merged = df_pulito_null.join(df_postgres_aggiustato, (df_pulito_null["athlete_id"] == df_postgres_aggiustato["athlete_id"]) & (df_pulito_null["timestamp"] == df_postgres_aggiustato["data_rilevazione"]), how="inner")
-
-    # Calcolo i volumi nei vari anni
-    df_volume = df_merged.groupBy("athlete_id", "session_id").agg(count("sample_id").alias("volume"))
+    df_merged = df_pulito_null.join(df_postgres_aggiustato, (df_pulito_null["athlete_id"] == df_postgres_aggiustato["athlete_id"]) & (to_date(col["timestamp"]) == col["data_rilevazione"]), how="inner")
 
     # Calcolo deriva cardiaca puntuale per valore antropometrico
 
@@ -112,14 +106,14 @@ def main():
 
     primo_punto_di_crisi_per_sessione = df_crisi_ordinate \
         .filter(col("riga_crisi") == 1) \
-        .select("timestamp", "velocita_media", "Deriva_cardiaca_percentuale", "athlete_id", "session_id", "peso_kg", "altezza_m", "BMI")
+        .select("timestamp", "velocita_media", "Deriva_cardiaca_percentuale", "athlete_id", "session_id", "peso_kg", "altezza_cm", "BMI")
 
     df_conteggio_corse = primo_punto_di_crisi_per_sessione.groupBy("athlete_id").agg(countDistinct("session_id").alias("numero_corse"))
     df_preanalisi = primo_punto_di_crisi_per_sessione.join(df_conteggio_corse, ["athlete_id"], how="left")
 
 
     # Vediamo se c'è correlazione rispetto all'altezza, al peso o al BMI
-    colonne_da_analizzare = ["peso_kg", "altezza_m", "BMI", "velocita_media","numero_corse"]
+    colonne_da_analizzare = ["peso_kg", "altezza_cm", "BMI", "velocita_media","numero_corse"]
 
     df_ml = df_preanalisi.select(colonne_da_analizzare).na.drop()
 
