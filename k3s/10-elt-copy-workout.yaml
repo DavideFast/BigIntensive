@@ -23,7 +23,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: elt-copy-workout
-              image: elt-copy-workout:latest
+              image: davidefast/elt-mirror-postgresql-to-clickhouse:latest
               imagePullPolicy: IfNotPresent
               env:
                 - name: POSTGRES_HOST
