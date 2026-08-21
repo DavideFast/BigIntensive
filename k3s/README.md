@@ -102,7 +102,9 @@ Nel caso a due VM, esegui questo script sulla VM server, non sull'agent.
 bash k3s/deploy-all.sh
 ```
 
-Questo applica i manifest modulari e crea namespace, secret, servizi, deployment/statefulset e schema PostgreSQL.
+Questo installa anche il Kubeflow Spark Operator e poi applica i manifest modulari, creando namespace, secret, servizi, deployment/statefulset e schema PostgreSQL. Richiede Helm 3 sul nodo server K3s.
+
+Il Spark Operator resta in ascolto delle risorse `SparkApplication`, ma non avvia alcun job da solo: Jupyter e altri client autorizzati possono continuare a sottomettere job solo su richiesta.
 
 ## Passo 4: controlla che i pod salgano
 

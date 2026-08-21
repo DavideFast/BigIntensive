@@ -67,6 +67,9 @@ pre_deploy_cleanup() {
 
 pre_deploy_cleanup
 
+# The operator installs cluster-wide CRDs and watches SparkApplication resources.
+bash "$SCRIPT_DIR/install-spark-operator.sh"
+
 # Apply in order
 apply_manifest "$SCRIPT_DIR/00-namespace-and-secrets.yaml" "Namespace, Secrets & ConfigMaps"
 apply_manifest "$SCRIPT_DIR/01-postgresql.yaml" "PostgreSQL Database"

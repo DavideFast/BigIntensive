@@ -45,14 +45,20 @@ data:
     spark.kubernetes.namespace                    bigintensive
     spark.kubernetes.authenticate.driver.mounted  true
     spark.kubernetes.authenticate.executor.mounted true
-    spark.kubernetes.container.image              python:3.11-slim
+    spark.kubernetes.container.image              apache/spark:3.5.3
     spark.kubernetes.container.image.pullPolicy   IfNotPresent
     spark.kubernetes.driver.pod.name              spark-driver
     spark.kubernetes.driver.label.version         3.5.0
     spark.kubernetes.executor.label.version       3.5.0
     spark.executor.cores                          2
     spark.executor.memory                         2g
-    spark.executor.instances                      2
+    spark.dynamicAllocation.enabled               true
+    spark.dynamicAllocation.shuffleTracking.enabled true
+    spark.dynamicAllocation.initialExecutors      1
+    spark.dynamicAllocation.minExecutors          1
+    spark.dynamicAllocation.maxExecutors          4
+    spark.dynamicAllocation.executorIdleTimeout   60s
+    spark.dynamicAllocation.cachedExecutorIdleTimeout 120s
     spark.sql.shuffle.partitions                  10
     spark.driver.memory                           2g
     spark.driver.cores                            2
@@ -80,8 +86,10 @@ spec:
       serviceAccountName: spark
       containers:
         - name: jupyter
-          image: python:3.11-slim
+          image: apache/spark:3.5.3
           imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 0
           ports:
             - containerPort: 8888
               name: jupyter
@@ -116,7 +124,7 @@ spec:
             - -c
             - |
               echo "Installing Jupyter and dependencies..."
-              pip install jupyter jupyterlab pyspark psycopg2-binary kafka-python pandas numpy
+              pip install --no-cache-dir jupyter jupyterlab psycopg2-binary kafka-python pandas numpy
               echo "Starting Jupyter Lab..."
               jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=changeme
           volumeMounts:

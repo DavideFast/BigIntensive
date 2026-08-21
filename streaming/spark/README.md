@@ -28,9 +28,11 @@ Spark è configurato in **native Kubernetes mode** nel cluster k3s. Questo signi
 - **Auto-scaling**: Gli executor scale automaticamente in base ai lavori
 - **No Spark Master**: Non c'è un Spark master centralizzato, tutto gestito da Kubernetes
 
+Il Kubeflow Spark Operator è installato nel namespace `spark-operator`. Rimane pronto a gestire risorse `SparkApplication`, ma non esegue analisi finché un client autorizzato non crea esplicitamente un job.
+
 ## Accesso a Jupyter
 
-Jupyter è il frontend per sottomettere job Spark e analizzare i dati.
+Jupyter è un ambiente opzionale per sviluppo, esplorazione e test manuali. Puoi anche sottomettere job Spark da altri client autorizzati, senza che Jupyter sia coinvolto.
 
 ### URL
 
@@ -70,7 +72,9 @@ kubectl -n bigintensive get configmap spark-config -o yaml
 | `spark.kubernetes.namespace` | `bigintensive`                         | Namespace per pods driver/executor |
 | `spark.executor.cores`       | `2`                                    | CPU per executor                   |
 | `spark.executor.memory`      | `2g`                                   | RAM per executor                   |
-| `spark.executor.instances`   | `2`                                    | Numero di executor iniziali        |
+| `spark.dynamicAllocation.enabled` | `true`                            | Crea e rimuove executor in base al carico |
+| `spark.dynamicAllocation.minExecutors` | `1`                           | Numero minimo di executor          |
+| `spark.dynamicAllocation.maxExecutors` | `4`                           | Limite massimo di executor         |
 | `spark.driver.memory`        | `2g`                                   | RAM del driver                     |
 | `spark.driver.cores`         | `2`                                    | CPU del driver                     |
 
