@@ -1,5 +1,5 @@
-# ClickHouse Distributed Database (2 shard, 1 replica per shard)
-# Pragmatic setup for 2 nodes: 1 Keeper + 2 ClickHouse pods
+# ClickHouse Distributed Database (2 shard, 2 replicas per shard)
+# Target setup for 3 nodes: 3 Keeper pods + 4 ClickHouse pods
 # ClickHouse Keeper (nativo, moderno, sostituisce Zookeeper)
 # Tables: running_samples, allenamenti, allenamenti_raw
 
@@ -21,7 +21,7 @@ data:
       <listen_host>0.0.0.0</listen_host>
       <keeper_server>
         <tcp_port>2181</tcp_port>
-        <server_id>1</server_id>
+          <server_id>1</server_id>
         <snapshot_storage_path>/var/lib/clickhouse-keeper/snapshots</snapshot_storage_path>
         <log_storage_path>/var/lib/clickhouse-keeper/logs</log_storage_path>
         <coordination_settings>
@@ -36,6 +36,16 @@ data:
             <hostname>clickhouse-keeper-0.clickhouse-keeper.bigintensive.svc.cluster.local</hostname>
             <port>9444</port>
           </server>
+            <server>
+              <id>2</id>
+              <hostname>clickhouse-keeper-1.clickhouse-keeper.bigintensive.svc.cluster.local</hostname>
+              <port>9444</port>
+            </server>
+            <server>
+              <id>3</id>
+              <hostname>clickhouse-keeper-2.clickhouse-keeper.bigintensive.svc.cluster.local</hostname>
+              <port>9444</port>
+            </server>
         </raft_configuration>
       </keeper_server>
     </clickhouse>
@@ -48,7 +58,7 @@ metadata:
   namespace: bigintensive
 spec:
   serviceName: clickhouse-keeper
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: clickhouse-keeper
@@ -57,6 +67,51 @@ spec:
       labels:
         app: clickhouse-keeper
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: clickhouse-keeper
+              topologyKey: kubernetes.io/hostname
+      initContainers:
+        - name: init-keeper-config
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - |
+              ordinal="${POD_NAME##*-}"
+              server_id="$((ordinal + 1))"
+              cat > /dynamic-config/config.xml <<EOF
+              <clickhouse>
+                <logger>
+                  <level>information</level>
+                  <log>/var/log/clickhouse-keeper/clickhouse-keeper.log</log>
+                  <errorlog>/var/log/clickhouse-keeper/clickhouse-keeper.err.log</errorlog>
+                </logger>
+                <listen_host>0.0.0.0</listen_host>
+                <keeper_server>
+                  <tcp_port>2181</tcp_port>
+                  <server_id>${server_id}</server_id>
+                  <snapshot_storage_path>/var/lib/clickhouse-keeper/snapshots</snapshot_storage_path>
+                  <log_storage_path>/var/lib/clickhouse-keeper/logs</log_storage_path>
+                  <raft_configuration>
+                    <server><id>1</id><hostname>clickhouse-keeper-0.clickhouse-keeper.bigintensive.svc.cluster.local</hostname><port>9444</port></server>
+                    <server><id>2</id><hostname>clickhouse-keeper-1.clickhouse-keeper.bigintensive.svc.cluster.local</hostname><port>9444</port></server>
+                    <server><id>3</id><hostname>clickhouse-keeper-2.clickhouse-keeper.bigintensive.svc.cluster.local</hostname><port>9444</port></server>
+                  </raft_configuration>
+                </keeper_server>
+              </clickhouse>
+              EOF
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: dynamic-config
+              mountPath: /dynamic-config
       containers:
         - name: clickhouse-keeper
           image: clickhouse/clickhouse-keeper:24.1
@@ -72,7 +127,7 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/clickhouse-keeper
-            - name: config
+            - name: dynamic-config
               mountPath: /etc/clickhouse-keeper/config.xml
               subPath: config.xml
           resources:
@@ -93,9 +148,8 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
       volumes:
-        - name: config
-          configMap:
-            name: clickhouse-keeper-config
+        - name: dynamic-config
+          emptyDir: {}
   volumeClaimTemplates:
     - metadata:
         name: data
@@ -148,11 +202,29 @@ data:
               <port>9000</port>
             </replica>
           </shard>
+          <shard>
+            <replica>
+              <host>clickhouse-2.clickhouse.bigintensive.svc.cluster.local</host>
+              <port>9000</port>
+            </replica>
+            <replica>
+              <host>clickhouse-3.clickhouse.bigintensive.svc.cluster.local</host>
+              <port>9000</port>
+            </replica>
+          </shard>
         </bigintensive_cluster>
       </remote_servers>
       <zookeeper>
         <node index="1">
           <host>clickhouse-keeper-0.clickhouse-keeper.bigintensive.svc.cluster.local</host>
+          <port>2181</port>
+        </node>
+        <node index="2">
+          <host>clickhouse-keeper-1.clickhouse-keeper.bigintensive.svc.cluster.local</host>
+          <port>2181</port>
+        </node>
+        <node index="3">
+          <host>clickhouse-keeper-2.clickhouse-keeper.bigintensive.svc.cluster.local</host>
           <port>2181</port>
         </node>
       </zookeeper>
@@ -211,7 +283,7 @@ data:
     </clickhouse>
 
 ---
-# ClickHouse StatefulSet (2 replica)
+# ClickHouse StatefulSet (2 shard x 2 replica)
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -219,7 +291,7 @@ metadata:
   namespace: bigintensive
 spec:
   serviceName: clickhouse
-  replicas: 2
+  replicas: 4
   selector:
     matchLabels:
       app: clickhouse
@@ -228,6 +300,13 @@ spec:
       labels:
         app: clickhouse
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: clickhouse
+              topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 101
         fsGroupChangePolicy: OnRootMismatch
@@ -239,8 +318,8 @@ spec:
             - -c
             - |
               ordinal="${POD_NAME##*-}"
-              shard="$((ordinal + 1))"
-              replica="replica_${shard}"
+              if [ "$ordinal" -lt 2 ]; then shard=1; else shard=2; fi
+              replica="$((ordinal % 2 + 1))"
               cat > /dynamic-config/macros.xml <<EOF
               <clickhouse>
                 <macros>
@@ -376,6 +455,23 @@ data:
     CREATE DATABASE IF NOT EXISTS bigintensive;
     USE bigintensive;
 
+    CREATE TABLE IF NOT EXISTS running_samples_local (
+      sample_id UInt64,
+      athlete_id UInt64,
+      session_id UInt64,
+      timestamp DateTime DEFAULT now(),
+      heart_rate UInt8,
+      latitude DECIMAL(9, 6),
+      longitude DECIMAL(9, 6),
+      altitude DECIMAL(5, 2),
+      temperature DECIMAL(4, 2),
+      cadence UInt8,
+      event_type String,
+      created_at DateTime DEFAULT now()
+    ) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/bigintensive/running_samples', '{replica}')
+    ORDER BY (timestamp, athlete_id, session_id)
+    PARTITION BY toYYYYMM(timestamp);
+
     CREATE TABLE IF NOT EXISTS running_samples (
       sample_id UInt64,
       athlete_id UInt64,
@@ -389,9 +485,21 @@ data:
       cadence UInt8,
       event_type String,
       created_at DateTime DEFAULT now()
-    ) ENGINE = MergeTree
-    ORDER BY (timestamp, athlete_id, session_id)
-    PARTITION BY toYYYYMM(timestamp);
+    ) ENGINE = Distributed(bigintensive_cluster, bigintensive, running_samples_local, cityHash64(athlete_id));
+
+    CREATE TABLE IF NOT EXISTS allenamenti_local (
+      allenamento_id UInt64,
+      athlete_id UInt64,
+      data_allenamento DateTime NOT NULL,
+      nome_esercizio String NOT NULL,
+      serie_allenamento UInt8 NOT NULL,
+      ripetizioni_allenamento UInt8 NOT NULL,
+      recupero_allenamento UInt8 NOT NULL,
+      peso_allenamento DECIMAL(5, 2),
+      created_at DateTime DEFAULT now()
+    ) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/bigintensive/allenamenti', '{replica}')
+    ORDER BY (data_allenamento, athlete_id, allenamento_id)
+    PARTITION BY toYYYYMM(data_allenamento);
 
     CREATE TABLE IF NOT EXISTS allenamenti (
       allenamento_id UInt64,
@@ -403,8 +511,16 @@ data:
       recupero_allenamento UInt8 NOT NULL,
       peso_allenamento DECIMAL(5, 2),
       created_at DateTime DEFAULT now()
-    ) ENGINE = MergeTree
-    ORDER BY (data_allenamento, athlete_id, allenamento_id)
+    ) ENGINE = Distributed(bigintensive_cluster, bigintensive, allenamenti_local, cityHash64(athlete_id));
+
+    CREATE TABLE IF NOT EXISTS allenamenti_raw_local (
+      allenamento_id UInt64,
+      athlete_id UInt64,
+      data_allenamento DateTime,
+      struttura_allenamento String,
+      created_at DateTime
+    ) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/bigintensive/allenamenti_raw', '{replica}')
+    ORDER BY allenamento_id
     PARTITION BY toYYYYMM(data_allenamento);
 
     CREATE TABLE IF NOT EXISTS allenamenti_raw (
@@ -413,9 +529,7 @@ data:
       data_allenamento DateTime,
       struttura_allenamento String,
       created_at DateTime
-    ) ENGINE = MergeTree
-    ORDER BY allenamento_id
-    PARTITION BY toYYYYMM(data_allenamento);
+    ) ENGINE = Distributed(bigintensive_cluster, bigintensive, allenamenti_raw_local, cityHash64(athlete_id));
 
 ---
 # ClickHouse Init Job (crea tabelle)
@@ -454,7 +568,7 @@ spec:
                 exit 1
               fi
 
-              for host in clickhouse-0.clickhouse.bigintensive.svc.cluster.local clickhouse-1.clickhouse.bigintensive.svc.cluster.local; do
+              for host in clickhouse-0.clickhouse.bigintensive.svc.cluster.local clickhouse-1.clickhouse.bigintensive.svc.cluster.local clickhouse-2.clickhouse.bigintensive.svc.cluster.local clickhouse-3.clickhouse.bigintensive.svc.cluster.local; do
                 clickhouse-client --host "$host" --port 9000 --multiquery < /schema/schema.sql
               done
 

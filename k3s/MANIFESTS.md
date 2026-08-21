@@ -31,7 +31,7 @@ k3s/
 - `01-postgresql.yaml`
   - PostgreSQL service, StatefulSet, persistent volume and schema init ConfigMap.
 - `02-kafka.yaml`
-  - Kafka (KRaft) and Kafka UI.
+  - Three-node Kafka KRaft cluster (broker + controller on each node) and Kafka UI.
 - `03-backend.yaml`
   - Backend deployment/service, probes, app env wiring.
 - `04-frontend.yaml`
@@ -41,7 +41,9 @@ k3s/
 - `06-ingress.yaml`
   - Traefik ingress routes for frontend, API, Kafka UI, Jupyter.
 - `07-clickhouse.yaml`
-  - ClickHouse and ClickHouse Keeper resources.
+  - Three-node ClickHouse Keeper quorum.
+  - Four ClickHouse servers arranged as two shards with two replicas each.
+  - Replicated local tables and Distributed tables using `cityHash64(athlete_id)`.
 - `08-trainingstatus-cronjob.yaml`
   - Training status CronJob for periodic jobs.
 - `09-kafka-consumer.yaml`
@@ -70,6 +72,12 @@ The expected order is fixed and implemented by `deploy-all.sh`:
 10. `08-trainingstatus-cronjob.yaml`
 11. `09-kafka-consumer.yaml` (requires Kafka, PostgreSQL, ClickHouse ready)
 12. `10-elt-copy-workout.yaml` (requires PostgreSQL and ClickHouse ready)
+
+Kafka topic replication is configured for three brokers with `min.insync.replicas=2`.
+The topic bootstrap Job does not change the replication factor of topics that already
+exist. On an existing cluster, migrate their assignments explicitly; for a clean
+development rebuild, use `RESET_NAMESPACE=true` only when deleting existing data is
+acceptable.
 
 ## Advanced operations
 

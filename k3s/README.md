@@ -65,6 +65,45 @@ sudo kubectl get nodes -o wide
 
 Nota pratica: nel setup attuale backend e frontend usano immagini locali (`bigintensive/...:local`). Lo script `k3s/deploy-k3s-local.sh` etichetta automaticamente il nodo server e forza quei due deployment a restare li'. Questo evita errori `ImagePullBackOff` sul nodo agent finche' non configuri un registry condiviso.
 
+## Topologia distribuita prevista
+
+Il cluster target usa 3 PC fisici, ognuno registrato come nodo K3s:
+
+```text
+PC 1: K3s server/control-plane + workload
+PC 2: K3s agent/worker + workload
+PC 3: K3s agent/worker + workload
+```
+
+La composizione dei servizi distribuiti prevista è:
+
+```text
+Kafka
+  3 broker/controller in modalità KRaft, uno per nodo
+  replication factor dei topic: 3
+  min.insync.replicas: 2
+  KRaft coordina Kafka; non viene usato ZooKeeper
+
+ClickHouse
+  4 pod server: 2 shard x 2 repliche
+  ClickHouse Keeper: 3 pod, uno per nodo
+  tabelle locali ReplicatedMergeTree
+  tabelle Distributed per l'accesso all'intero cluster
+
+Spark
+  modalità native Kubernetes
+  Jupyter può funzionare come driver per le dimostrazioni
+  gli executor vengono creati da Spark su richiesta
+  K3s distribuisce gli executor sui nodi disponibili
+```
+
+Nota: il bootstrap dei topic Kafka crea i nuovi topic con replication factor `3`, ma
+non modifica topic già esistenti creati con replication factor `1`. Su un cluster già
+popolato serve una migrazione delle assegnazioni; in sviluppo puoi usare
+`RESET_NAMESPACE=true` solo se la cancellazione dei dati è accettabile.
+
+KRaft e ClickHouse Keeper sono componenti distinti: KRaft coordina Kafka, mentre Keeper coordina le repliche ClickHouse. L'aggiunta di un quarto PC non richiede un nuovo ruolo fisso per Spark; K3s può schedulare nuovi executor sui nodi disponibili quando un job ne richiede altri.
+
 ## Passo 2: prepara le immagini
 
 Dal root del repository builda le immagini del backend e del frontend:

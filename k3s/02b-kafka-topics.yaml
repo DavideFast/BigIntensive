@@ -16,12 +16,12 @@ data:
 
     echo "Ensuring required Kafka topics exist..."
 
-    kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic demo-events --partitions 3 --replication-factor 1 --config cleanup.policy=delete --config retention.ms=604800000
-    kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic heart-rate-events --partitions 6 --replication-factor 1 --config cleanup.policy=delete --config retention.ms=604800000 --config segment.bytes=1073741824
-    kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic workout-events --partitions 3 --replication-factor 1 --config cleanup.policy=delete --config retention.ms=1209600000
-    kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic smartwatch-status --partitions 3 --replication-factor 1 --config cleanup.policy=delete --config retention.ms=259200000
-    kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic spark-analytics --partitions 3 --replication-factor 1 --config cleanup.policy=delete --config retention.ms=604800000
-    kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic system-events --partitions 3 --replication-factor 1 --config cleanup.policy=delete --config retention.ms=259200000
+    kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic demo-events --partitions 3 --replication-factor 3 --config min.insync.replicas=2 --config cleanup.policy=delete --config retention.ms=604800000
+    kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic heart-rate-events --partitions 6 --replication-factor 3 --config min.insync.replicas=2 --config cleanup.policy=delete --config retention.ms=604800000 --config segment.bytes=1073741824
+    kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic workout-events --partitions 3 --replication-factor 3 --config min.insync.replicas=2 --config cleanup.policy=delete --config retention.ms=1209600000
+    kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic smartwatch-status --partitions 3 --replication-factor 3 --config min.insync.replicas=2 --config cleanup.policy=delete --config retention.ms=259200000
+    kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic spark-analytics --partitions 3 --replication-factor 3 --config min.insync.replicas=2 --config cleanup.policy=delete --config retention.ms=604800000
+    kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic system-events --partitions 3 --replication-factor 3 --config min.insync.replicas=2 --config cleanup.policy=delete --config retention.ms=259200000
 
     echo "Kafka topics are ready."
 ---
