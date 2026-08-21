@@ -202,12 +202,6 @@ data:
           </shard>
           <shard>
             <replica>
-              <host>clickhouse-1.clickhouse.bigintensive.svc.cluster.local</host>
-              <port>9000</port>
-            </replica>
-          </shard>
-          <shard>
-            <replica>
               <host>clickhouse-2.clickhouse.bigintensive.svc.cluster.local</host>
               <port>9000</port>
             </replica>
@@ -573,6 +567,19 @@ spec:
               fi
 
               for host in clickhouse-0.clickhouse.bigintensive.svc.cluster.local clickhouse-1.clickhouse.bigintensive.svc.cluster.local clickhouse-2.clickhouse.bigintensive.svc.cluster.local clickhouse-3.clickhouse.bigintensive.svc.cluster.local; do
+                ready=0
+                for i in $(seq 1 60); do
+                  if clickhouse-client --host "$host" --port 9000 --query "SELECT 1" >/dev/null 2>&1; then
+                    ready=1
+                    break
+                  fi
+                  echo "Waiting for $host... ($i/60)"
+                  sleep 2
+                done
+                if [ "$ready" -ne 1 ]; then
+                  echo "$host is not ready after timeout"
+                  exit 1
+                fi
                 clickhouse-client --host "$host" --port 9000 --multiquery < /schema/schema.sql
               done
 
