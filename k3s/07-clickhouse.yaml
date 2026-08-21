@@ -195,6 +195,10 @@ data:
               <host>clickhouse-0.clickhouse.bigintensive.svc.cluster.local</host>
               <port>9000</port>
             </replica>
+            <replica>
+              <host>clickhouse-1.clickhouse.bigintensive.svc.cluster.local</host>
+              <port>9000</port>
+            </replica>
           </shard>
           <shard>
             <replica>
