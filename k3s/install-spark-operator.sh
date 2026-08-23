@@ -4,6 +4,7 @@ set -eu
 
 HELM_BIN="${HELM_BIN:-helm}"
 KUBECTL_CMD="${KUBECTL_CMD:-sudo k3s kubectl}"
+KUBECONFIG="${KUBECONFIG:-/etc/rancher/k3s/k3s.yaml}"
 OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE:-spark-operator}"
 OPERATOR_RELEASE="${OPERATOR_RELEASE:-spark-operator}"
 OPERATOR_VERSION="${OPERATOR_VERSION:-2.5.2}"
@@ -14,6 +15,7 @@ if ! command -v "$HELM_BIN" >/dev/null 2>&1; then
 fi
 
 echo "Installing Spark Operator ${OPERATOR_VERSION}..."
+export KUBECONFIG
 "$HELM_BIN" repo add --force-update spark-operator https://kubeflow.github.io/spark-operator
 "$HELM_BIN" upgrade --install "$OPERATOR_RELEASE" spark-operator/spark-operator \
     --namespace "$OPERATOR_NAMESPACE" \
