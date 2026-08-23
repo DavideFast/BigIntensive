@@ -141,9 +141,6 @@ async function start() {
 }
 
 start().catch(console.error);
-// app.listen(context.port, () => {
-//   console.log(`Backend API listening on http://localhost:${context.port}`);
-// });
 
 process.on("SIGINT", async () => {
   await producer.disconnect();
