@@ -2,7 +2,7 @@ export default function HandleSimulation() {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
 
   const avviaSimulazione = () => {
-    fetch(`${apiBaseUrl}/api/v1/startSmartWatchPodSimulator`)
+    fetch(`${apiBaseUrl}/api/v1/startSmartWatchPodSimulator`, { method: "POST" })
       .then((response) => response.json())
       .then((data) => {
         if (!data.success) {
@@ -18,7 +18,7 @@ export default function HandleSimulation() {
   };
 
   const fermaSimulazione = () => {
-    fetch(`${apiBaseUrl}/api/v1/stopSmartWatchPodSimulator`)
+    fetch(`${apiBaseUrl}/api/v1/stopSmartWatchPodSimulator`, { method: "POST" })
       .then((response) => response.json())
       .then((data) => {
         if (!data.success) {
