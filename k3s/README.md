@@ -182,6 +182,8 @@ git clone https://github.com/DavideFast/BigIntensive.git
 bash k3s/deploy-k3s-local.sh
 ```
 
+Se il servizio è già in esecuzione e si vuole re-buildare tutto.
+
 ```bash
 RESET_NAMESPACE=true bash k3s/deploy-k3s-local.sh
 ```
