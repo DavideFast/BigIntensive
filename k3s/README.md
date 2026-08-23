@@ -143,6 +143,9 @@ Testare poi la connettività tra i nodi con ping:
 ping <IP_STATIC_NODO>
 ```
 
+<br>
+<br>
+
 # Installazione su server master
 
 Per avviare correttamente il server K3s, è necessario eseguire i seguenti passaggi:
