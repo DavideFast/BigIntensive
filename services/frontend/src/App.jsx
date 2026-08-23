@@ -1,24 +1,10 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
-import AddSingleWorkoutPage from "./pages/AddSingleWorkoutPage";
-import AddWeekWorkoutsPage from "./pages/AddWeekWorkoutsPage";
-import CorrelationPage from "./pages/CorrelationPage";
-import RunningChartPage from "./pages/RunningChartPage";
-import SmartwatchSimulatorPage from "./pages/SmartwatchSimulatorPage";
-import StressTestPage from "./pages/StressTestPage";
-import TrainingStatusPage from "./pages/TrainingStatusPage";
-import VolumePage from "./pages/VolumePage";
-import WorkoutsClickhousePage from "./pages/WorkoutsClickhousePage";
+import ClickhouseConnectionPage from "./pages/ClickhouseConnection";
+import PostgresConnectionPage from "./pages/PostgresConnection";
 
 const pages = [
-  { id: "correlation", label: "Matrice correlazione", path: "/correlation" },
-  { id: "status", label: "Training status", path: "/training-status" },
-  { id: "volume", label: "Volumi", path: "/volumi-allenamento" },
-  { id: "running", label: "Grafico corsa", path: "/grafico-corsa" },
-  { id: "smartwatch", label: "Simulatore smartwatch", path: "/simulatore-smartwatch" },
-  { id: "stress", label: "Stress test", path: "/stress-test" },
-  { id: "workouts-ch", label: "Grafico CH allenamenti", path: "/grafico-clickhouse-allenamenti" },
-  { id: "add-single", label: "Aggiungi allenamento", path: "/simula-aggiunta-allenamento" },
-  { id: "add-week", label: "Pianifica settimana", path: "/simula-aggiunta-allenamenti" },
+  { id: "postgres", label: "PostgreSQL", path: "/postgres" },
+  { id: "clickhouse", label: "ClickHouse", path: "/clickhouse" },
 ];
 
 export default function App() {
@@ -29,18 +15,11 @@ export default function App() {
 
       <header className="hero">
         <p className="eyebrow">BigIntensive Dashboard</p>
-        <h1>Training Intelligence Hub</h1>
-        <p className="subtitle">
-          Dashboard operativa con analisi correlazioni, stato atleti, volumi, grafici ClickHouse e
-          simulatori di inserimento dati per allenamenti e smartwatch.
-        </p>
+        <h1>Database connections</h1>
+        <p className="subtitle">Consultazione e test delle connessioni PostgreSQL e ClickHouse.</p>
         <nav className="page-tabs" aria-label="Schermate principali">
           {pages.map((page) => (
-            <NavLink
-              key={page.id}
-              to={page.path}
-              className={({ isActive }) => `tab-btn ${isActive ? "active" : ""}`}
-            >
+            <NavLink key={page.id} to={page.path} className={({ isActive }) => `tab-btn ${isActive ? "active" : ""}`}>
               {page.label}
             </NavLink>
           ))}
@@ -49,17 +28,10 @@ export default function App() {
 
       <main className="force-plate-section">
         <Routes>
-          <Route path="/correlation" element={<CorrelationPage />} />
-          <Route path="/training-status" element={<TrainingStatusPage />} />
-          <Route path="/volumi-allenamento" element={<VolumePage />} />
-          <Route path="/grafico-corsa" element={<RunningChartPage />} />
-          <Route path="/simulatore-smartwatch" element={<SmartwatchSimulatorPage />} />
-          <Route path="/stress-test" element={<StressTestPage />} />
-          <Route path="/grafico-clickhouse-allenamenti" element={<WorkoutsClickhousePage />} />
-          <Route path="/simula-aggiunta-allenamento" element={<AddSingleWorkoutPage />} />
-          <Route path="/simula-aggiunta-allenamenti" element={<AddWeekWorkoutsPage />} />
-          <Route path="/" element={<Navigate to="/correlation" replace />} />
-          <Route path="*" element={<Navigate to="/correlation" replace />} />
+          <Route path="/postgres" element={<PostgresConnectionPage />} />
+          <Route path="/clickhouse" element={<ClickhouseConnectionPage />} />
+          <Route path="/" element={<Navigate to="/postgres" replace />} />
+          <Route path="*" element={<Navigate to="/postgres" replace />} />
         </Routes>
       </main>
     </div>
