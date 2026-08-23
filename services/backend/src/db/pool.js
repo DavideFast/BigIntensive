@@ -1,5 +1,5 @@
 import pg from "pg";
-const { createClient } = require("@clickhouse/client");
+import { createClient } from "@clickhouse/client";
 
 export function createDbPool() {
   return new pg.Pool({
