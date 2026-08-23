@@ -225,10 +225,10 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NOME_ASSEGNA
 
 > [!WARNING]
 > Potrebbe essere necessario aprire delle porte sul firewall del master esponendo:
-
-- 6443 TCP per l'API server di Kubernetes
-- 8472 UDP per il traffico di rete tra i nodi (flannel VXLAN)
-- 10250 TCP per il kubelet (solo se si vuole accedere ai log dei pod dal master)
+>
+> - 6443 TCP per l'API server di Kubernetes
+> - 8472 UDP per il traffico di rete tra i nodi (flannel VXLAN)
+> - 10250 TCP per il kubelet (solo se si vuole accedere ai log dei pod dal master)
 
 ## Passo 2: prepara le immagini
 
