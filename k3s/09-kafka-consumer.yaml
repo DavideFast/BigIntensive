@@ -127,7 +127,7 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - ps aux | grep "[S]treamsAllarmi" || exit 1
+                - ps aux | grep "[k]afka-consumer.jar" || exit 1
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
@@ -138,7 +138,7 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - ps aux | grep "[S]treamsAllarmi" || exit 1
+                - ps aux | grep "[k]afka-consumer.jar" || exit 1
             initialDelaySeconds: 20
             periodSeconds: 5
             timeoutSeconds: 5
