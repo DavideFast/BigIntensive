@@ -147,15 +147,15 @@ ping <IP_STATIC_NODO>
 
 Per avviare correttamente il server K3s, è necessario eseguire i seguenti passaggi:
 
-### Creare la macchina virtuale con Ubuntu (altri sistemi operativi non sono testati).
+## Creare la macchina virtuale con Ubuntu (altri sistemi operativi non sono testati).
 
-#### Aggiornamento preliminare del sistema operativo:
+## Aggiornamento preliminare del sistema operativo:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
 ```
 
-#### Installare servizi di base
+## Installare servizi di base
 
 ```bash
 sudo apt install git ca-certificates helm -y
@@ -163,20 +163,20 @@ sudo apt install git ca-certificates helm -y
 
 Helm è necessario per installare il Spark Operator, che gestisce i job Spark su Kubernetes. Helm è un package manager come apt o npm che permette di installare applicazioni complesse come lo Spark Operator (richiede la coordinazione di più file yaml) in maniera veloce.
 
-#### Installare K3s come server:
+## Installare K3s come server:
 
 ```bash
 curl -sfL https://get.k3s.io | sh -
 ```
 
-#### Copiare la repository del progetto nella home dell'utente:
+## Copiare la repository del progetto nella home dell'utente:
 
 ```bash
 cd ~
 git clone https://github.com/DavideFast/BigIntensive.git
 ```
 
-### Avvio in locale con build immagini + import in k3s
+## Avvio in locale con build immagini + import in k3s
 
 ```bash
 bash k3s/deploy-k3s-local.sh
@@ -188,7 +188,7 @@ Se il servizio è già in esecuzione e si vuole re-buildare tutto.
 RESET_NAMESPACE=true bash k3s/deploy-k3s-local.sh
 ```
 
-### Recupero del token per il join dei nodi agent/worker
+## Recupero del token per il join dei nodi agent/worker
 
 ```bash
 sudo cat /var/lib/rancher/k3s/server/node-token
