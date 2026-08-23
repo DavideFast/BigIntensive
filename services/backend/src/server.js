@@ -1,15 +1,10 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { createDeployLoadtestRouter } from "./routes/deployLoadtestRoutes.js";
-import { createSimulationRouter } from "./routes/simulationRoutes.js";
-import { createBusinessRouter } from "./routes/businessRoutes.js";
+
 import { createSystemRouter } from "./routes/systemRoutes.js";
-import { createDashboardRouter } from "./routes/dashboardRoutes.js";
-import { createSparkJobsRouter } from "./routes/sparkJobsRoutes.js";
 import { createServerContext } from "./bootstrap/serverContext.js";
 import { createClickhouseClient } from "./db/pool.js";
-import { createDbPool } from "./db/pool.js";
 const { Kafka } = require("kafkajs");
 
 const kafka = new Kafka({
