@@ -112,8 +112,8 @@ Il nodo server K3s ospita il controllo del cluster e può anche eseguire workloa
 Il sistema viene interconnesso tramite uno switch di rete. Tutti i nodi vengono connessi tramite cavo ethernet allo switch (senza management)
 e pertanto dovranno essere configurati con IP statici. I nodi avranno un altra scheda di rete (essendo portatili wi-fi) che useranno per accedere a internet per aggiornamenti e download di pacchetti. Nonchè per simulare un accesso remoto al cluster da un PC esterno. In questo caso il nodo server K3s dovrà essere raggiungibile dall'esterno tramite il suo IP statico.
 
-```bash
-# Comando generale
+```text
+
 sudo ip addr add <IP_STATIC_NODO>/24 dev <INTERFACE>
 ```
 
