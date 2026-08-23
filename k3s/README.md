@@ -145,6 +145,34 @@ ping <IP_STATIC_NODO>
 
 # Installazione su server master
 
+Per avviare correttamente il server K3s, è necessario eseguire i seguenti passaggi:
+
+1. Creare la macchina virtuale con Ubuntu (altri sistemi operativi non sono testati).
+2. Aggiornamento preliminare del sistema operativo:
+
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+3. Installare servizi di base
+
+```bash
+sudo apt install git ca-certificates helm -y
+```
+
+4. Installare K3s come server:
+
+```bash
+curl -sfL https://get.k3s.io | sh -
+```
+
+5. Copiare la repository del progetto nella home dell'utente:
+
+```bash
+cd ~
+git clone https://github.com/DavideFast/BigIntensive.git
+```
+
 # Installazione su server worker
 
 ## Passo 2: prepara le immagini
