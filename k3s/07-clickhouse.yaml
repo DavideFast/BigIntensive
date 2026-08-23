@@ -58,6 +58,7 @@ metadata:
   namespace: bigintensive
 spec:
   serviceName: clickhouse-keeper
+  podManagementPolicy: Parallel
   replicas: 3
   selector:
     matchLabels:
