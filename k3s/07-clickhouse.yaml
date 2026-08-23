@@ -300,11 +300,13 @@ spec:
     spec:
       affinity:
         podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchLabels:
-                  app: clickhouse
-              topologyKey: kubernetes.io/hostname
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: clickhouse
+                topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 101
         fsGroupChangePolicy: OnRootMismatch
