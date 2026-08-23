@@ -33,11 +33,6 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 5173
-          env:
-            - name: VITE_API_BASE_URL
-              value: http://api.bigintensive.local
-            - name: VITE_EVENTS_PATH
-              value: /events
           readinessProbe:
             httpGet:
               path: /
