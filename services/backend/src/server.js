@@ -36,6 +36,10 @@ async function ensureProducerConnected() {
   }
 }
 
+function getKubernetesErrorMessage(error) {
+  return error?.body?.message || error?.response?.body?.message || error?.message || "Errore Kubernetes sconosciuto";
+}
+
 // ============================ SERVER ===============================
 dotenv.config();
 const context = createServerContext(import.meta.url);
@@ -169,10 +173,11 @@ app.post("/api/v1/startSmartWatchPodSimulator", async (req, res) => {
       message: "Simulatore SmartWatch Pod avviato",
     });
   } catch (error) {
-    console.error("Errore avviando il simulatore SmartWatch Pod:", error);
+    const message = getKubernetesErrorMessage(error);
+    console.error("Errore avviando il simulatore SmartWatch Pod:", message);
     res.status(500).json({
       success: false,
-      error: "Impossibile avviare il simulatore SmartWatch Pod",
+      error: message,
     });
   }
 });
@@ -186,10 +191,11 @@ app.post("/api/v1/stopSmartWatchPodSimulator", async (req, res) => {
       message: "Simulatore SmartWatch Pod fermato",
     });
   } catch (error) {
-    console.error("Errore fermando il simulatore SmartWatch Pod:", error);
+    const message = getKubernetesErrorMessage(error);
+    console.error("Errore fermando il simulatore SmartWatch Pod:", message);
     res.status(500).json({
       success: false,
-      error: "Impossibile fermare il simulatore SmartWatch Pod",
+      error: message,
     });
   }
 });
