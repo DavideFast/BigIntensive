@@ -114,12 +114,17 @@ app.get("/api/v1/writePostgresql", (req, res) => {
 });
 
 app.get("/api/v1/readClickhouse", async (req, res) => {
-  const valore = await createClickhouseClient.query({
-    query: "SELECT * FROM running_samples WHERE session_id = (SELECT session_id FROM running_samples WHERE athlete_id = 1 LIMIT 1)",
-    format: "JSONEachRow",
-  });
-  const data = await valore.json();
-  res.json({ success: true, count: data.length, data: data });
+  try {
+    const valore = await createClickhouseClient.query({
+      query: "SELECT * FROM running_samples WHERE session_id = (SELECT session_id FROM running_samples WHERE athlete_id = 1 LIMIT 1)",
+      format: "JSONEachRow",
+    });
+    const data = await valore.json();
+    res.json({ success: true, count: data.length, data });
+  } catch (error) {
+    console.error("Errore query ClickHouse:", error.message);
+    res.status(503).json({ success: false, error: "ClickHouse non disponibile" });
+  }
 });
 
 app.post("/api/v1/pushToKafka", async (req, res) => {

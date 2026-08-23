@@ -11,8 +11,15 @@ export function createDbPool() {
   });
 }
 
+const clickhouseHost = process.env.CLICKHOUSE_HOST || "localhost";
+const clickhousePort = process.env.CLICKHOUSE_PORT || "8123";
+const clickhouseUrl = /^https?:\/\//i.test(clickhouseHost)
+  ? clickhouseHost
+  : `http://${clickhouseHost}:${clickhousePort}`;
+
 export const createClickhouseClient = createClient({
-  host: process.env.CLICKHOUSE_HOST || "http://localhost:8123",
+  url: clickhouseUrl,
   username: process.env.CLICKHOUSE_USER || "default",
   password: process.env.CLICKHOUSE_PASSWORD || "",
+  database: process.env.CLICKHOUSE_DB || "bigintensive",
 });
