@@ -146,11 +146,11 @@ start().catch(console.error);
 // });
 
 process.on("SIGINT", async () => {
-  await context.kafkaProducer.disconnect();
+  await producer.disconnect();
   process.exit(0);
 });
 
 process.on("SIGTERM", async () => {
-  await context.kafkaProducer.disconnect();
+  await producer.disconnect();
   process.exit(0);
 });
