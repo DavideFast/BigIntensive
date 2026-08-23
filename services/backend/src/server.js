@@ -6,7 +6,11 @@ import { createSystemRouter } from "./routes/systemRoutes.js";
 import { createServerContext } from "./bootstrap/serverContext.js";
 import { createClickhouseClient } from "./db/pool.js";
 import { Kafka } from "kafkajs";
+import { KubeConfig, CoreV1Api } from "@kubernetes/client-node"; // Importa il client Kubernetes per eventuali operazioni future
 
+const kubeConfig = new KubeConfig();
+kubeConfig.loadFromDefault();
+const k8sApi = kubeConfig.makeApiClient(CoreV1Api);
 const kafkaBrokers = String(process.env.KAFKA_BOOTSTRAP_SERVERS || "kafka:19092")
   .split(",")
   .map((value) => value.trim())
