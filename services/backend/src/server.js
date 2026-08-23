@@ -134,60 +134,6 @@ app.post("/api/v1/pushToKafka", async (req, res) => {
     });
   }
 });
-// ========================== SIMULATION ROUTES START =============================
-app.use(
-  createSimulationRouter({
-    pythonRuntime: context.pythonRuntime,
-    resolvePythonScript: context.resolvePythonScript,
-    kafkaProducer: context.kafkaProducer,
-    pool: context.pool,
-  }),
-);
-
-// ========================= DEPLOY/LOADTEST ROUTES START =========================
-app.use(
-  createDeployLoadtestRouter({
-    dockerRuntime: context.dockerRuntime,
-    k6ScriptPath: context.k6ScriptPath,
-    k6SharedScriptPath: context.k6SharedScriptPath,
-    k6DockerNetwork: context.k6DockerNetwork,
-    k6DockerVolume: context.k6DockerVolume,
-  }),
-);
-
-// ========================== SPARK JOB ROUTES START ============================
-app.use(
-  createSparkJobsRouter({
-    dockerRuntime: context.dockerRuntime,
-    sparkComposeService: context.sparkComposeService,
-    sparkMasterUrl: context.sparkMasterUrl,
-    sparkAppsDir: context.sparkAppsDir,
-    sparkCitusJdbcUrl: context.sparkCitusJdbcUrl,
-    sparkClickhouseJdbcUrl: context.sparkClickhouseJdbcUrl,
-    sparkKafkaBootstrapServers: context.sparkKafkaBootstrapServers,
-    sparkKafkaTopic: context.sparkKafkaTopic,
-    sparkClickhouseTable: context.sparkClickhouseTable,
-    sparkClickhouseUser: context.sparkClickhouseUser,
-    sparkClickhousePassword: context.sparkClickhousePassword,
-    sparkCheckpointDir: context.sparkCheckpointDir,
-  }),
-);
-
-// =========================== BUSINESS ROUTES START ==============================
-app.use(
-  createBusinessRouter({
-    pool: context.pool,
-    correlationStore: context.correlationStore,
-  }),
-);
-
-// ============================ DASHBOARD ROUTES START ===========================
-app.use(
-  createDashboardRouter({
-    pool: context.pool,
-    clickhouseConfig: context.clickhouse,
-  }),
-);
 
 // ============================ AVVIO ===============================
 
