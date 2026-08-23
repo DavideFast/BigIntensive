@@ -104,6 +104,45 @@ popolato serve una migrazione delle assegnazioni; in sviluppo puoi usare
 
 KRaft e ClickHouse Keeper sono componenti distinti: KRaft coordina Kafka, mentre Keeper coordina le repliche ClickHouse. L'aggiunta di un quarto PC non richiede un nuovo ruolo fisso per Spark; K3s può schedulare nuovi executor sui nodi disponibili quando un job ne richiede altri.
 
+# Concetti chiave
+
+Il progetto nasce per girare su 3 nodi fisici. Pertanto la topologia e le configurazioni sono ottimizzate per questo scenario.
+Il nodo server K3s ospita il controllo del cluster e può anche eseguire workload. I nodi agent/worker ospitano solo workload. I servizi Kafka e ClickHouse sono distribuiti su tutti i nodi per garantire resilienza e performance.
+
+Il sistema viene interconnesso tramite uno switch di rete. Tutti i nodi vengono connessi tramite cavo ethernet allo switch (senza management)
+e pertanto dovranno essere configurati con IP statici. I nodi avranno un altra scheda di rete (essendo portatili wi-fi) che useranno per accedere a internet per aggiornamenti e download di pacchetti. Nonchè per simulare un accesso remoto al cluster da un PC esterno. In questo caso il nodo server K3s dovrà essere raggiungibile dall'esterno tramite il suo IP statico.
+
+```bash
+# Configurazione IP del master
+sudo ip addr add 192.168.1.10/24 dev <INTERFACE>
+```
+
+```bash
+# Configurazione IP del worker-1
+sudo ip addr add 192.168.1.20/24 dev <INTERFACE>
+```
+
+```bash
+# Configurazione IP del worker-2
+sudo ip addr add 192.168.1.30/24 dev <INTERFACE>
+```
+
+Per vedere le interfacce di rete disponibili:
+
+```bash
+ip addr show
+```
+
+Testare poi la connettività tra i nodi con ping:
+
+```bash
+ping <IP_STATIC_NODO>
+```
+
+# Installazione su server master
+
+# Installazione su server worker
+
 ## Passo 2: prepara le immagini
 
 Dal root del repository builda le immagini del backend e del frontend:
