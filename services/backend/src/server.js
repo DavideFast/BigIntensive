@@ -149,6 +149,53 @@ app.post("/api/v1/pushToKafka", async (req, res) => {
   }
 });
 
+app.get("/api/v1/startSmartWatchPodSimulator", async (req, res) => {
+  try {
+    await ensureProducerConnected();
+    const intervalId = setInterval(async () => {
+      const evento = {
+        atleta_id: 1,
+        sessione_id: 1,
+        frequenza_cardiaca: Math.floor(Math.random() * (180 - 60 + 1)) + 60,
+        velocita: parseFloat((Math.random() * (20 - 5) + 5).toFixed(2)),
+        timestamp: new Date().toISOString(),
+      };
+      await producer.send({
+        topic: "my-topic",
+        messages: [{ key: evento.atleta_id.toString() + "-" + evento.sessione_id.toString(), value: JSON.stringify(evento) }],
+      });
+    }, 5000); // Invia un evento ogni 5 secondi
+
+    res.status(202).json({
+      success: true,
+      message: "Simulatore SmartWatch Pod avviato",
+    });
+  } catch (error) {
+    console.error("Errore simulatore SmartWatch Pod:", error);
+    res.status(500).json({
+      success: false,
+      error: "Impossibile avviare il simulatore SmartWatch Pod",
+    });
+  }
+});
+
+app.get("/api/v1/stopSmartWatchPodSimulator", async (req, res) => {
+  try {
+    clearInterval(intervalId);
+    res.status(200).json({
+      success: true,
+      message: "Simulatore SmartWatch Pod fermato",
+    });
+  } catch (error) {
+    console.error("Errore fermando il simulatore SmartWatch Pod:", error);
+    res.status(500).json({
+      success: false,
+      error: "Impossibile fermare il simulatore SmartWatch Pod",
+    });
+  }
+  intervalId = null;
+});
+
 // ============================ AVVIO ===============================
 
 async function start() {
