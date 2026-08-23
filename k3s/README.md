@@ -149,6 +149,17 @@ Per avviare correttamente il server K3s, è necessario eseguire i seguenti passa
 
 ## Creare la macchina virtuale con Ubuntu (altri sistemi operativi non sono testati).
 
+Le informazioni per creare la macchina virtuale si riferiscono a Hyper-V e VirtualBox.
+In Hyper-V, creare una nuova macchina virtuale con le seguenti impostazioni:
+
+- Generazione 2
+- Memoria: 16000 MB
+- Disco rigido: 500 GB
+- Scheda di rete esterna: Default Switch (Wi-fi)
+- Scheda di rete intra cluster: External Virtual Switch (collegato alla rete fisica)
+- Disabilitare Secure Boot
+- Image ISO: Ubuntu 25.04/26.04 LTS
+
 ## Aggiornamento preliminare del sistema operativo:
 
 ```bash
