@@ -167,7 +167,11 @@ app.post("/api/v1/pushToKafka", async (req, res) => {
 app.post("/api/v1/startSmartWatchPodSimulator", async (req, res) => {
   try {
     const patch = [{ op: "replace", path: "/spec/replicas", value: 1 }];
-    await k8sApi.patchNamespacedDeployment("smartwatch-simulator", kubernetesNamespace, patch);
+    await k8sApi.patchNamespacedDeployment({
+      name: "smartwatch-simulator",
+      namespace: kubernetesNamespace,
+      body: patch,
+    });
     res.status(200).json({
       success: true,
       message: "Simulatore SmartWatch Pod avviato",
@@ -185,7 +189,11 @@ app.post("/api/v1/startSmartWatchPodSimulator", async (req, res) => {
 app.post("/api/v1/stopSmartWatchPodSimulator", async (req, res) => {
   try {
     const patch = [{ op: "replace", path: "/spec/replicas", value: 0 }];
-    await k8sApi.patchNamespacedDeployment("smartwatch-simulator", kubernetesNamespace, patch);
+    await k8sApi.patchNamespacedDeployment({
+      name: "smartwatch-simulator",
+      namespace: kubernetesNamespace,
+      body: patch,
+    });
     res.status(200).json({
       success: true,
       message: "Simulatore SmartWatch Pod fermato",
