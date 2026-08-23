@@ -8,9 +8,14 @@ import { createClickhouseClient } from "./db/pool.js";
 import { Kafka } from "kafkajs";
 import { KubeConfig, CoreV1Api } from "@kubernetes/client-node"; // Importa il client Kubernetes per eventuali operazioni future
 
+// ============================ CONFIGURAZIONE ===============================
+
+// Configurazione del client Kubernetes
 const kubeConfig = new KubeConfig();
 kubeConfig.loadFromDefault();
 const k8sApi = kubeConfig.makeApiClient(CoreV1Api);
+
+// Configurazione del produttore Kafka
 const kafkaBrokers = String(process.env.KAFKA_BOOTSTRAP_SERVERS || "kafka:19092")
   .split(",")
   .map((value) => value.trim())
@@ -30,6 +35,7 @@ async function ensureProducerConnected() {
   }
 }
 
+// ============================ SERVER ===============================
 dotenv.config();
 const context = createServerContext(import.meta.url);
 const app = express();
@@ -155,27 +161,15 @@ app.post("/api/v1/pushToKafka", async (req, res) => {
 
 app.get("/api/v1/startSmartWatchPodSimulator", async (req, res) => {
   try {
-    await ensureProducerConnected();
-    const intervalId = setInterval(async () => {
-      const evento = {
-        atleta_id: 1,
-        sessione_id: 1,
-        frequenza_cardiaca: Math.floor(Math.random() * (180 - 60 + 1)) + 60,
-        velocita: parseFloat((Math.random() * (20 - 5) + 5).toFixed(2)),
-        timestamp: new Date().toISOString(),
-      };
-      await producer.send({
-        topic: "my-topic",
-        messages: [{ key: evento.atleta_id.toString() + "-" + evento.sessione_id.toString(), value: JSON.stringify(evento) }],
-      });
-    }, 5000); // Invia un evento ogni 5 secondi
-
-    res.status(202).json({
+    const patch = [{ op: "replace", path: "/spec/replicas", value: 1 }];
+    const options = { headers: { "Content-Type": "application/json-patch+json" } };
+    await k8sApi.patchNamespacedDeployment("smartwatch-simulator", "default", patch, undefined, undefined, undefined, undefined, options);
+    res.status(200).json({
       success: true,
       message: "Simulatore SmartWatch Pod avviato",
     });
   } catch (error) {
-    console.error("Errore simulatore SmartWatch Pod:", error);
+    console.error("Errore avviando il simulatore SmartWatch Pod:", error);
     res.status(500).json({
       success: false,
       error: "Impossibile avviare il simulatore SmartWatch Pod",
@@ -185,7 +179,9 @@ app.get("/api/v1/startSmartWatchPodSimulator", async (req, res) => {
 
 app.get("/api/v1/stopSmartWatchPodSimulator", async (req, res) => {
   try {
-    clearInterval(intervalId);
+    const patch = [{ op: "replace", path: "/spec/replicas", value: 0 }];
+    const options = { headers: { "Content-Type": "application/json-patch+json" } };
+    await k8sApi.patchNamespacedDeployment("smartwatch-simulator", "default", patch, undefined, undefined, undefined, undefined, options);
     res.status(200).json({
       success: true,
       message: "Simulatore SmartWatch Pod fermato",
