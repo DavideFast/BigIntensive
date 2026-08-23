@@ -188,6 +188,12 @@ Se il servizio è già in esecuzione e si vuole re-buildare tutto.
 RESET_NAMESPACE=true bash k3s/deploy-k3s-local.sh
 ```
 
+### Recupero del token per il join dei nodi agent/worker
+
+```bash
+sudo cat /var/lib/rancher/k3s/server/node-token
+```
+
 # Installazione su server worker
 
 ## Passo 2: prepara le immagini
