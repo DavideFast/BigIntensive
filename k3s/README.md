@@ -113,13 +113,18 @@ Il sistema viene interconnesso tramite uno switch di rete. Tutti i nodi vengono 
 e pertanto dovranno essere configurati con IP statici. I nodi avranno un altra scheda di rete (essendo portatili wi-fi) che useranno per accedere a internet per aggiornamenti e download di pacchetti. Nonchè per simulare un accesso remoto al cluster da un PC esterno. In questo caso il nodo server K3s dovrà essere raggiungibile dall'esterno tramite il suo IP statico.
 
 ```bash
+# Comando generale
+sudo ip addr add <IP_STATIC_NODO>/24 dev eth0
+```
+
+```bash
 # Configurazione IP del master
-sudo ip addr add 192.168.1.10/24 dev <INTERFACE>
+sudo ip addr add 192.168.1.10/24 dev eth1
 ```
 
 ```bash
 # Configurazione IP del worker-1
-sudo ip addr add 192.168.1.20/24 dev <INTERFACE>
+sudo ip addr add 192.168.1.20/24 dev eth0
 ```
 
 ```bash
