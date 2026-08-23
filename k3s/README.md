@@ -160,6 +160,8 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install git ca-certificates helm -y
 ```
 
+Helm è necessario per installare il Spark Operator, che gestisce i job Spark su Kubernetes. Helm è un package manager come apt o npm che permette di installare applicazioni complesse come lo Spark Operator (richiede la coordinazione di più file yaml) in maniera veloce.
+
 4. Installare K3s come server:
 
 ```bash
