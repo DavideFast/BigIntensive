@@ -176,6 +176,16 @@ cd ~
 git clone https://github.com/DavideFast/BigIntensive.git
 ```
 
+### Avvio in locale con build immagini + import in k3s
+
+```bash
+bash k3s/deploy-k3s-local.sh
+```
+
+```bash
+RESET_NAMESPACE=true bash k3s/deploy-k3s-local.sh
+```
+
 # Installazione su server worker
 
 ## Passo 2: prepara le immagini
