@@ -1,10 +1,12 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import ClickhouseConnectionPage from "./pages/ClickhouseConnection";
 import PostgresConnectionPage from "./pages/PostgresConnection";
+import HandleSimulation from "./pages/manageSmartwatchConnections";
 
 const pages = [
   { id: "postgres", label: "PostgreSQL", path: "/postgres" },
   { id: "clickhouse", label: "ClickHouse", path: "/clickhouse" },
+  { id: "simulation", label: "Simulazione", path: "/simulation" },
 ];
 
 export default function App() {
@@ -30,6 +32,7 @@ export default function App() {
         <Routes>
           <Route path="/postgres" element={<PostgresConnectionPage />} />
           <Route path="/clickhouse" element={<ClickhouseConnectionPage />} />
+          <Route path="/simulation" element={<HandleSimulation />} />
           <Route path="/" element={<Navigate to="/postgres" replace />} />
           <Route path="*" element={<Navigate to="/postgres" replace />} />
         </Routes>

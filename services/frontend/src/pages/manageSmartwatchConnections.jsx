@@ -1,0 +1,44 @@
+import { useEffect, useState } from "react";
+
+export default function HandleSimulation() {
+  const avviaSimulazione = () => {
+    fetch("/api/v1/startSmartwatchSimulation")
+      .then((response) => response.json())
+      .then((data) => {
+        if (!data.success) {
+          throw new Error(`Errore nella richiesta: ${data.error}`);
+        }
+        console.log("Simulazione avviata:", data);
+        alert("Simulazione avviata. Controlla la console per i dettagli.");
+      })
+      .catch((err) => {
+        console.error("Errore nell'avvio della simulazione:", err);
+        alert(`Errore nell'avvio della simulazione: ${err.message}`);
+      });
+  };
+
+  const fermaSimulazione = () => {
+    fetch("/api/v1/stopSmartwatchSimulation")
+      .then((response) => response.json())
+      .then((data) => {
+        if (!data.success) {
+          throw new Error(`Errore nella richiesta: ${data.error}`);
+        }
+        console.log("Simulazione fermata:", data);
+        alert("Simulazione fermata. Controlla la console per i dettagli.");
+      })
+      .catch((err) => {
+        console.error("Errore nel fermare la simulazione:", err);
+        alert(`Errore nel fermare la simulazione: ${err.message}`);
+      });
+  };
+
+  useEffect(() => {}, []);
+
+  return (
+    <section aria-label="Dati workouts">
+      <button onClick={avviaSimulazione}>Avvia simulazione</button>
+      <button onClick={fermaSimulazione}>Ferma simulazione</button>
+    </section>
+  );
+}

@@ -6,14 +6,15 @@ import { createSystemRouter } from "./routes/systemRoutes.js";
 import { createServerContext } from "./bootstrap/serverContext.js";
 import { createClickhouseClient } from "./db/pool.js";
 import { Kafka } from "kafkajs";
-import { KubeConfig, CoreV1Api } from "@kubernetes/client-node"; // Importa il client Kubernetes per eventuali operazioni future
+import { AppsV1Api, KubeConfig } from "@kubernetes/client-node";
 
 // ============================ CONFIGURAZIONE ===============================
 
 // Configurazione del client Kubernetes
 const kubeConfig = new KubeConfig();
 kubeConfig.loadFromDefault();
-const k8sApi = kubeConfig.makeApiClient(CoreV1Api);
+const k8sApi = kubeConfig.makeApiClient(AppsV1Api);
+const kubernetesNamespace = process.env.KUBERNETES_NAMESPACE || "bigintensive";
 
 // Configurazione del produttore Kafka
 const kafkaBrokers = String(process.env.KAFKA_BOOTSTRAP_SERVERS || "kafka:19092")
@@ -163,7 +164,7 @@ app.get("/api/v1/startSmartWatchPodSimulator", async (req, res) => {
   try {
     const patch = [{ op: "replace", path: "/spec/replicas", value: 1 }];
     const options = { headers: { "Content-Type": "application/json-patch+json" } };
-    await k8sApi.patchNamespacedDeployment("smartwatch-simulator", "default", patch, undefined, undefined, undefined, undefined, options);
+    await k8sApi.patchNamespacedDeployment("smartwatch-simulator", kubernetesNamespace, patch, undefined, undefined, undefined, undefined, undefined, options);
     res.status(200).json({
       success: true,
       message: "Simulatore SmartWatch Pod avviato",
@@ -181,7 +182,7 @@ app.get("/api/v1/stopSmartWatchPodSimulator", async (req, res) => {
   try {
     const patch = [{ op: "replace", path: "/spec/replicas", value: 0 }];
     const options = { headers: { "Content-Type": "application/json-patch+json" } };
-    await k8sApi.patchNamespacedDeployment("smartwatch-simulator", "default", patch, undefined, undefined, undefined, undefined, options);
+    await k8sApi.patchNamespacedDeployment("smartwatch-simulator", kubernetesNamespace, patch, undefined, undefined, undefined, undefined, undefined, options);
     res.status(200).json({
       success: true,
       message: "Simulatore SmartWatch Pod fermato",
@@ -193,7 +194,6 @@ app.get("/api/v1/stopSmartWatchPodSimulator", async (req, res) => {
       error: "Impossibile fermare il simulatore SmartWatch Pod",
     });
   }
-  intervalId = null;
 });
 
 // ============================ AVVIO ===============================

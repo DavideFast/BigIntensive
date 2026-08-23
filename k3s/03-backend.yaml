@@ -1,4 +1,35 @@
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backend-controller
+  namespace: bigintensive
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: smartwatch-simulator-controller
+  namespace: bigintensive
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    resourceNames: ["smartwatch-simulator"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backend-smartwatch-simulator-controller
+  namespace: bigintensive
+subjects:
+  - kind: ServiceAccount
+    name: backend-controller
+    namespace: bigintensive
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: smartwatch-simulator-controller
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: backend
@@ -27,6 +58,7 @@ spec:
       labels:
         app: backend
     spec:
+      serviceAccountName: backend-controller
       containers:
         - name: backend
           image: davidefast/bigintensive-backend:latest
@@ -44,6 +76,10 @@ spec:
                 configMapKeyRef:
                   name: bigintensive-config
                   key: BACKEND_PORT
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: CORS_ORIGIN
               valueFrom:
                 configMapKeyRef:
