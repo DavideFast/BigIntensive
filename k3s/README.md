@@ -116,6 +116,12 @@ e pertanto dovranno essere configurati con IP statici. I nodi avranno un altra s
 sudo ip addr add <IP_STATIC_NODO>/24 dev <INTERFACE>
 ```
 
+Per vedere le interfacce di rete disponibili:
+
+```bash
+ip addr show
+```
+
 ```bash
 # Configurazione IP del master
 sudo ip addr add 192.168.1.10/24 dev eth0
@@ -131,15 +137,9 @@ sudo ip addr add 192.168.1.20/24 dev eth1
 sudo ip addr add 192.168.1.30/24 dev eth0
 ```
 
-Per vedere le interfacce di rete disponibili:
-
-```bash
-ip addr show
-```
-
 Testare poi la connettività tra i nodi con ping:
 
-```bash
+```text
 ping <IP_STATIC_NODO>
 ```
 
