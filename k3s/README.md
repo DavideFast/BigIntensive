@@ -207,6 +207,16 @@ sudo cat /var/lib/rancher/k3s/server/node-token
 
 # Installazione su server worker
 
+La macchina virtuale deve essere configurata come il server master, con le stesse impostazioni di memoria, disco e rete.
+
+## Installare K3s come agent/worker:
+
+Installare K3s come agent/worker, sostituendo `<NOME_ASSEGNATO>` con un nome univoco per il nodo e `<SERVER_IP>` e `<TOKEN>` con i valori ottenuti dal server master:
+
+```bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NOME_ASSEGNATO>" K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN='<TOKEN>' sh -
+```
+
 ## Passo 2: prepara le immagini
 
 Dal root del repository builda le immagini del backend e del frontend:
