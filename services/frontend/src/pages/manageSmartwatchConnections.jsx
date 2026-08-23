@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-
 export default function HandleSimulation() {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
+
   const avviaSimulazione = () => {
-    fetch("/api/v1/startSmartwatchSimulation")
+    fetch(`${apiBaseUrl}/api/v1/startSmartWatchPodSimulator`)
       .then((response) => response.json())
       .then((data) => {
         if (!data.success) {
@@ -18,7 +18,7 @@ export default function HandleSimulation() {
   };
 
   const fermaSimulazione = () => {
-    fetch("/api/v1/stopSmartwatchSimulation")
+    fetch(`${apiBaseUrl}/api/v1/stopSmartWatchPodSimulator`)
       .then((response) => response.json())
       .then((data) => {
         if (!data.success) {
@@ -32,8 +32,6 @@ export default function HandleSimulation() {
         alert(`Errore nel fermare la simulazione: ${err.message}`);
       });
   };
-
-  useEffect(() => {}, []);
 
   return (
     <section aria-label="Dati workouts">
