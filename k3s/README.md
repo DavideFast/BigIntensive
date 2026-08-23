@@ -205,6 +205,9 @@ RESET_NAMESPACE=true bash k3s/deploy-k3s-local.sh
 sudo cat /var/lib/rancher/k3s/server/node-token
 ```
 
+<br>
+<br>
+
 # Installazione su server worker
 
 La macchina virtuale deve essere configurata come il server master, con le stesse impostazioni di memoria, disco e rete.
