@@ -213,6 +213,12 @@ La macchina virtuale deve essere configurata come il server master, con le stess
 
 Installare K3s come agent/worker, sostituendo `<NOME_ASSEGNATO>` con un nome univoco per il nodo e `<SERVER_IP>` e `<TOKEN>` con i valori ottenuti dal server master:
 
+WARNING: Potrebbe essere necessario aprire delle porte sul firewall del master esponendo:
+
+- 6443 TCP per l'API server di Kubernetes
+- 8472 UDP per il traffico di rete tra i nodi (flannel VXLAN)
+- 10250 TCP per il kubelet (solo se si vuole accedere ai log dei pod dal master)
+
 ```bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NOME_ASSEGNATO>" K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN='<TOKEN>' sh -
 ```
