@@ -7,11 +7,24 @@ import { createServerContext } from "./bootstrap/serverContext.js";
 import { createClickhouseClient } from "./db/pool.js";
 import { Kafka } from "kafkajs";
 
+const kafkaBrokers = String(process.env.KAFKA_BOOTSTRAP_SERVERS || "kafka:19092")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
+
 const kafka = new Kafka({
   clientId: "my-express-api",
-  brokers: ["localhost:9092"],
+  brokers: kafkaBrokers,
 });
 const producer = kafka.producer();
+let producerConnected = false;
+
+async function ensureProducerConnected() {
+  if (!producerConnected) {
+    await producer.connect();
+    producerConnected = true;
+  }
+}
 
 dotenv.config();
 const context = createServerContext(import.meta.url);
@@ -111,6 +124,7 @@ app.get("/api/v1/readClickhouse", async (req, res) => {
 
 app.post("/api/v1/pushToKafka", async (req, res) => {
   try {
+    await ensureProducerConnected();
     await producer.send({
       topic: "my-topic",
       messages: [{ key: req.body.atleta_id.toString() + "-" + req.body.sessione_id.toString(), value: JSON.stringify(req.body) }],
@@ -133,8 +147,6 @@ app.post("/api/v1/pushToKafka", async (req, res) => {
 // ============================ AVVIO ===============================
 
 async function start() {
-  await producer.connect();
-
   app.listen(context.port, () => {
     console.log(`Backend API listening on http://localhost:${context.port}`);
   });
@@ -143,11 +155,15 @@ async function start() {
 start().catch(console.error);
 
 process.on("SIGINT", async () => {
-  await producer.disconnect();
+  if (producerConnected) {
+    await producer.disconnect();
+  }
   process.exit(0);
 });
 
 process.on("SIGTERM", async () => {
-  await producer.disconnect();
+  if (producerConnected) {
+    await producer.disconnect();
+  }
   process.exit(0);
 });
