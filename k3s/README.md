@@ -223,6 +223,8 @@ Installare K3s come agent/worker, sostituendo `<NOME_ASSEGNATO>` con un nome uni
 curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NOME_ASSEGNATO>" K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN='<TOKEN>' sh -
 ```
 
+<br>
+
 > [!WARNING]
 > Potrebbe essere necessario aprire delle porte sul firewall del master esponendo:
 >
