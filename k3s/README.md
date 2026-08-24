@@ -143,6 +143,18 @@ Testare poi la connettività tra i nodi con ping:
 ping <IP_STATIC_NODO>
 ```
 
+Se si vogliono far persistere tali configurazioni bisogna usare i comandi di nmcli:
+
+```bash
+nmcli dev show
+sudo nmcli connection down <INTERFACE>
+sudo nmcli connection delete <INTERFACE>
+sudo nmcli connection add type ethernet con-name <INTERFACE> ifname <NOME> ip4 <IP_STATIC_NODO>/24
+sudo nmcli connection up <INTERFACE>
+sudo nmcli connection show
+
+```
+
 <br>
 <br>
 
