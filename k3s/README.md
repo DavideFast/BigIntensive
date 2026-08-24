@@ -237,33 +237,34 @@ Installare K3s come agent/worker, sostituendo `<NOME_ASSEGNATO>` con un nome uni
 curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NOME_ASSEGNATO>" K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN='<TOKEN>' sh -
 ```
 
-Potrebbe essere necessario cambiare gli indirizzi IP di riferimento. Per vedere se ci sono problemi di connessione usare il seguente comando:
-
-```bash
-sudo journalctl -u k3s-agent -f
-```
-
-In caso positivo creare il seguente file:
-
-```bash
-sudo mkdir -p /etc/rancher/k3s
-sudo nano /etc/rancher/k3s/config.yaml
-```
-
-Dentro al file scrivere:
-
-```yaml
-server: https://<SERVER_IP>:6443
-token: <TOKEN>
-node-ip: <IP_STATIC_NODO>
-```
-
-Dopo di che salvare il file e riavviare il servizio k3s-agent:
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl restart k3s-agent
-```
+> [!WARNING]
+> Potrebbe essere necessario cambiare gli indirizzi IP di riferimento. Per vedere se ci sono problemi di connessione usare il seguente comando:
+>
+> ```bash
+> sudo journalctl -u k3s-agent -f
+> ```
+>
+> In caso positivo creare il seguente file:
+>
+> ```bash
+> sudo mkdir -p /etc/rancher/k3s
+> sudo nano /etc/rancher/k3s/config.yaml
+> ```
+>
+> Dentro al file scrivere:
+>
+> ```yaml
+> server: https://<SERVER_IP>:6443
+> token: <TOKEN>
+> node-ip: <IP_STATIC_NODO>
+> ```
+>
+> Dopo di che salvare il file e riavviare il servizio k3s-agent:
+>
+> ```bash
+> sudo systemctl daemon-reload
+> sudo systemctl restart k3s-agent
+> ```
 
 > [!TIP]
 > Potrebbe essere necessario aprire delle porte sul firewall del master esponendo:
