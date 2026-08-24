@@ -147,10 +147,10 @@ Se si vogliono far persistere tali configurazioni bisogna usare i comandi di nmc
 
 ```bash
 nmcli dev show
-sudo nmcli connection down <INTERFACE>
-sudo nmcli connection delete <INTERFACE>
+sudo nmcli connection down <NOME>
+sudo nmcli connection delete <NOME>
 sudo nmcli connection add type ethernet con-name <INTERFACE> ifname <NOME> ip4 <IP_STATIC_NODO>/24
-sudo nmcli connection up <INTERFACE>
+sudo nmcli connection up <NOME>
 sudo nmcli connection show
 
 ```
@@ -174,6 +174,8 @@ In Hyper-V, creare una nuova macchina virtuale con le seguenti impostazioni:
 - Scheda di rete intra cluster: External Virtual Switch (collegato alla rete fisica)
 - Disabilitare Secure Boot
 - Image ISO: Ubuntu 25.04/26.04 LTS
+
+L'ordine di inserimento della scheda di rete influenza quale interfaccia verrà usata per tale rete. La prima inserita si chiamerà eth0 mentre la seconda eth1.
 
 ## Aggiornamento preliminare del sistema operativo:
 
