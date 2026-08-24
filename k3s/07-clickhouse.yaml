@@ -301,13 +301,11 @@ spec:
     spec:
       affinity:
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchLabels:
-                    app: clickhouse
-                topologyKey: kubernetes.io/hostname
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: clickhouse
+              topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 101
         fsGroupChangePolicy: OnRootMismatch
@@ -406,7 +404,7 @@ spec:
         storageClassName: local-path
         resources:
           requests:
-            storage: 500Gi
+            storage: 100Gi
 
 ---
 apiVersion: v1

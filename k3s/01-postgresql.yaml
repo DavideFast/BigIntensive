@@ -74,7 +74,7 @@ spec:
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
-            storage: 500Gi
+            storage: 150Gi
 ---
 apiVersion: v1
 kind: ConfigMap
