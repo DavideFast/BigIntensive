@@ -239,12 +239,14 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NOME_ASSEGNA
 
 <br>
 
-> [!WARNING]
+> [!TIP]
 > Potrebbe essere necessario aprire delle porte sul firewall del master esponendo:
 >
 > - 6443 TCP per l'API server di Kubernetes (worker->master)
 > - 8472 UDP per il traffico di rete tra i nodi (flannel VXLAN)
 > - 10250 TCP per il kubelet (master->worker e traffico interno)
+>
+> Le regole vanno aggiunte direttamente tramite iptables e non tramite ufw che non è attivo di default su Ubuntu Desktop.
 
 ## Passo 2: prepara le immagini
 
