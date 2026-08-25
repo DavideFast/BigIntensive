@@ -240,6 +240,19 @@ Se il servizio è già in esecuzione e si vuole re-buildare tutto.
 RESET_NAMESPACE=true bash k3s/deploy-k3s-local.sh
 ```
 
+Creare file config.yaml per il nodo server k3s:
+
+```bash
+sudo mkdir -p /etc/rancher/k3s
+sudo nano /etc/rancher/k3s/config.yaml
+```
+
+Inserire il seguente contenuto, sostituendo `<IP_STATIC_NODO>` con l'IP statico del nodo server:
+
+```yaml
+node-ip: "<IP_STATIC_NODO>"
+```
+
 ## Recupero del token per il join dei nodi agent/worker
 
 ```bash
