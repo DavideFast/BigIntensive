@@ -159,10 +159,10 @@ ping <IP_STATIC_NODO>
 Se si vogliono far persistere tali configurazioni bisogna usare i comandi di nmcli:
 
 ```bash
-nmcli dev show
+sudo nmcli device status
 sudo nmcli connection down <NOME>
 sudo nmcli connection delete <NOME>
-sudo nmcli connection add type ethernet con-name <INTERFACE> ifname <NOME> ip4 <IP_STATIC_NODO>/24
+sudo nmcli connection add type ethernet con-name <NOME> ifname <INTERFACE> ip4 <IP_STATIC_NODO>/24
 sudo nmcli connection up <NOME>
 sudo nmcli connection show
 
