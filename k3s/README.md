@@ -37,7 +37,14 @@ hostname -I
 Sulla seconda VM installa l'agent sostituendo `<SERVER_IP>` e `<TOKEN>`:
 
 ```bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --with-node-id" K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN='<TOKEN>' sh -
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NODE_NAME>" K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN='<TOKEN>' sh -
+```
+
+Nel caso specifico:
+
+```bash
+#TOKEN
+K10f8eed66f2b617a72eb273c752e47b1e9f81f0132219beec50ec42101b25d6dd0::server:926a3320a8d2afe48113eb997039ce7c
 ```
 
 `--with-node-id` evita conflitti se il cluster ha gia' visto in passato lo stesso hostname della seconda VM.
@@ -140,7 +147,7 @@ sudo ip addr add 192.168.1.20/24 dev eth1
 
 ```bash
 # Configurazione IP del worker-2
-sudo ip addr add 192.168.1.30/24 dev eth0
+sudo ip addr add 192.168.1.30/24 dev enp0s3
 ```
 
 Testare poi la connettività tra i nodi con ping:
@@ -182,6 +189,17 @@ In Hyper-V, creare una nuova macchina virtuale con le seguenti impostazioni:
 - Image ISO: Ubuntu 25.04/26.04 LTS
 
 L'ordine di inserimento della scheda di rete influenza quale interfaccia verrà usata per tale rete. La prima inserita si chiamerà eth0 mentre la seconda eth1.
+
+In VirtualBox, creare una nuova macchina virtuale con le seguenti impostazioni:
+
+- Memoria: 16000 MB
+- Core: 5
+- Disco rigido: 500 GB
+- Scheda di rete intra-cluster: Bridge (collegata alla rete fisica)
+- Scheda di rete esterna: NAT
+- Image ISO: Ubuntu 25.04/26.04 LTS
+
+L'ordine di inserimento della scheda di rete influenza quale interfaccia verrà usata per tale rete. La prima inserita si chiamerà enp0s3 mentre la seconda enp0s8.
 
 ## Aggiornamento preliminare del sistema operativo:
 
