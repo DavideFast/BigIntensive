@@ -255,6 +255,12 @@ La macchina virtuale deve essere configurata come il server master, con le stess
 
 ## Installare K3s come agent/worker:
 
+Inizializzare il nodo con il comando:
+
+```bash
+sudo apt update && sudo apt install curl -y
+```
+
 Installare K3s come agent/worker, sostituendo `<NOME_ASSEGNATO>` con un nome univoco per il nodo e `<SERVER_IP>` e `<TOKEN>` con i valori ottenuti dal server master:
 
 ```bash
