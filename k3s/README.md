@@ -122,6 +122,12 @@ Per vedere le interfacce di rete disponibili:
 ip addr show
 ```
 
+Solo per virtualBox
+
+```bash
+sudo nmcli device set enp0s3 managed no
+```
+
 ```bash
 # Configurazione IP del master
 sudo ip addr add 192.168.1.10/24 dev eth0
@@ -253,18 +259,17 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NOME_ASSEGNA
 >
 > Dentro al file scrivere:
 >
-> ```yaml
-> server: https://<SERVER_IP>:6443
-> token: <TOKEN>
-> node-ip: <IP_STATIC_NODO>
-> ```
+> ````yaml
+> server: "https://<SERVER_IP>:6443"
+> token: "<TOKEN>"
+> node-ip: "<IP_STATIC_NODO>"
 >
 > Dopo di che salvare il file e riavviare il servizio k3s-agent:
 >
 > ```bash
 > sudo systemctl daemon-reload
 > sudo systemctl restart k3s-agent
-> ```
+> ````
 
 > [!TIP]
 > Potrebbe essere necessario aprire delle porte sul firewall del master esponendo:
