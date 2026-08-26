@@ -290,6 +290,7 @@ metadata:
   namespace: bigintensive
 spec:
   serviceName: clickhouse
+  podManagementPolicy: Parallel
   replicas: 4
   selector:
     matchLabels:
