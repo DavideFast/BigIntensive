@@ -169,6 +169,7 @@ metadata:
   namespace: bigintensive
 spec:
   clusterIP: None
+  publishNotReadyAddresses: true
   selector:
     app: clickhouse-keeper
   ports:
@@ -417,6 +418,7 @@ metadata:
   namespace: bigintensive
 spec:
   clusterIP: None
+  publishNotReadyAddresses: true
   selector:
     app: clickhouse
   ports:
