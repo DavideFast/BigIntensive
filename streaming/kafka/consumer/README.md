@@ -34,15 +34,18 @@ kafka-consumer-real-time/
 ## Variabili d'Ambiente
 
 ### Kafka
+
 - `KAFKA_BOOTSTRAP_SERVERS`: Bootstrap servers Kafka (default: `kafka:19092`)
 - `KAFKA_TOPIC`: Topic di input (default: `heart-rate-events`)
 
 ### ClickHouse
+
 - `CLICKHOUSE_URL`: JDBC URL (default: `jdbc:clickhouse://clickhouse:8123/bigintensive`)
 - `CLICKHOUSE_USER`: Username (default: `default`)
 - `CLICKHOUSE_PASSWORD`: Password (default: empty)
 
 ### PostgreSQL
+
 - `POSTGRES_URL`: JDBC URL (default: `jdbc:postgresql://postgres:5432/bigintensive`)
 - `POSTGRES_USER`: Username (default: `postgres`)
 - `POSTGRES_PASSWORD`: Password (default: `postgres`)
@@ -86,6 +89,7 @@ docker-compose up -d kafka-consumer
 ```
 
 **Configurazione nel docker-compose.yml:**
+
 ```yaml
 kafka-consumer:
   build:
@@ -107,6 +111,7 @@ kafka-consumer:
 ```
 
 **Verificare i log:**
+
 ```bash
 docker-compose logs -f kafka-consumer
 ```
@@ -116,7 +121,7 @@ docker-compose logs -f kafka-consumer
 1. Creare l'immagine Docker:
 
 ```bash
-docker build -t kafka-consumer-realtime:latest streaming/kafka/consumer/
+docker build -t davidefast/consumer-kafka:latest streaming/kafka/consumer/
 ```
 
 2. Caricare l'immagine nel registry locale K3s (se non in uso DockerHub)
@@ -128,6 +133,7 @@ kubectl apply -f k3s/09-kafka-consumer.yaml
 ```
 
 **Manifesto include:**
+
 - ConfigMap con le variabili d'ambiente
 - Deployment con 2 replica per alta disponibilità
 - Service per esporre le metriche
@@ -136,6 +142,7 @@ kubectl apply -f k3s/09-kafka-consumer.yaml
 - Tolerations per node taints
 
 **Verificare il deployment:**
+
 ```bash
 # Status deployment
 kubectl get deployment kafka-consumer-realtime -n bigintensive
@@ -223,6 +230,7 @@ Il consumer include health check che verifica il processo Java è in esecuzione.
 ### Metriche (Opzionale - da implementare)
 
 Potrebbe essere aggiunto Prometheus per metriche:
+
 - Record elaborati per secondo
 - Latenza di elaborazione
 - Rate di errori nel salvataggio in DB
@@ -230,6 +238,7 @@ Potrebbe essere aggiunto Prometheus per metriche:
 ### Log
 
 I log sono salvati in:
+
 - Docker: `docker logs kafka-consumer-realtime`
 - K3s: `kubectl logs <pod-name> -n bigintensive`
 - File locale: `/var/log/kafka-consumer/`

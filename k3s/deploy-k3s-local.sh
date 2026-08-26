@@ -105,9 +105,11 @@ sudo k3s kubectl set image deployment/kafka-consumer-realtime kafka-consumer="$C
 sudo k3s kubectl set image cronjob/elt-copy-workout elt-copy-workout="$ELT_IMAGE" -n "$NAMESPACE"
 sudo k3s kubectl patch deployment/backend -n "$NAMESPACE" --type=strategic -p '{"spec":{"template":{"spec":{"containers":[{"name":"backend","imagePullPolicy":"IfNotPresent"}]}}}}'
 sudo k3s kubectl patch deployment/frontend -n "$NAMESPACE" --type=strategic -p '{"spec":{"template":{"spec":{"containers":[{"name":"frontend","imagePullPolicy":"IfNotPresent"}]}}}}'
+sudo k3s kubectl patch deployment/kafka-consumer-realtime -n "$NAMESPACE" --type=strategic -p '{"spec":{"template":{"spec":{"nodeSelector":{"bigintensive.io/local-images":"true"},"containers":[{"name":"kafka-consumer","imagePullPolicy":"IfNotPresent"}]}}}}'
 echo "Riavvio deployment applicativi..."
 sudo k3s kubectl rollout restart deployment/backend -n "$NAMESPACE"
 sudo k3s kubectl rollout restart deployment/frontend -n "$NAMESPACE"
+sudo k3s kubectl rollout restart deployment/kafka-consumer-realtime -n "$NAMESPACE"
 
 echo "Stato pod nel namespace $NAMESPACE:"
 sudo k3s kubectl get pods -n "$NAMESPACE"

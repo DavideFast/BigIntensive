@@ -64,15 +64,15 @@ echo ""
 if [ "$DEPLOY_DOCKER" = true ] || [ "$DEPLOY_K3S" = true ]; then
     echo -e "${YELLOW}🐳 Building Docker image...${NC}"
     cd "$DOCKER_DIR"
-    docker build -t kafka-consumer-realtime:latest .
+    docker build -t consumer-kafka:latest .
     echo -e "${GREEN}✅ Docker image built successfully${NC}"
     echo ""
     
     if [ "$PUSH_REGISTRY" = true ]; then
         echo -e "${YELLOW}📤 Pushing to registry: $REGISTRY${NC}"
-        docker tag kafka-consumer-realtime:latest $REGISTRY/kafka-consumer-realtime:latest
-        docker push $REGISTRY/kafka-consumer-realtime:latest
-        echo -e "${GREEN}✅ Image pushed to $REGISTRY/kafka-consumer-realtime:latest${NC}"
+        docker tag consumer-kafka:latest $REGISTRY/consumer-kafka:latest
+        docker push $REGISTRY/consumer-kafka:latest
+        echo -e "${GREEN}✅ Image pushed to $REGISTRY/consumer-kafka:latest${NC}"
         echo ""
     fi
 fi

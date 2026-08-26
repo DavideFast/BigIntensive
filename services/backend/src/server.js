@@ -27,6 +27,7 @@ const kafka = new Kafka({
   brokers: kafkaBrokers,
 });
 const producer = kafka.producer();
+const smartwatchKafkaTopic = process.env.SMARTWATCH_KAFKA_TOPIC || "heart-rate-events";
 let producerConnected = false;
 
 async function ensureProducerConnected() {
@@ -146,7 +147,7 @@ app.post("/api/v1/pushToKafka", async (req, res) => {
   try {
     await ensureProducerConnected();
     await producer.send({
-      topic: "my-topic",
+      topic: smartwatchKafkaTopic,
       messages: [{ key: req.body.atleta_id.toString() + "-" + req.body.sessione_id.toString(), value: JSON.stringify(req.body) }],
     });
 

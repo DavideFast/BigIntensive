@@ -24,7 +24,7 @@ import java.util.Properties;
 /** Rilevamento immobilita con Kafka Streams: lo stato sopravvive a riavvii e rebalance. */
 public class StreamsAllarmi {
 
-    private static final String TOPIC_INGRESSO = "heart-rate-events";
+    private static final String TOPIC_INGRESSO_PREDEFINITO = "heart-rate-events";
     private static final String NOME_STORE = "stato-sessioni";
     private static final double SOGLIA_MOVIMENTO_M = 10.0;
     private static final int SECONDI_IMMOBILE = 30;
@@ -162,6 +162,11 @@ public class StreamsAllarmi {
                 return; // messaggio malformato: scartato senza fermare la topologia
             }
 
+            String chiave = record.key();
+            if (chiave == null || chiave.isBlank()) {
+                chiave = sample.athlete_id() + "-" + sample.session_id();
+            }
+
             //Se il campo event_type è "session_end" allora elimino lo stato della sessione e non faccio altro
             if ("session_end".equals(sample.event_type())) {
                 velocitaMedia = velocitaMedia / campioniRicevuti;
@@ -169,14 +174,14 @@ public class StreamsAllarmi {
                 frequenzaCardiacaMedia = frequenzaCardiacaMedia / campioniRicevuti;
                 distanzaTotale = distanzaTotale / campioniRicevuti;
                 databaseSummary(velocitaMedia, velocitaMax, frequenzaCardiacaMedia, frequenzaCardiacaMax, cadenzaMedia, distanzaTotale, campioniRicevuti,  sample, context.currentStreamTimeMs());
-                store.delete(record.key());
+                store.delete(chiave);
                 return;
             }
 
             //Se non c'è uno stato precedente lo creo e esco
-            StatoSessione precedente = leggiStato(record.key());
+            StatoSessione precedente = leggiStato(chiave);
             if (precedente == null) {
-                salvaStato(record.key(), new StatoSessione(sample.latitude(), sample.longitude(), sample.sample_index(), false));
+                salvaStato(chiave, new StatoSessione(sample.latitude(), sample.longitude(), sample.sample_index(), false));
                 return;
             }
 
@@ -189,14 +194,14 @@ public class StreamsAllarmi {
 
             // Se lo spostamento è maggiore della soglia, aggiorno lo stato e non faccio altro
             if (spostamento > SOGLIA_MOVIMENTO_M) {
-                salvaStato(record.key(), new StatoSessione(sample.latitude(), sample.longitude(), sample.sample_index(), false));
+                salvaStato(chiave, new StatoSessione(sample.latitude(), sample.longitude(), sample.sample_index(), false));
                 return;
             }
 
             // Calcolo da quanto tempo l'atleta è fermo
             int fermoDaSecondi = sample.sample_index() - precedente.indice();
             if (fermoDaSecondi >= SECONDI_IMMOBILE && !precedente.allarmeInviato() && sample.heart_rate_bpm() > 180) {
-                salvaStato(record.key(), new StatoSessione(precedente.latitudine(), precedente.longitudine(),precedente.indice(), true));
+                salvaStato(chiave, new StatoSessione(precedente.latitudine(), precedente.longitudine(),precedente.indice(), true));
 
                 String messaggio = String.format("Atleta %s fermo da %d s in posizione %.6f, %.6f (bpm %.0f)",
                         sample.athlete_id(), fermoDaSecondi, sample.latitude(), sample.longitude(),sample.heart_rate_bpm());
@@ -234,6 +239,10 @@ public class StreamsAllarmi {
         if (bootstrapServers == null || bootstrapServers.isEmpty()) {
             bootstrapServers = "localhost:9092";
         }
+        String topicIngresso = System.getenv("KAFKA_TOPIC");
+        if (topicIngresso == null || topicIngresso.isBlank()) {
+            topicIngresso = TOPIC_INGRESSO_PREDEFINITO;
+        }
 
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "rilevatore-immobilita");
@@ -250,7 +259,7 @@ public class StreamsAllarmi {
         builder.addStateStore(store);
 
         // Lettura dei messaggi dal topic di ingresso
-        KStream<String, String> sorgente = builder.stream(TOPIC_INGRESSO, Consumed.with(Serdes.String(), Serdes.String()));
+        KStream<String, String> sorgente = builder.stream(topicIngresso, Consumed.with(Serdes.String(), Serdes.String()));
         
         // Processamento dei messaggi con il rilevatore di immobilità
         sorgente.process(RilevatoreImmobilita::new, NOME_STORE);

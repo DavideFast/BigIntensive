@@ -17,15 +17,15 @@ if [ "$1" = "--docker" ]; then
     echo ""
     echo "🐳 Building Docker image..."
     cd ..
-    docker build -t kafka-consumer-realtime:latest .
+    docker build -t consumer-kafka:latest .
     echo "✅ Docker image built successfully!"
     
     # Opzionale: Push to registry
     if [ "$2" = "--push" ]; then
         REGISTRY=${3:-davidefast}
         echo "📤 Pushing to registry: $REGISTRY"
-        docker tag kafka-consumer-realtime:latest $REGISTRY/kafka-consumer-realtime:latest
-        docker push $REGISTRY/kafka-consumer-realtime:latest
+        docker tag consumer-kafka:latest $REGISTRY/consumer-kafka:latest
+        docker push $REGISTRY/consumer-kafka:latest
         echo "✅ Image pushed successfully!"
     fi
 fi
