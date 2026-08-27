@@ -50,7 +50,7 @@ spec:
             - /bin/bash
             - -ec
             - |
-              until kafka-topics.sh --bootstrap-server "$KAFKA_BOOTSTRAP_SERVERS" --list >/dev/null 2>&1; do
+              until /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$KAFKA_BOOTSTRAP_SERVERS" --list >/dev/null 2>&1; do
                 echo "Kafka bootstrap is not ready; retrying in 5 seconds..."
                 sleep 5
               done
