@@ -247,10 +247,11 @@ sudo mkdir -p /etc/rancher/k3s
 sudo nano /etc/rancher/k3s/config.yaml
 ```
 
-Inserire il seguente contenuto, sostituendo `<IP_STATIC_NODO>` con l'IP statico del nodo server:
+Inserire il seguente contenuto, sostituendo `<IP_STATIC_NODO>` con l'IP statico del nodo server e `<INTERFACE>` con l'interfaccia di rete corretta:
 
 ```yaml
 node-ip: "<IP_STATIC_NODO>"
+flannel-iface: "<INTERFACE>"
 ```
 
 ## Recupero del token per il join dei nodi agent/worker
@@ -281,13 +282,7 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NOME_ASSEGNA
 ```
 
 > [!WARNING]
-> Potrebbe essere necessario cambiare gli indirizzi IP di riferimento. Per vedere se ci sono problemi di connessione usare il seguente comando:
->
-> ```bash
-> sudo journalctl -u k3s-agent -f
-> ```
->
-> In caso positivo creare il seguente file:
+> Bisogna aggiornare il file di configurazione del nodo:
 >
 > ```bash
 > sudo mkdir -p /etc/rancher/k3s
@@ -300,6 +295,7 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NOME_ASSEGNA
 > server: "https://<SERVER_IP>:6443"
 > token: "<TOKEN>"
 > node-ip: "<IP_STATIC_NODO>"
+> flannel-iface: "<INTERFACE>"
 >
 > Dopo di che salvare il file e riavviare il servizio k3s-agent:
 >
