@@ -20,6 +20,7 @@ import org.apache.kafka.streams.state.Stores;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.CountDownLatch;
 
 /** Rilevamento immobilita con Kafka Streams: lo stato sopravvive a riavvii e rebalance. */
 public class StreamsAllarmi {
@@ -266,11 +267,21 @@ public class StreamsAllarmi {
 
         // Avvio del flusso di elaborazione
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
+        CountDownLatch shutdownLatch = new CountDownLatch(1);
 
         // Gestione della chiusura dell'applicazione
-        Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            streams.close();
+            shutdownLatch.countDown();
+        }));
 
         //Avvio del flusso di elaborazione
         streams.start();
+        try {
+            shutdownLatch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            streams.close();
+        }
     }
 }

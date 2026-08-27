@@ -188,7 +188,7 @@ In Hyper-V, creare una nuova macchina virtuale con le seguenti impostazioni:
 - Disabilitare Secure Boot
 - Image ISO: Ubuntu 25.04/26.04 LTS
 
-L'ordine di inserimento della scheda di rete influenza quale interfaccia verrà usata per tale rete. La prima inserita si chiamerà eth0 mentre la seconda eth1.
+L'ordine di inserimento della scheda di rete influenza quale interfaccia verrà usata per tale rete. La prima inserita si chiamerà eth0 mentre la seconda eth1. La scheda di rete intra-cluster deve essere configurata in modo tale da abilitare lo spoofing degli indirizzi MAC.
 
 In VirtualBox, creare una nuova macchina virtuale con le seguenti impostazioni:
 
@@ -199,7 +199,7 @@ In VirtualBox, creare una nuova macchina virtuale con le seguenti impostazioni:
 - Scheda di rete esterna: NAT
 - Image ISO: Ubuntu 25.04/26.04 LTS
 
-L'ordine di inserimento della scheda di rete influenza quale interfaccia verrà usata per tale rete. La prima inserita si chiamerà enp0s3 mentre la seconda enp0s8.
+L'ordine di inserimento della scheda di rete influenza quale interfaccia verrà usata per tale rete. La prima inserita si chiamerà enp0s3 mentre la seconda enp0s8. Bisogna spuntare permetti tutto sullo switch virtuale per abilitare lo spoofing degli indirizzi MAC.
 
 ## Aggiornamento preliminare del sistema operativo:
 
