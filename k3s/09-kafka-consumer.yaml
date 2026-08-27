@@ -64,7 +64,7 @@ spec:
       containers:
         - name: kafka-consumer
           image: davidefast/consumer-kafka:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
 
           resources:
             requests:
@@ -145,7 +145,7 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - ps aux | grep "[k]afka-consumer.jar" || exit 1
+                - kill -0 1
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
