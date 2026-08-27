@@ -344,6 +344,22 @@ spec:
           volumeMounts:
             - name: dynamic-config
               mountPath: /dynamic-config
+        - name: wait-for-clickhouse-peers
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              for host in \
+                clickhouse-0.clickhouse.bigintensive.svc.cluster.local \
+                clickhouse-1.clickhouse.bigintensive.svc.cluster.local \
+                clickhouse-2.clickhouse.bigintensive.svc.cluster.local \
+                clickhouse-3.clickhouse.bigintensive.svc.cluster.local; do
+                until nslookup "$host" >/dev/null 2>&1; do
+                  echo "Waiting for $host DNS record..."
+                  sleep 2
+                done
+              done
       containers:
         - name: clickhouse
           image: clickhouse/clickhouse-server:24.1
