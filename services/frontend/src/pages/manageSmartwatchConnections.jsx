@@ -67,6 +67,7 @@ export default function ManageSmartwatchConnections() {
 
   return (
     <section aria-label="Dati workouts">
+      <h1>Gestione connessioni Smartwatch e processo ELT</h1>
       <button onClick={avviaSimulazione}>Avvia simulazione</button>
       <button onClick={fermaSimulazione}>Ferma simulazione</button>
 
