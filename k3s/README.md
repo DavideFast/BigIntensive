@@ -63,6 +63,9 @@ popolato serve una migrazione delle assegnazioni; in sviluppo puoi usare
 
 KRaft e ClickHouse Keeper sono componenti distinti: KRaft coordina Kafka, mentre Keeper coordina le repliche ClickHouse. L'aggiunta di un quarto PC non richiede un nuovo ruolo fisso per Spark; K3s può schedulare nuovi executor sui nodi disponibili quando un job ne richiede altri.
 
+<br>
+<br>
+
 # Creazione della macchina virtuale con Ubuntu (altri sistemi operativi non sono testati).
 
 Le informazioni per creare la macchina virtuale si riferiscono a Hyper-V e VirtualBox.
@@ -88,6 +91,9 @@ In VirtualBox, creare una nuova macchina virtuale con le seguenti impostazioni:
 - Image ISO: Ubuntu 25.04/26.04 LTS
 
 L'ordine di inserimento della scheda di rete influenza quale interfaccia verrà usata per tale rete. La prima inserita si chiamerà enp0s3 mentre la seconda enp0s8. Bisogna spuntare permetti tutto sullo switch virtuale per abilitare lo spoofing degli indirizzi MAC.
+
+<br>
+<br>
 
 # Creazione rete LAN del cluster
 
@@ -160,6 +166,9 @@ kubectl get nodes
 
 Se il contesto non e' quello giusto, selezionalo prima di continuare.
 
+<br>
+<br>
+
 # Step 1: configurazione master
 
 ## Aggiornamento preliminare del sistema operativo:
@@ -226,6 +235,7 @@ K10f8eed66f2b617a72eb273c752e47b1e9f81f0132219beec50ec42101b25d6dd0::server:926a
 ```
 
 <br>
+<br>
 
 # Step 2: configurazione worker
 
@@ -277,6 +287,9 @@ sudo systemctl restart k3s-agent
 >
 > Le regole vanno aggiunte direttamente tramite iptables e non tramite ufw che non è attivo di default su Ubuntu Desktop.
 
+<br>
+<br>
+
 # Step 3: applica i manifest
 
 Se si tratta della prima installazione, puoi fare il deploy di tutti i manifest con:
@@ -290,6 +303,9 @@ Altrimenti se è già attivo e non ci sono dati salvati, puoi fare il deploy con
 ```bash
 RESET_NAMESPACE=true bash k3s/deploy-all.sh
 ```
+
+<br>
+<br>
 
 # Step 4: verifica stabilità del cluster
 
@@ -357,6 +373,9 @@ Poi apri:
 - `http://localhost:3001/health`
 - `http://bigintensive.local`
 - `http://api.bigintensive.local/events`
+
+<br>
+<br>
 
 # Troubleshooting rapido
 
