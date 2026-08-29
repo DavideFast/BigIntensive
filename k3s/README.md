@@ -51,7 +51,7 @@ popolato serve una migrazione delle assegnazioni; in sviluppo puoi usare
 
 KRaft e ClickHouse Keeper sono componenti distinti: KRaft coordina Kafka, mentre Keeper coordina le repliche ClickHouse. L'aggiunta di un quarto PC non richiede un nuovo ruolo fisso per Spark; K3s può schedulare nuovi executor sui nodi disponibili quando un job ne richiede altri.
 
-# Concetti chiave
+# Creazione rete LAN del cluster
 
 Il progetto nasce per girare su 3 nodi fisici. Pertanto la topologia e le configurazioni sono ottimizzate per questo scenario.
 Il nodo server K3s ospita il controllo del cluster e può anche eseguire workload. I nodi agent/worker ospitano solo workload. I servizi Kafka e ClickHouse sono distribuiti su tutti i nodi per garantire resilienza e performance.
