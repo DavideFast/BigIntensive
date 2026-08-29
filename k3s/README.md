@@ -12,7 +12,7 @@ Il cluster gestisce:
 - `kafka`
 - `kafka-ui`
 
-## Topologia distribuita prevista
+# Topologia distribuita prevista
 
 Il cluster target usa 3 PC fisici, ognuno registrato come nodo K3s:
 
@@ -51,7 +51,7 @@ popolato serve una migrazione delle assegnazioni; in sviluppo puoi usare
 
 KRaft e ClickHouse Keeper sono componenti distinti: KRaft coordina Kafka, mentre Keeper coordina le repliche ClickHouse. L'aggiunta di un quarto PC non richiede un nuovo ruolo fisso per Spark; K3s può schedulare nuovi executor sui nodi disponibili quando un job ne richiede altri.
 
-## Creazione della macchina virtuale con Ubuntu (altri sistemi operativi non sono testati).
+# Creazione della macchina virtuale con Ubuntu (altri sistemi operativi non sono testati).
 
 Le informazioni per creare la macchina virtuale si riferiscono a Hyper-V e VirtualBox.
 In Hyper-V, creare una nuova macchina virtuale con le seguenti impostazioni:
@@ -77,7 +77,7 @@ In VirtualBox, creare una nuova macchina virtuale con le seguenti impostazioni:
 
 L'ordine di inserimento della scheda di rete influenza quale interfaccia verrà usata per tale rete. La prima inserita si chiamerà enp0s3 mentre la seconda enp0s8. Bisogna spuntare permetti tutto sullo switch virtuale per abilitare lo spoofing degli indirizzi MAC.
 
-## Creazione rete LAN del cluster
+# Creazione rete LAN del cluster
 
 Il progetto nasce per girare su 3 nodi fisici. Pertanto la topologia e le configurazioni sono ottimizzate per questo scenario.
 Il nodo server K3s ospita il controllo del cluster e può anche eseguire workload. I nodi agent/worker ospitano solo workload. I servizi Kafka e ClickHouse sono distribuiti su tutti i nodi per garantire resilienza e performance.
@@ -137,7 +137,7 @@ sudo nmcli connection show
 <br>
 <br>
 
-## Step 0: verifica il cluster
+# Step 0: verifica il cluster
 
 Assicurati che k3s sia avviato e che `kubectl` punti al suo contesto:
 
@@ -148,7 +148,7 @@ kubectl get nodes
 
 Se il contesto non e' quello giusto, selezionalo prima di continuare.
 
-## Step 1: configurazione master
+# Step 1: configurazione master
 
 ## Aggiornamento preliminare del sistema operativo:
 
@@ -225,7 +225,7 @@ K10f8eed66f2b617a72eb273c752e47b1e9f81f0132219beec50ec42101b25d6dd0::server:926a
 
 `--node-name <NODE_NAME>` evita conflitti se il cluster ha gia' visto in passato lo stesso hostname della seconda VM.
 
-# Installazione su server worker
+# Step 2:Installazione su server worker
 
 La macchina virtuale deve essere configurata come il server master, con le stesse impostazioni di memoria, disco e rete.
 
@@ -275,13 +275,13 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NOME_ASSEGNA
 >
 > Le regole vanno aggiunte direttamente tramite iptables e non tramite ufw che non è attivo di default su Ubuntu Desktop.
 
-## Passo 3: applica i manifest
+# Step 3: applica i manifest
 
 ```powershell
 bash k3s/deploy-all.sh
 ```
 
-## Passo 4: controlla che i pod salgano
+# Step 4: controlla che i pod salgano
 
 ```powershell
 kubectl get pods -n bigintensive -w
@@ -289,7 +289,7 @@ kubectl get pods -n bigintensive -w
 
 Aspettati inizialmente `ContainerCreating` sui servizi stateful, poi `Running` per i pod applicativi.
 
-## Passo 5: verifica PostgreSQL
+# Step 5: verifica PostgreSQL
 
 Lo StatefulSet `postgres` monta `database/postgresql/schema.sql` come script di inizializzazione. Lo script viene eseguito da PostgreSQL solo al primo avvio del volume dati.
 
@@ -298,7 +298,7 @@ kubectl get statefulset postgres -n bigintensive
 kubectl logs statefulset/postgres -n bigintensive
 ```
 
-## Passo 6: esponi i servizi nel browser
+# Step 6: esponi i servizi nel browser
 
 Il manifest usa `traefik` come ingress class e questi host:
 
@@ -320,7 +320,7 @@ Esempio file hosts:
 
 Aprire direttamente `http://192.168.1.50` non basta, perche' l'Ingress instrada in base all'hostname richiesto.
 
-## Passo 7: verifica l'app
+# Step 7: verifica l'app
 
 Per un controllo automatico rapido di stato deploy, rollout e servizi:
 
@@ -346,7 +346,7 @@ Poi apri:
 - `http://bigintensive.local`
 - `http://api.bigintensive.local/events`
 
-## Troubleshooting rapido
+# Troubleshooting rapido
 
 - Se il join della seconda VM fallisce con errori sui CA, verifica prima l'endpoint giusto del server:
 
