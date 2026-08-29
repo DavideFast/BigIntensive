@@ -213,7 +213,7 @@ Nel caso specifico:
 K10f8eed66f2b617a72eb273c752e47b1e9f81f0132219beec50ec42101b25d6dd0::server:926a3320a8d2afe48113eb997039ce7c
 ```
 
-`--node-name <NODE_NAME>` evita conflitti se il cluster ha gia' visto in passato lo stesso hostname della seconda VM.
+<br>
 
 # Step 2: configurazione worker
 
