@@ -51,7 +51,7 @@ popolato serve una migrazione delle assegnazioni; in sviluppo puoi usare
 
 KRaft e ClickHouse Keeper sono componenti distinti: KRaft coordina Kafka, mentre Keeper coordina le repliche ClickHouse. L'aggiunta di un quarto PC non richiede un nuovo ruolo fisso per Spark; K3s può schedulare nuovi executor sui nodi disponibili quando un job ne richiede altri.
 
-## Creare la macchina virtuale con Ubuntu (altri sistemi operativi non sono testati).
+## Creazione della macchina virtuale con Ubuntu (altri sistemi operativi non sono testati).
 
 Le informazioni per creare la macchina virtuale si riferiscono a Hyper-V e VirtualBox.
 In Hyper-V, creare una nuova macchina virtuale con le seguenti impostazioni:
