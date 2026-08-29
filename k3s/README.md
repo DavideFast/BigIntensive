@@ -309,7 +309,7 @@ RESET_NAMESPACE=true bash k3s/deploy-all.sh
 
 # Step 4: verifica stabilità del cluster
 
-## Step 4: controlla che i pod salgano
+## Controlla che i pod siano attivi e stabili
 
 ```bash
 kubectl get pods -n bigintensive -w
@@ -317,7 +317,7 @@ kubectl get pods -n bigintensive -w
 
 Aspettati inizialmente `ContainerCreating` sui servizi stateful, poi `Running` per i pod applicativi.
 
-## Step 5: verifica PostgreSQL
+## Verifica PostgreSQL
 
 Lo StatefulSet `postgres` monta `database/postgresql/schema.sql` come script di inizializzazione. Lo script viene eseguito da PostgreSQL solo al primo avvio del volume dati.
 
@@ -326,7 +326,7 @@ kubectl get statefulset postgres -n bigintensive
 kubectl logs statefulset/postgres -n bigintensive
 ```
 
-## Step 6: esponi i servizi nel browser
+## Esponi i servizi nel browser
 
 Il manifest usa `traefik` come ingress class e questi host:
 
@@ -348,7 +348,7 @@ Esempio file hosts:
 
 Aprire direttamente `http://192.168.1.50` non basta, perche' l'Ingress instrada in base all'hostname richiesto.
 
-## Step 7: verifica l'app
+## Verifica l'app
 
 Per un controllo automatico rapido di stato deploy, rollout e servizi:
 
