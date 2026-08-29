@@ -346,7 +346,7 @@ Poi apri:
 - `http://bigintensive.local`
 - `http://api.bigintensive.local/events`
 
-## Troubleshooting rapido
+# Troubleshooting rapido
 
 - Se il join della seconda VM fallisce con errori sui CA, verifica prima l'endpoint giusto del server:
 
