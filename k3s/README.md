@@ -12,66 +12,6 @@ Il cluster gestisce:
 - `kafka`
 - `kafka-ui`
 
-## Passo 1: verifica il cluster
-
-Assicurati che k3s sia avviato e che `kubectl` punti al suo contesto:
-
-```powershell
-kubectl config current-context
-kubectl get nodes
-```
-
-Se il contesto non e' quello giusto, selezionalo prima di continuare.
-
-## Passo 1b: aggiungi la seconda VM come agent
-
-Se stai usando due VM Ubuntu in bridge, installa `k3s server` solo sulla VM principale e collega la seconda VM come `k3s agent`.
-
-Sulla VM principale recupera token e IP del server:
-
-```bash
-sudo cat /var/lib/rancher/k3s/server/node-token
-hostname -I
-```
-
-Sulla seconda VM installa l'agent sostituendo `<SERVER_IP>` e `<TOKEN>`:
-
-```bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NODE_NAME>" K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN='<TOKEN>' sh -
-```
-
-Nel caso specifico:
-
-```bash
-#TOKEN
-K10f8eed66f2b617a72eb273c752e47b1e9f81f0132219beec50ec42101b25d6dd0::server:926a3320a8d2afe48113eb997039ce7c
-```
-
-`--with-node-id` evita conflitti se il cluster ha gia' visto in passato lo stesso hostname della seconda VM.
-
-Se stai rifacendo il join dopo tentativi falliti, sulla seconda VM conviene pulire prima lo stato locale:
-
-```bash
-sudo /usr/local/bin/k3s-agent-uninstall.sh
-sudo rm -rf /etc/rancher /var/lib/rancher /var/lib/kubelet
-sudo systemctl daemon-reload
-```
-
-Se sul server compare gia' un vecchio nodo della seconda VM, rimuovilo prima di riprovare:
-
-```bash
-sudo kubectl get nodes -o wide
-sudo kubectl delete node <OLD_NODE_NAME>
-```
-
-Poi verifica dal server che entrambi i nodi siano presenti:
-
-```bash
-sudo kubectl get nodes -o wide
-```
-
-Nota pratica: nel setup attuale backend e frontend usano immagini locali (`bigintensive/...:local`). Lo script `k3s/deploy-k3s-local.sh` etichetta automaticamente il nodo server e forza quei due deployment a restare li'. Questo evita errori `ImagePullBackOff` sul nodo agent finche' non configuri un registry condiviso.
-
 ## Topologia distribuita prevista
 
 Il cluster target usa 3 PC fisici, ognuno registrato come nodo K3s:
@@ -170,6 +110,66 @@ sudo nmcli connection show
 
 <br>
 <br>
+
+## Step 0: verifica il cluster
+
+Assicurati che k3s sia avviato e che `kubectl` punti al suo contesto:
+
+```powershell
+kubectl config current-context
+kubectl get nodes
+```
+
+Se il contesto non e' quello giusto, selezionalo prima di continuare.
+
+## Step 1: configurazione master
+
+Se stai usando due VM Ubuntu in bridge, installa `k3s server` solo sulla VM principale e collega la seconda VM come `k3s agent`.
+
+Sulla VM principale recupera token e IP del server:
+
+```bash
+sudo cat /var/lib/rancher/k3s/server/node-token
+hostname -I
+```
+
+Sulla seconda VM installa l'agent sostituendo `<SERVER_IP>` e `<TOKEN>`:
+
+```bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NODE_NAME>" K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN='<TOKEN>' sh -
+```
+
+Nel caso specifico:
+
+```bash
+#TOKEN
+K10f8eed66f2b617a72eb273c752e47b1e9f81f0132219beec50ec42101b25d6dd0::server:926a3320a8d2afe48113eb997039ce7c
+```
+
+`--node-name <NODE_NAME>` evita conflitti se il cluster ha gia' visto in passato lo stesso hostname della seconda VM.
+
+Se stai rifacendo il join dopo tentativi falliti, sulla seconda VM conviene pulire prima lo stato locale:
+
+```bash
+sudo /usr/local/bin/k3s-agent-uninstall.sh
+sudo rm -rf /etc/rancher /var/lib/rancher /var/lib/kubelet
+sudo systemctl daemon-reload
+```
+
+Se sul server compare gia' un vecchio nodo della seconda VM, rimuovilo prima di riprovare:
+
+```bash
+sudo kubectl get nodes -o wide
+sudo kubectl delete node <OLD_NODE_NAME>
+```
+
+Poi verifica dal server che entrambi i nodi siano presenti:
+
+```bash
+sudo kubectl get nodes -o wide
+```
+
+Nota pratica: nel setup attuale backend e frontend usano immagini locali (`bigintensive/...:local`). Lo script `k3s/deploy-k3s-local.sh` etichetta automaticamente il nodo server e forza quei due deployment a restare li'. Questo evita errori `ImagePullBackOff` sul nodo agent finche' non configuri un registry condiviso.
 
 # Installazione su server master
 
