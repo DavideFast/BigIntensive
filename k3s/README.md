@@ -1,4 +1,4 @@
-# BigIntensive su k3s
+# Deploy di BigIntensive su k3s
 
 Questa cartella contiene la base Kubernetes per avviare BigIntensive su k3s senza passare da Docker Compose.
 
@@ -11,6 +11,18 @@ Il cluster gestisce:
 - `postgres`
 - `kafka`
 - `kafka-ui`
+
+## Indice:
+
+- Topologia distribuita prevista
+- Creazione della macchina virtuale con Ubuntu
+- Creazione rete LAN del cluster
+- Step 0: verifica il cluster
+- Step 1: configurazione master
+- Step 2: configurazione worker
+- Step 3: applica i manifest
+- Step 4: verifica stabilità del cluster
+- Troubleshooting rapido
 
 # Topologia distribuita prevista
 
