@@ -177,17 +177,7 @@ cd ~
 git clone https://github.com/DavideFast/BigIntensive.git
 ```
 
-## Avvio in locale con build immagini + import in k3s
-
-```bash
-bash k3s/deploy-k3s-local.sh
-```
-
-Se il servizio è già in esecuzione e si vuole re-buildare tutto.
-
-```bash
-RESET_NAMESPACE=true bash k3s/deploy-k3s-local.sh
-```
+## Configurare il nodo master K3s
 
 Creare file config.yaml per il nodo server k3s:
 
@@ -277,8 +267,16 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NOME_ASSEGNA
 
 # Step 3: applica i manifest
 
+Se si tratta della prima installazione, puoi fare il deploy di tutti i manifest con:
+
 ```powershell
 bash k3s/deploy-all.sh
+```
+
+Altrimenti se è già attivo e non ci sono dati salvati, puoi fare il deploy con:
+
+```bash
+RESET_NAMESPACE=true bash k3s/deploy-all.sh
 ```
 
 # Step 4: verifica stabilità del cluster
