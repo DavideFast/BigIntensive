@@ -209,6 +209,50 @@ app.post("/api/v1/stopSmartWatchPodSimulator", async (req, res) => {
   }
 });
 
+app.post("/api/v1/startELTProcess", async (req, res) => {
+  try {
+    const patch = [{ op: "replace", path: "/spec/replicas", value: 1 }];
+    await k8sApi.patchNamespacedDeployment({
+      name: "elt-process",
+      namespace: kubernetesNamespace,
+      body: patch,
+    });
+    res.status(200).json({
+      success: true,
+      message: "Processo ELT avviato",
+    });
+  } catch (error) {
+    const message = getKubernetesErrorMessage(error);
+    console.error("Errore avviando il processo ELT:", message);
+    res.status(500).json({
+      success: false,
+      error: message,
+    });
+  }
+});
+
+app.post("/api/v1/stopELTProcess", async (req, res) => {
+  try {
+    const patch = [{ op: "replace", path: "/spec/replicas", value: 0 }];
+    await k8sApi.patchNamespacedDeployment({
+      name: "elt-process",
+      namespace: kubernetesNamespace,
+      body: patch,
+    });
+    res.status(200).json({
+      success: true,
+      message: "Processo ELT fermato",
+    });
+  } catch (error) {
+    const message = getKubernetesErrorMessage(error);
+    console.error("Errore fermando il processo ELT:", message);
+    res.status(500).json({
+      success: false,
+      error: message,
+    });
+  }
+});
+
 // ============================ AVVIO ===============================
 
 async function start() {
