@@ -216,22 +216,6 @@ sudo systemctl restart k3s
 sudo cat /var/lib/rancher/k3s/server/node-token
 ```
 
-<br>
-<br>
-
-Sulla VM principale recupera token e IP del server:
-
-```bash
-sudo cat /var/lib/rancher/k3s/server/node-token
-hostname -I
-```
-
-Sulla seconda VM installa l'agent sostituendo `<SERVER_IP>` e `<TOKEN>`:
-
-```bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NODE_NAME>" K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN='<TOKEN>' sh -
-```
-
 Nel caso specifico:
 
 ```bash
@@ -240,27 +224,6 @@ K10f8eed66f2b617a72eb273c752e47b1e9f81f0132219beec50ec42101b25d6dd0::server:926a
 ```
 
 `--node-name <NODE_NAME>` evita conflitti se il cluster ha gia' visto in passato lo stesso hostname della seconda VM.
-
-Se stai rifacendo il join dopo tentativi falliti, sulla seconda VM conviene pulire prima lo stato locale:
-
-```bash
-sudo /usr/local/bin/k3s-agent-uninstall.sh
-sudo rm -rf /etc/rancher /var/lib/rancher /var/lib/kubelet
-sudo systemctl daemon-reload
-```
-
-Se sul server compare gia' un vecchio nodo della seconda VM, rimuovilo prima di riprovare:
-
-```bash
-sudo kubectl get nodes -o wide
-sudo kubectl delete node <OLD_NODE_NAME>
-```
-
-Poi verifica dal server che entrambi i nodi siano presenti:
-
-```bash
-sudo kubectl get nodes -o wide
-```
 
 Nota pratica: nel setup attuale backend e frontend usano immagini locali (`bigintensive/...:local`). Lo script `k3s/deploy-k3s-local.sh` etichetta automaticamente il nodo server e forza quei due deployment a restare li'. Questo evita errori `ImagePullBackOff` sul nodo agent finche' non configuri un registry condiviso.
 
