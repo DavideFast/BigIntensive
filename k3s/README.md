@@ -225,7 +225,7 @@ K10f8eed66f2b617a72eb273c752e47b1e9f81f0132219beec50ec42101b25d6dd0::server:926a
 
 `--node-name <NODE_NAME>` evita conflitti se il cluster ha gia' visto in passato lo stesso hostname della seconda VM.
 
-# Step 2:Installazione su server worker
+# Step 2: configurazione worker
 
 La macchina virtuale deve essere configurata come il server master, con le stesse impostazioni di memoria, disco e rete.
 
@@ -281,7 +281,9 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NOME_ASSEGNA
 bash k3s/deploy-all.sh
 ```
 
-# Step 4: controlla che i pod salgano
+# Step 4: verifica stabilità del cluster
+
+## Step 4: controlla che i pod salgano
 
 ```powershell
 kubectl get pods -n bigintensive -w
@@ -289,7 +291,7 @@ kubectl get pods -n bigintensive -w
 
 Aspettati inizialmente `ContainerCreating` sui servizi stateful, poi `Running` per i pod applicativi.
 
-# Step 5: verifica PostgreSQL
+## Step 5: verifica PostgreSQL
 
 Lo StatefulSet `postgres` monta `database/postgresql/schema.sql` come script di inizializzazione. Lo script viene eseguito da PostgreSQL solo al primo avvio del volume dati.
 
@@ -298,7 +300,7 @@ kubectl get statefulset postgres -n bigintensive
 kubectl logs statefulset/postgres -n bigintensive
 ```
 
-# Step 6: esponi i servizi nel browser
+## Step 6: esponi i servizi nel browser
 
 Il manifest usa `traefik` come ingress class e questi host:
 
@@ -320,7 +322,7 @@ Esempio file hosts:
 
 Aprire direttamente `http://192.168.1.50` non basta, perche' l'Ingress instrada in base all'hostname richiesto.
 
-# Step 7: verifica l'app
+## Step 7: verifica l'app
 
 Per un controllo automatico rapido di stato deploy, rollout e servizi:
 
@@ -346,7 +348,7 @@ Poi apri:
 - `http://bigintensive.local`
 - `http://api.bigintensive.local/events`
 
-# Troubleshooting rapido
+## Troubleshooting rapido
 
 - Se il join della seconda VM fallisce con errori sui CA, verifica prima l'endpoint giusto del server:
 
