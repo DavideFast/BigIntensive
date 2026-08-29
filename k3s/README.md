@@ -275,37 +275,6 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NOME_ASSEGNA
 >
 > Le regole vanno aggiunte direttamente tramite iptables e non tramite ufw che non è attivo di default su Ubuntu Desktop.
 
-## Passo 2: prepara le immagini
-
-Dal root del repository builda le immagini del backend e del frontend:
-
-```powershell
-docker build -f services/backend/Dockerfile -t bigintensive/backend:local services/backend
-docker build -f services/frontend/Dockerfile -t bigintensive/frontend:local services/frontend
-```
-
-Se il cluster e' locale e usa lo stesso motore container, le immagini devono comunque essere visibili ai nodi k3s. Hai due opzioni:
-
-- caricarle in un registry raggiungibile dal cluster;
-- importarle nel runtime del nodo k3s.
-
-In alternativa, dalla root della repo puoi usare lo script automatico:
-
-```bash
-chmod +x k3s/deploy-k3s-local.sh
-./k3s/deploy-k3s-local.sh
-```
-
-`chmod +x` serve solo a rendere eseguibile il file `.sh` su Linux. In alternativa puoi lanciarlo senza cambiare permessi:
-
-```bash
-bash k3s/deploy-k3s-local.sh
-```
-
-Lo script applica i manifest, builda backend/frontend, importa le immagini in k3s e riavvia i deployment app.
-
-Nel caso a due VM, esegui questo script sulla VM server, non sull'agent.
-
 ## Passo 3: applica i manifest
 
 ```powershell
