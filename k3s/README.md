@@ -366,11 +366,3 @@ Poi apri:
   ```
 
 Per operazioni avanzate (deploy selettivo componenti, runtime checks estesi, checklist modifiche), vedi [MANIFESTS.md](MANIFESTS.md).
-
-```
-
-```
-
-```
-
-```
