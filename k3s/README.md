@@ -14,15 +14,15 @@ Il cluster gestisce:
 
 ## Indice:
 
-- Topologia distribuita prevista
-- Creazione della macchina virtuale con Ubuntu
-- Creazione rete LAN del cluster
-- Step 0: verifica il cluster
-- Step 1: configurazione master
-- Step 2: configurazione worker
-- Step 3: applica i manifest
-- Step 4: verifica stabilità del cluster
-- Troubleshooting rapido
+- [Topologia distribuita prevista](#topologia-distribuita-prevista)
+- [Creazione della macchina virtuale con Ubuntu](#creazione-della-macchina-virtuale-con-ubuntu-altri-sistemi-operativi-non-sono-testati)
+- [Creazione rete LAN del cluster](#creazione-rete-lan-del-cluster)
+- [Step 0: verifica il cluster](#step-0-verifica-il-cluster)
+- [Step 1: configurazione master](#step-1-configurazione-master)
+- [Step 2: configurazione worker](#step-2-configurazione-worker)
+- [Step 3: applica i manifest](#step-3-applica-i-manifest)
+- [Step 4: verifica stabilità del cluster](#step-4-verifica-stabilit%C3%A0-del-cluster)
+- [Troubleshooting rapido](#troubleshooting-rapido)
 
 # Topologia distribuita prevista
 
