@@ -51,6 +51,32 @@ popolato serve una migrazione delle assegnazioni; in sviluppo puoi usare
 
 KRaft e ClickHouse Keeper sono componenti distinti: KRaft coordina Kafka, mentre Keeper coordina le repliche ClickHouse. L'aggiunta di un quarto PC non richiede un nuovo ruolo fisso per Spark; K3s può schedulare nuovi executor sui nodi disponibili quando un job ne richiede altri.
 
+## Creare la macchina virtuale con Ubuntu (altri sistemi operativi non sono testati).
+
+Le informazioni per creare la macchina virtuale si riferiscono a Hyper-V e VirtualBox.
+In Hyper-V, creare una nuova macchina virtuale con le seguenti impostazioni:
+
+- Generazione 2
+- Memoria: 16000 MB
+- Disco rigido: 500 GB
+- Scheda di rete esterna: Default Switch (Wi-fi)
+- Scheda di rete intra cluster: External Virtual Switch (collegato alla rete fisica)
+- Disabilitare Secure Boot
+- Image ISO: Ubuntu 25.04/26.04 LTS
+
+L'ordine di inserimento della scheda di rete influenza quale interfaccia verrà usata per tale rete. La prima inserita si chiamerà eth0 mentre la seconda eth1. La scheda di rete intra-cluster deve essere configurata in modo tale da abilitare lo spoofing degli indirizzi MAC.
+
+In VirtualBox, creare una nuova macchina virtuale con le seguenti impostazioni:
+
+- Memoria: 16000 MB
+- Core: 5
+- Disco rigido: 500 GB
+- Scheda di rete intra-cluster: Bridge (collegata alla rete fisica)
+- Scheda di rete esterna: NAT
+- Image ISO: Ubuntu 25.04/26.04 LTS
+
+L'ordine di inserimento della scheda di rete influenza quale interfaccia verrà usata per tale rete. La prima inserita si chiamerà enp0s3 mentre la seconda enp0s8. Bisogna spuntare permetti tutto sullo switch virtuale per abilitare lo spoofing degli indirizzi MAC.
+
 # Creazione rete LAN del cluster
 
 Il progetto nasce per girare su 3 nodi fisici. Pertanto la topologia e le configurazioni sono ottimizzate per questo scenario.
@@ -174,32 +200,6 @@ Nota pratica: nel setup attuale backend e frontend usano immagini locali (`bigin
 # Installazione su server master
 
 Per avviare correttamente il server K3s, è necessario eseguire i seguenti passaggi:
-
-## Creare la macchina virtuale con Ubuntu (altri sistemi operativi non sono testati).
-
-Le informazioni per creare la macchina virtuale si riferiscono a Hyper-V e VirtualBox.
-In Hyper-V, creare una nuova macchina virtuale con le seguenti impostazioni:
-
-- Generazione 2
-- Memoria: 16000 MB
-- Disco rigido: 500 GB
-- Scheda di rete esterna: Default Switch (Wi-fi)
-- Scheda di rete intra cluster: External Virtual Switch (collegato alla rete fisica)
-- Disabilitare Secure Boot
-- Image ISO: Ubuntu 25.04/26.04 LTS
-
-L'ordine di inserimento della scheda di rete influenza quale interfaccia verrà usata per tale rete. La prima inserita si chiamerà eth0 mentre la seconda eth1. La scheda di rete intra-cluster deve essere configurata in modo tale da abilitare lo spoofing degli indirizzi MAC.
-
-In VirtualBox, creare una nuova macchina virtuale con le seguenti impostazioni:
-
-- Memoria: 16000 MB
-- Core: 5
-- Disco rigido: 500 GB
-- Scheda di rete intra-cluster: Bridge (collegata alla rete fisica)
-- Scheda di rete esterna: NAT
-- Image ISO: Ubuntu 25.04/26.04 LTS
-
-L'ordine di inserimento della scheda di rete influenza quale interfaccia verrà usata per tale rete. La prima inserita si chiamerà enp0s3 mentre la seconda enp0s8. Bisogna spuntare permetti tutto sullo switch virtuale per abilitare lo spoofing degli indirizzi MAC.
 
 ## Aggiornamento preliminare del sistema operativo:
 
