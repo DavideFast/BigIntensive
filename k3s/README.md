@@ -77,7 +77,7 @@ In VirtualBox, creare una nuova macchina virtuale con le seguenti impostazioni:
 
 L'ordine di inserimento della scheda di rete influenza quale interfaccia verrà usata per tale rete. La prima inserita si chiamerà enp0s3 mentre la seconda enp0s8. Bisogna spuntare permetti tutto sullo switch virtuale per abilitare lo spoofing degli indirizzi MAC.
 
-# Creazione rete LAN del cluster
+## Creazione rete LAN del cluster
 
 Il progetto nasce per girare su 3 nodi fisici. Pertanto la topologia e le configurazioni sono ottimizzate per questo scenario.
 Il nodo server K3s ospita il controllo del cluster e può anche eseguire workload. I nodi agent/worker ospitano solo workload. I servizi Kafka e ClickHouse sono distribuiti su tutti i nodi per garantire resilienza e performance.
@@ -150,57 +150,6 @@ Se il contesto non e' quello giusto, selezionalo prima di continuare.
 
 ## Step 1: configurazione master
 
-Se stai usando due VM Ubuntu in bridge, installa `k3s server` solo sulla VM principale e collega la seconda VM come `k3s agent`.
-
-Sulla VM principale recupera token e IP del server:
-
-```bash
-sudo cat /var/lib/rancher/k3s/server/node-token
-hostname -I
-```
-
-Sulla seconda VM installa l'agent sostituendo `<SERVER_IP>` e `<TOKEN>`:
-
-```bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NODE_NAME>" K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN='<TOKEN>' sh -
-```
-
-Nel caso specifico:
-
-```bash
-#TOKEN
-K10f8eed66f2b617a72eb273c752e47b1e9f81f0132219beec50ec42101b25d6dd0::server:926a3320a8d2afe48113eb997039ce7c
-```
-
-`--node-name <NODE_NAME>` evita conflitti se il cluster ha gia' visto in passato lo stesso hostname della seconda VM.
-
-Se stai rifacendo il join dopo tentativi falliti, sulla seconda VM conviene pulire prima lo stato locale:
-
-```bash
-sudo /usr/local/bin/k3s-agent-uninstall.sh
-sudo rm -rf /etc/rancher /var/lib/rancher /var/lib/kubelet
-sudo systemctl daemon-reload
-```
-
-Se sul server compare gia' un vecchio nodo della seconda VM, rimuovilo prima di riprovare:
-
-```bash
-sudo kubectl get nodes -o wide
-sudo kubectl delete node <OLD_NODE_NAME>
-```
-
-Poi verifica dal server che entrambi i nodi siano presenti:
-
-```bash
-sudo kubectl get nodes -o wide
-```
-
-Nota pratica: nel setup attuale backend e frontend usano immagini locali (`bigintensive/...:local`). Lo script `k3s/deploy-k3s-local.sh` etichetta automaticamente il nodo server e forza quei due deployment a restare li'. Questo evita errori `ImagePullBackOff` sul nodo agent finche' non configuri un registry condiviso.
-
-# Installazione su server master
-
-Per avviare correttamente il server K3s, è necessario eseguire i seguenti passaggi:
-
 ## Aggiornamento preliminare del sistema operativo:
 
 ```bash
@@ -254,6 +203,13 @@ node-ip: "<IP_STATIC_NODO>"
 flannel-iface: "<INTERFACE>"
 ```
 
+Riavviare il servizio k3s-server:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart k3s
+```
+
 ## Recupero del token per il join dei nodi agent/worker
 
 ```bash
@@ -262,6 +218,51 @@ sudo cat /var/lib/rancher/k3s/server/node-token
 
 <br>
 <br>
+
+Sulla VM principale recupera token e IP del server:
+
+```bash
+sudo cat /var/lib/rancher/k3s/server/node-token
+hostname -I
+```
+
+Sulla seconda VM installa l'agent sostituendo `<SERVER_IP>` e `<TOKEN>`:
+
+```bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NODE_NAME>" K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN='<TOKEN>' sh -
+```
+
+Nel caso specifico:
+
+```bash
+#TOKEN
+K10f8eed66f2b617a72eb273c752e47b1e9f81f0132219beec50ec42101b25d6dd0::server:926a3320a8d2afe48113eb997039ce7c
+```
+
+`--node-name <NODE_NAME>` evita conflitti se il cluster ha gia' visto in passato lo stesso hostname della seconda VM.
+
+Se stai rifacendo il join dopo tentativi falliti, sulla seconda VM conviene pulire prima lo stato locale:
+
+```bash
+sudo /usr/local/bin/k3s-agent-uninstall.sh
+sudo rm -rf /etc/rancher /var/lib/rancher /var/lib/kubelet
+sudo systemctl daemon-reload
+```
+
+Se sul server compare gia' un vecchio nodo della seconda VM, rimuovilo prima di riprovare:
+
+```bash
+sudo kubectl get nodes -o wide
+sudo kubectl delete node <OLD_NODE_NAME>
+```
+
+Poi verifica dal server che entrambi i nodi siano presenti:
+
+```bash
+sudo kubectl get nodes -o wide
+```
+
+Nota pratica: nel setup attuale backend e frontend usano immagini locali (`bigintensive/...:local`). Lo script `k3s/deploy-k3s-local.sh` etichetta automaticamente il nodo server e forza quei due deployment a restare li'. Questo evita errori `ImagePullBackOff` sul nodo agent finche' non configuri un registry condiviso.
 
 # Installazione su server worker
 
