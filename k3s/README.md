@@ -269,7 +269,7 @@ sudo systemctl restart k3s-agent
 
 Se si tratta della prima installazione, puoi fare il deploy di tutti i manifest con:
 
-```powershell
+```bash
 bash k3s/deploy-all.sh
 ```
 
@@ -283,7 +283,7 @@ RESET_NAMESPACE=true bash k3s/deploy-all.sh
 
 ## Step 4: controlla che i pod salgano
 
-```powershell
+```bash
 kubectl get pods -n bigintensive -w
 ```
 
@@ -293,7 +293,7 @@ Aspettati inizialmente `ContainerCreating` sui servizi stateful, poi `Running` p
 
 Lo StatefulSet `postgres` monta `database/postgresql/schema.sql` come script di inizializzazione. Lo script viene eseguito da PostgreSQL solo al primo avvio del volume dati.
 
-```powershell
+```bash
 kubectl get statefulset postgres -n bigintensive
 kubectl logs statefulset/postgres -n bigintensive
 ```
@@ -336,7 +336,7 @@ bash k3s/validate-deploy.sh --deploy-first
 
 Controlla prima la health del backend:
 
-```powershell
+```bash
 kubectl port-forward -n bigintensive svc/backend 3001:3001
 ```
 
