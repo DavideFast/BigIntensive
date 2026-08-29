@@ -225,8 +225,6 @@ K10f8eed66f2b617a72eb273c752e47b1e9f81f0132219beec50ec42101b25d6dd0::server:926a
 
 `--node-name <NODE_NAME>` evita conflitti se il cluster ha gia' visto in passato lo stesso hostname della seconda VM.
 
-Nota pratica: nel setup attuale backend e frontend usano immagini locali (`bigintensive/...:local`). Lo script `k3s/deploy-k3s-local.sh` etichetta automaticamente il nodo server e forza quei due deployment a restare li'. Questo evita errori `ImagePullBackOff` sul nodo agent finche' non configuri un registry condiviso.
-
 # Installazione su server worker
 
 La macchina virtuale deve essere configurata come il server master, con le stesse impostazioni di memoria, disco e rete.
@@ -313,10 +311,6 @@ Nel caso a due VM, esegui questo script sulla VM server, non sull'agent.
 ```powershell
 bash k3s/deploy-all.sh
 ```
-
-Questo installa anche il Kubeflow Spark Operator e poi applica i manifest modulari, creando namespace, secret, servizi, deployment/statefulset e schema PostgreSQL. Richiede Helm 3 sul nodo server K3s.
-
-Il Spark Operator resta in ascolto delle risorse `SparkApplication`, ma non avvia alcun job da solo: Jupyter e altri client autorizzati possono continuare a sottomettere job solo su richiesta.
 
 ## Passo 4: controlla che i pod salgano
 
