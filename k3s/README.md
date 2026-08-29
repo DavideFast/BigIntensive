@@ -233,28 +233,28 @@ Installare K3s come agent/worker, sostituendo `<NOME_ASSEGNATO>` con un nome uni
 curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NOME_ASSEGNATO>" K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN='<TOKEN>' sh -
 ```
 
-> [!WARNING]
-> Bisogna aggiornare il file di configurazione del nodo:
->
-> ```bash
-> sudo mkdir -p /etc/rancher/k3s
-> sudo nano /etc/rancher/k3s/config.yaml
-> ```
->
-> Dentro al file scrivere:
->
-> ````yaml
-> server: "https://<SERVER_IP>:6443"
-> token: "<TOKEN>"
-> node-ip: "<IP_STATIC_NODO>"
-> flannel-iface: "<INTERFACE>"
->
-> Dopo di che salvare il file e riavviare il servizio k3s-agent:
->
-> ```bash
-> sudo systemctl daemon-reload
-> sudo systemctl restart k3s-agent
-> ````
+Bisogna aggiornare il file di configurazione del nodo:
+
+```bash
+sudo mkdir -p /etc/rancher/k3s
+sudo nano /etc/rancher/k3s/config.yaml
+```
+
+Dentro al file scrivere:
+
+```yaml
+server: "https://<SERVER_IP>:6443"
+token: "<TOKEN>"
+node-ip: "<IP_STATIC_NODO>"
+flannel-iface: "<INTERFACE>"
+```
+
+Dopo di che salvare il file e riavviare il servizio k3s-agent:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart k3s-agent
+```
 
 > [!TIP]
 > Potrebbe essere necessario aprire delle porte sul firewall del master esponendo:
@@ -366,3 +366,11 @@ Poi apri:
   ```
 
 Per operazioni avanzate (deploy selettivo componenti, runtime checks estesi, checklist modifiche), vedi [MANIFESTS.md](MANIFESTS.md).
+
+```
+
+```
+
+```
+
+```
