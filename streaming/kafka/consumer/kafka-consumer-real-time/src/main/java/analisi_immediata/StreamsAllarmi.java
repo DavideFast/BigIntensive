@@ -304,6 +304,7 @@ public class StreamsAllarmi {
         } catch (Exception e) {
             Thread.currentThread().interrupt();
         }
+        System.out.println("Collegato al cluster Kafka in " + bootstrapServers + ", in ascolto sul topic " + topicIngresso);
         streams.start();
         System.out.println("Rilevatore di immobilità in esecuzione. Premere Ctrl+C per terminare.");
         try {
