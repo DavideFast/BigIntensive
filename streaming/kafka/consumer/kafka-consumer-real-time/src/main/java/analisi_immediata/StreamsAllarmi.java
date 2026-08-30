@@ -281,7 +281,9 @@ public class StreamsAllarmi {
         System.out.println("Rilevatore di immobilità in esecuzione. Premere Ctrl+C per terminare.");
         try {
             shutdownLatch.await();
+            System.out.println("Rilevatore di immobilità terminato.");
         } catch (InterruptedException e) {
+            System.err.println("Interruzione del rilevatore di immobilità.");
             Thread.currentThread().interrupt();
             streams.close();
         }
