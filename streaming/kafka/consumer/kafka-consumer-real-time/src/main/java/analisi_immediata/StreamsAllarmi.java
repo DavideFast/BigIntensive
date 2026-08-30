@@ -68,6 +68,7 @@ public class StreamsAllarmi {
 
         public void flushBatch(long timestamp) {
             if (!campioni.isEmpty()) {
+                System.out.printf("Flushing batch of %d samples to database at timestamp %d%n", campioni.size(), timestamp);
                 databaseBulkInsert(campioni, timestamp);
                 campioni.clear();
             }
