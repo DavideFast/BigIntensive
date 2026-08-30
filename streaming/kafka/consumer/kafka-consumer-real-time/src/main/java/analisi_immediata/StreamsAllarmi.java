@@ -192,6 +192,8 @@ public class StreamsAllarmi {
             double velocitaTratto = spostamento / (sample.sample_index() - precedente.indice());
             velocitaMedia = velocitaMedia + velocitaTratto;
             velocitaMax = Math.max(velocitaMax, velocitaTratto);
+            System.out.printf("Atleta %s: spostamento %.2f m, velocità %.2f m/s, velocità media %.2f m/s, velocità max %.2f m/s, distanza totale %.2f m%n",
+                    sample.athlete_id(), spostamento, velocitaTratto, velocitaMedia / campioniRicevuti, velocitaMax, distanzaTotale);
 
             // Se lo spostamento è maggiore della soglia, aggiorno lo stato e non faccio altro
             if (spostamento > SOGLIA_MOVIMENTO_M) {
