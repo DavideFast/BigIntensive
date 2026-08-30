@@ -143,6 +143,7 @@ public class StreamsAllarmi {
             
             // Provo a vedere se l'evento che arriva ha una struttura JSON corretta
             HeartRateSample sample;
+            System.out.printf("Ricevuto evento: %s%n", record.value());
             try {
                 sample = MAPPER.readValue(record.value(), HeartRateSample.class);
 
