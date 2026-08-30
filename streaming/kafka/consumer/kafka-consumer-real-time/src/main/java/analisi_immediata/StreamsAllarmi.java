@@ -87,7 +87,7 @@ public class StreamsAllarmi {
                 password = "";
             }
             try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, password)) {
-                String sql = "INSERT INTO running_samples (athlete_id, sample_index, latitude, longitude, heart_rate_bpm, cadence_spm, event_type) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO running_samples (athlete_id, sample_index, latitude, longitude, heart_rate_bpm, cadence, event_type) VALUES (?, ?, ?, ?, ?, ?, ?)";
                 System.out.printf("Inserimento batch di %d campioni nel database ClickHouse%n", samples.size());
                 try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
                     for (HeartRateSample sample : samples) {
