@@ -62,7 +62,7 @@ app.use(createSystemRouter());
 
 // =========================== READ/WRITE DATABASE  ==============================
 app.get("/api/v1/readPostgresql", (req, res) => {
-  const query = "SELECT * FROM allenamenti WHERE atleta_id = 1 LIMIT 10";
+  const query = "SELECT * FROM allenamenti WHERE athlete_id = 1 LIMIT 10";
   context.pool.query(query, (err, result) => {
     if (err) {
       console.error("Errore query PostgreSQL:", err.message);
@@ -119,13 +119,15 @@ app.get("/api/v1/writePostgresql", (req, res) => {
       ],
     },
   };
-  const query = `INSERT INTO allenamenti (atleta_id, sessione_id, frequenza_cardiaca, velocita, timestamp,struttura_allenamento)
-                 VALUES (1, 1, 120, 10.5, '2024-06-05 12:00:00', '${JSON.stringify(allenamento)}')`;
-  context.pool.query(query, (err, result) => {
+  const query = `INSERT INTO allenamenti (athlete_id, data_allenamento, tipo_allenamento, durata_minuti, struttura_allenamento)
+                 VALUES ($1, $2, $3, $4, $5)`;
+  const values = [1, "2026-08-15", "forza", 75, JSON.stringify(allenamento)];
+  context.pool.query(query, values, (err, result) => {
     if (err) {
       console.error("Errore query PostgreSQL:", err.message);
       return res.status(500).json({ success: false, error: err.message });
     }
+    res.json({ success: true });
   });
 });
 
@@ -148,7 +150,7 @@ app.post("/api/v1/pushToKafka", async (req, res) => {
     await ensureProducerConnected();
     await producer.send({
       topic: smartwatchKafkaTopic,
-      messages: [{ key: req.body.atleta_id.toString() + "-" + req.body.sessione_id.toString(), value: JSON.stringify(req.body) }],
+      messages: [{ key: req.body.athlete_id.toString() + "-" + req.body.session_id.toString(), value: JSON.stringify(req.body) }],
     });
 
     res.status(202).json({
