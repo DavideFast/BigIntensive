@@ -143,7 +143,7 @@ public class StreamsAllarmi {
             
             // Provo a vedere se l'evento che arriva ha una struttura JSON corretta
             HeartRateSample sample;
-            System.out.printf("Ricevuto evento: %s%n", record.value());
+            System.out.printf("Ricevuto evento");
             try {
                 sample = MAPPER.readValue(record.value(), HeartRateSample.class);
 
@@ -253,6 +253,7 @@ public class StreamsAllarmi {
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
+        props.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, org.apache.kafka.streams.errors.LogAndContinueExceptionHandler.class);
 
         // Creazione dello state store persistente
         StoreBuilder<KeyValueStore<String, String>> store = Stores.keyValueStoreBuilder(
@@ -262,6 +263,7 @@ public class StreamsAllarmi {
         StreamsBuilder builder = new StreamsBuilder();
         builder.addStateStore(store);
 
+        System.out.printf("Avvio del rilevatore di immobilità su topic %s con bootstrap servers %s%n", topicIngresso, bootstrapServers);
         // Lettura dei messaggi dal topic di ingresso
         KStream<String, String> sorgente = builder.stream(topicIngresso, Consumed.with(Serdes.String(), Serdes.String()));
         
