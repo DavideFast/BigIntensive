@@ -291,6 +291,12 @@ public class StreamsAllarmi {
             exception.printStackTrace();
             return StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.SHUTDOWN_APPLICATION;
         });
+        try {
+            System.out.println("Attendo che Kafka Streams si inizializzi e crei lo state store...");
+            Thread.sleep(5000); // Attendo 5 secondi per permettere a Kafka Streams di inizializzarsi
+        } catch (Exception e) {
+            Thread.currentThread().interrupt();
+        }
         streams.start();
         System.out.println("Rilevatore di immobilità in esecuzione. Premere Ctrl+C per terminare.");
         try {
