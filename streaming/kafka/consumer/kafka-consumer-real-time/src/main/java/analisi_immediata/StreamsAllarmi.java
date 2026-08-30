@@ -88,6 +88,7 @@ public class StreamsAllarmi {
             }
             try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, password)) {
                 String sql = "INSERT INTO heart_rate_samples (athlete_id, sample_index, latitude, longitude, heart_rate_bpm, cadence_spm, event_type) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                System.out.printf("Inserimento batch di %d campioni nel database ClickHouse%n", samples.size());
                 try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
                     for (HeartRateSample sample : samples) {
                         stmt.setString(1, sample.athlete_id());
@@ -264,7 +265,6 @@ public class StreamsAllarmi {
         StreamsBuilder builder = new StreamsBuilder();
         builder.addStateStore(store);
 
-        System.out.printf("Avvio del rilevatore di immobilità su topic %s con bootstrap servers %s%n", topicIngresso, bootstrapServers);
         // Lettura dei messaggi dal topic di ingresso
         KStream<String, String> sorgente = builder.stream(topicIngresso, Consumed.with(Serdes.String(), Serdes.String()));
         
