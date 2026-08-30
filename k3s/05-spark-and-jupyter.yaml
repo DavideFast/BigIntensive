@@ -84,6 +84,8 @@ spec:
         app: jupyter
     spec:
       serviceAccountName: spark
+      nodeSelector:
+        bigintensive.io/local-images: "true"
       containers:
         - name: jupyter
           image: apache/spark:3.5.3
@@ -126,7 +128,7 @@ spec:
               echo "Installing Jupyter and dependencies..."
               pip install --no-cache-dir jupyter jupyterlab psycopg2-binary kafka-python pandas numpy
               echo "Starting Jupyter Lab..."
-              jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=changeme
+              jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=bigintensive
           volumeMounts:
             - name: notebooks
               mountPath: /root/work
@@ -151,7 +153,9 @@ spec:
             failureThreshold: 3
       volumes:
         - name: notebooks
-          emptyDir: {}
+          hostPath:
+            path: /home/davide/BigIntensive/notebooks
+            type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service

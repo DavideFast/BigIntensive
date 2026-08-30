@@ -333,20 +333,26 @@ Il manifest usa `traefik` come ingress class e questi host:
 - `http://bigintensive.local` per il frontend
 - `http://api.bigintensive.local` per il backend
 - `http://kafka-ui.bigintensive.local` per Kafka UI
+- `http://jupyter.bigintensive.local` per Jupyter
 
 Devi far puntare questi nomi all'IP del nodo k3s nel file hosts della macchina da cui navighi.
 
 Se navighi da entrambe le macchine host, aggiorna il file hosts su entrambe con l'IP della VM server.
 
+```bash
+sudo nano /etc/hosts
+```
+
 Esempio file hosts:
 
 ```text
-192.168.1.50 bigintensive.local
-192.168.1.50 api.bigintensive.local
-192.168.1.50 kafka-ui.bigintensive.local
+192.168.1.10 bigintensive.local
+192.168.1.10 api.bigintensive.local
+192.168.1.10 kafka-ui.bigintensive.local
+192.168.1.10 jupyter.bigintensive.local
 ```
 
-Aprire direttamente `http://192.168.1.50` non basta, perche' l'Ingress instrada in base all'hostname richiesto.
+Aprire direttamente `http://192.168.1.10` non basta, perche' l'Ingress instrada in base all'hostname richiesto.
 
 ## Verifica l'app
 
@@ -372,7 +378,9 @@ Poi apri:
 
 - `http://localhost:3001/health`
 - `http://bigintensive.local`
-- `http://api.bigintensive.local/events`
+- `http://api.bigintensive.local/health`
+- `http://kafka-ui.bigintensive.local`
+- `http://jupyter.bigintensive.local`
 
 <br>
 <br>
