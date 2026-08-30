@@ -12,6 +12,7 @@ WORKDIR /app
 COPY --from=builder /build/target/kafka-consumer-real-time-1.0-SNAPSHOT-jar-with-dependencies.jar /app/kafka-consumer.jar
 
 # Create state store directory
+RUN apk add --no-cache libstdc++ libc6-compat
 RUN mkdir -p /var/lib/kafka-streams && chmod 777 /var/lib/kafka-streams
 
 # Variabili di ambiente per le connessioni
