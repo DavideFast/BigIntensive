@@ -267,6 +267,9 @@ public class StreamsAllarmi {
         // Lettura dei messaggi dal topic di ingresso
         KStream<String, String> sorgente = builder.stream(topicIngresso, Consumed.with(Serdes.String(), Serdes.String()));
         
+        //DEBUG: stampa dei messaggi ricevuti qualsiasi
+        sorgente.peek((chiave, valore) -> System.out.printf("Ricevuto messaggio con chiave %s e valore %s%n", chiave, valore));
+
         // Processamento dei messaggi con il rilevatore di immobilità
         sorgente.process(RilevatoreImmobilita::new, NOME_STORE);
 
