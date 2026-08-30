@@ -87,17 +87,22 @@ public class StreamsAllarmi {
                 password = "";
             }
             try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, password)) {
-                String sql = "INSERT INTO running_samples (athlete_id, sample_index, latitude, longitude, heart_rate_bpm, cadence, event_type) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO running_samples (sample_index, session_id, athlete_id, sport, heart_rate_bpm, latitude, longitude, altitudine, temperature, cadence, event_type, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 System.out.printf("Inserimento batch di %d campioni nel database ClickHouse%n", samples.size());
                 try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
                     for (HeartRateSample sample : samples) {
-                        stmt.setString(1, sample.athlete_id());
-                        stmt.setInt(2, sample.sample_index());
-                        stmt.setDouble(3, sample.latitude());
-                        stmt.setDouble(4, sample.longitude());
+                        stmt.setInt(1, sample.sample_index());
+                        stmt.setLong(2, sample.session_id());
+                        stmt.setInt(3, sample.athlete_id());
+                        stmt.setString(4, sample.sport());
                         stmt.setDouble(5, sample.heart_rate_bpm());
-                        stmt.setDouble(6, sample.cadence_spm());
-                        stmt.setString(7, sample.event_type());
+                        stmt.setDouble(6, sample.latitude());
+                        stmt.setDouble(7, sample.longitude());
+                        stmt.setDouble(8, sample.altitudine());
+                        stmt.setDouble(9, sample.temperature());
+                        stmt.setDouble(10, sample.cadence_spm());
+                        stmt.setString(11, sample.event_type());
+                        stmt.setLong(12, timestamp);
                         stmt.addBatch();
                     }
                     stmt.executeBatch();
@@ -123,7 +128,7 @@ public class StreamsAllarmi {
             try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, password)) {
                 String sql = "INSERT INTO session_summary (athlete_id, velocita_media, velocita_max, frequenza_cardiaca_media, frequenza_cardiaca_max, cadenza_media, distanza_totale, campioni, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
-                    stmt.setString(1, sample.athlete_id());
+                    stmt.setInt(1, sample.athlete_id());
                     stmt.setDouble(2, velocitaMedia);
                     stmt.setDouble(3, velocitaMax);
                     stmt.setDouble(4, frequenzaCardiacaMedia);

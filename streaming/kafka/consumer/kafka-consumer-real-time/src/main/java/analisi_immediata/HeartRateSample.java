@@ -2,7 +2,7 @@ package analisi_immediata;
 
 // I nomi dei campi devono combaciare con le chiavi JSON prodotte da heart_rate_simulator.py
 public record HeartRateSample(
-         String athlete_id,
+         int athlete_id,
          String sport,
          double heart_rate_bpm,
          double cadence_spm,
@@ -10,6 +10,8 @@ public record HeartRateSample(
          double latitude,
          double longitude,
          String timestamp,
+         double altitudine,
+         double temperature,
          int sample_index,
          long session_id,
          String event_type) {
