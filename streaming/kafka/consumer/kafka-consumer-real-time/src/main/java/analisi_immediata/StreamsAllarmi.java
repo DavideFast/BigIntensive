@@ -157,6 +157,7 @@ public class StreamsAllarmi {
 
                 campioni.add(sample);
                 if (campioni.size() > MAX_CAMPIONI) {
+                    System.out.printf("Raggiunto limite di %d campioni, invio batch al database%n", MAX_CAMPIONI);
                     flushBatch(context.currentStreamTimeMs());
                 }
                 if (campioni.size() > MAX_CAMPIONI) {
