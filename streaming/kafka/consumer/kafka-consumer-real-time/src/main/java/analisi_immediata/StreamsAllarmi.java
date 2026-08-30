@@ -7,6 +7,7 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
+import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Repartitioned;
@@ -16,7 +17,7 @@ import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
-
+import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -267,7 +268,7 @@ public class StreamsAllarmi {
         // Lettura dei messaggi dal topic di ingresso
         KStream<String, String> sorgente = builder.stream(topicIngresso, Consumed.with(Serdes.String(), Serdes.String()));
         
-        //DEBUG: stampa dei messaggi ricevuti qualsiasi
+        //DEBUG: stampa dei messaggi ricevuti qualsiasi sia la chiave e il valore
         sorgente.peek((chiave, valore) -> System.out.printf("Ricevuto messaggio con chiave %s e valore %s%n", chiave, valore));
 
         // Processamento dei messaggi con il rilevatore di immobilità
@@ -284,7 +285,12 @@ public class StreamsAllarmi {
         }));
 
         //Avvio del flusso di elaborazione
-        System.out.println("Avvio del rilevatore di immobilità...");
+        streams.setStateListener((newState, oldState)->{System.out.println(">>> STATO KAFKA STREAMS CAMBIATO DA "+oldState+ " a " +newState);});
+        streams.setUncaughtExceptionHandler((Throwable exception) -> {
+            System.out.println(">>> ERRORE CRITICO FINALE IN KAFKA STREAMS:");
+            exception.printStackTrace();
+            return StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.SHUTDOWN_APPLICATION;
+        });
         streams.start();
         System.out.println("Rilevatore di immobilità in esecuzione. Premere Ctrl+C per terminare.");
         try {
