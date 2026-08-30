@@ -32,7 +32,8 @@ public class StreamsAllarmi {
     private static final int SECONDI_IMMOBILE = 30;
     private static final double RAGGIO_TERRA_M = 6_371_000.0;
     private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    private static final List<HeartRateSample> campioni = new ArrayList<>();
+    private static final List<HeartRateSample> campioniAnalisi = new ArrayList<>();
+    private static final List<HeartRateSample> campioniDB = new ArrayList<>();
     private static double distanzaTotale= 0.0;
     private static double velocitaMedia= 0.0;
     private static double velocitaMax= 0.0;
@@ -40,7 +41,8 @@ public class StreamsAllarmi {
     private static double frequenzaCardiacaMax= 0.0;
     private static double cadenzaMedia= 0.0;
     private static int campioniRicevuti = 0;
-    private static final int MAX_CAMPIONI = 1000;
+    private static final int MAX_CAMPIONI = 2000;
+    private static final int MAX_CAMPIONI_ANALISI = 1000;
 
 
     /** Stato persistito nello state store, serializzato come JSON. */
@@ -67,10 +69,10 @@ public class StreamsAllarmi {
         }
 
         public void flushBatch(long timestamp) {
-            if (!campioni.isEmpty()) {
-                System.out.printf("Flushing batch of %d samples to database at timestamp %d%n", campioni.size(), timestamp);
-                databaseBulkInsert(campioni, timestamp);
-                campioni.clear();
+            if (!campioniDB.isEmpty()) {
+                System.out.printf("Flushing batch of %d samples to database at timestamp %d%n", campioniDB.size(), timestamp);
+                databaseBulkInsert(campioniDB, timestamp);
+                campioniDB.clear();
             }
         }
 
@@ -159,15 +161,15 @@ public class StreamsAllarmi {
                 cadenzaMedia += sample.cadence_spm();
                 campioniRicevuti++;
                 
-
-                campioni.add(sample);
-                System.out.println(campioni.size());
-                if (campioni.size() > MAX_CAMPIONI) {
+                campioniAnalisi.add(sample);
+                campioniDB.add(sample);
+                System.out.println(campioniDB.size());
+                if (campioniDB.size() > MAX_CAMPIONI) {
                     System.out.printf("Raggiunto limite di %d campioni, invio batch al database%n", MAX_CAMPIONI);
                     flushBatch(context.currentStreamTimeMs());
                 }
-                if (campioni.size() > MAX_CAMPIONI) {
-                    campioni.remove(0);
+                if (campioniAnalisi.size() > MAX_CAMPIONI_ANALISI) {
+                    campioniAnalisi.remove(0);
                 }
             } catch (Exception e) {
                 return; // messaggio malformato: scartato senza fermare la topologia
