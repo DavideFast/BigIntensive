@@ -23,7 +23,7 @@ spec:
           imagePullPolicy: Always
           env:
             - name: ENDPOINT_URL
-              value: "http://api.bigintensive.local/api/v1/pushToKafka"
+              value: "http://backend:3001/api/v1/pushToKafka"
             - name: NUM_ATHLETES
               value: "50"
             - name: SAMPLE_INTERVAL
