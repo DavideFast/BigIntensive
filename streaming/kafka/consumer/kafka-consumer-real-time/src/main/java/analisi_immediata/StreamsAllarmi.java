@@ -302,6 +302,7 @@ public class StreamsAllarmi {
                 streams.setUncaughtExceptionHandler((Throwable exception) -> {
                     System.out.println(">>> ERRORE CRITICO FINALE IN KAFKA STREAMS:");
                     exception.printStackTrace();
+                    shutdownLatch.countDown();
                     return StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.SHUTDOWN_APPLICATION;
                 });
                 System.out.println("Attendo che Kafka Streams si inizializzi e crei lo state store...");
