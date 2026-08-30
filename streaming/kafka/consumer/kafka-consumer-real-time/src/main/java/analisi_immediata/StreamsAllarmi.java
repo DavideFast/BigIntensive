@@ -145,7 +145,7 @@ public class StreamsAllarmi {
             
             // Provo a vedere se l'evento che arriva ha una struttura JSON corretta
             HeartRateSample sample;
-            System.out.printf("Ricevuto evento");
+            //System.out.printf("Ricevuto evento");
             try {
                 sample = MAPPER.readValue(record.value(), HeartRateSample.class);
 
@@ -156,6 +156,7 @@ public class StreamsAllarmi {
                 
 
                 campioni.add(sample);
+                System.out.println(campioni.size());
                 if (campioni.size() > MAX_CAMPIONI) {
                     System.out.printf("Raggiunto limite di %d campioni, invio batch al database%n", MAX_CAMPIONI);
                     flushBatch(context.currentStreamTimeMs());
@@ -196,8 +197,8 @@ public class StreamsAllarmi {
             double velocitaTratto = spostamento / (sample.sample_index() - precedente.indice());
             velocitaMedia = velocitaMedia + velocitaTratto;
             velocitaMax = Math.max(velocitaMax, velocitaTratto);
-            System.out.printf("Atleta %s: spostamento %.2f m, velocità %.2f m/s, velocità media %.2f m/s, velocità max %.2f m/s, distanza totale %.2f m%n",
-                    sample.athlete_id(), spostamento, velocitaTratto, velocitaMedia / campioniRicevuti, velocitaMax, distanzaTotale);
+            //System.out.printf("Atleta %s: spostamento %.2f m, velocità %.2f m/s, velocità media %.2f m/s, velocità max %.2f m/s, distanza totale %.2f m%n",
+            //        sample.athlete_id(), spostamento, velocitaTratto, velocitaMedia / campioniRicevuti, velocitaMax, distanzaTotale);
 
             // Se lo spostamento è maggiore della soglia, aggiorno lo stato e non faccio altro
             if (spostamento > SOGLIA_MOVIMENTO_M) {
