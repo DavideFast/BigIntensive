@@ -276,6 +276,7 @@ public class StreamsAllarmi {
         }));
 
         //Avvio del flusso di elaborazione
+        System.out.println("Avvio del rilevatore di immobilità...");
         streams.start();
         try {
             shutdownLatch.await();
