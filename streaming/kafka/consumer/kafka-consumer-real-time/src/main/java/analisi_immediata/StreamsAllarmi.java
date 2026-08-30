@@ -279,40 +279,48 @@ public class StreamsAllarmi {
 
         // Processamento dei messaggi con il rilevatore di immobilità
         sorgente.process(RilevatoreImmobilita::new, NOME_STORE);
+        boolean waiting = true;
+        
+        while (waiting) {
+            try {
+                
+                // Avvio del flusso di elaborazione
+                final KafkaStreams streams  = new KafkaStreams(builder.build(), props);
+                CountDownLatch shutdownLatch = new CountDownLatch(1);
 
-        // Avvio del flusso di elaborazione
-        KafkaStreams streams = new KafkaStreams(builder.build(), props);
-        CountDownLatch shutdownLatch = new CountDownLatch(1);
+                // Gestione della chiusura dell'applicazione
+                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                    streams.close();
+                    shutdownLatch.countDown();
+                }));
 
-        // Gestione della chiusura dell'applicazione
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            streams.close();
-            shutdownLatch.countDown();
-        }));
+                //Avvio del flusso di elaborazione
+                streams.setStateListener((newState, oldState)->{System.out.println(">>> STATO KAFKA STREAMS CAMBIATO DA "+oldState+ " a " +newState);});
+                streams.setUncaughtExceptionHandler((Throwable exception) -> {
+                    System.out.println(">>> ERRORE CRITICO FINALE IN KAFKA STREAMS:");
+                    exception.printStackTrace();
+                    return StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.SHUTDOWN_APPLICATION;
+                });
+                System.out.println("Attendo che Kafka Streams si inizializzi e crei lo state store...");
+                Thread.sleep(5000); // Attendo 5 secondi per permettere a Kafka Streams di inizializzarsi
 
-        //Avvio del flusso di elaborazione
-        streams.setStateListener((newState, oldState)->{System.out.println(">>> STATO KAFKA STREAMS CAMBIATO DA "+oldState+ " a " +newState);});
-        streams.setUncaughtExceptionHandler((Throwable exception) -> {
-            System.out.println(">>> ERRORE CRITICO FINALE IN KAFKA STREAMS:");
-            exception.printStackTrace();
-            return StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.SHUTDOWN_APPLICATION;
-        });
-        try {
-            System.out.println("Attendo che Kafka Streams si inizializzi e crei lo state store...");
-            Thread.sleep(5000); // Attendo 5 secondi per permettere a Kafka Streams di inizializzarsi
-        } catch (Exception e) {
-            Thread.currentThread().interrupt();
-        }
-        System.out.println("Collegato al cluster Kafka in " + bootstrapServers + ", in ascolto sul topic " + topicIngresso);
-        streams.start();
-        System.out.println("Rilevatore di immobilità in esecuzione. Premere Ctrl+C per terminare.");
-        try {
-            shutdownLatch.await();
-            System.out.println("Rilevatore di immobilità terminato.");
-        } catch (InterruptedException e) {
-            System.err.println("Interruzione del rilevatore di immobilità.");
-            Thread.currentThread().interrupt();
-            streams.close();
+                System.out.println("Collegato al cluster Kafka in " + bootstrapServers + ", in ascolto sul topic " + topicIngresso);
+                streams.start();
+                System.out.println("Rilevatore di immobilità in esecuzione. Premere Ctrl+C per terminare.");
+
+                shutdownLatch.await();
+                System.out.println("Rilevatore di immobilità terminato.");
+                waiting = false;
+
+            } catch (Exception e) {
+                System.err.println("Errore durante l'esecuzione del rilevatore di immobilità: " + e.getMessage());
+                try {
+                    Thread.sleep(5000); // Attendo 5 secondi prima di riprovare
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    waiting = false;
+                }
+            }
         }
     }
 }
