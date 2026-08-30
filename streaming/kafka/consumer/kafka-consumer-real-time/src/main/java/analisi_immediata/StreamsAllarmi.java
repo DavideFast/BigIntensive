@@ -278,6 +278,7 @@ public class StreamsAllarmi {
         //Avvio del flusso di elaborazione
         System.out.println("Avvio del rilevatore di immobilità...");
         streams.start();
+        System.out.println("Rilevatore di immobilità in esecuzione. Premere Ctrl+C per terminare.");
         try {
             shutdownLatch.await();
         } catch (InterruptedException e) {
