@@ -26,6 +26,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
     private int campioniRicevuti = 0;
     private KeyValueStore<String, String> store;
     private ProcessorContext<String, String> context;
+    private int id_istanza = 0;
 
     private final List<HeartRateSample> campioniAnalisi = new ArrayList<>();
     private final List<HeartRateSample> campioniDB = new ArrayList<>();
@@ -36,6 +37,11 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
     private static final int SECONDI_IMMOBILE = 30;
     private static final double RAGGIO_TERRA_M = 6_371_000.0;
     private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private static int NUMERO_ISTANZE = 0;
+
+    private static void setNumeroIstanze() {
+        NUMERO_ISTANZE++;
+    }
 
     private static double distanzaMetri(double lat1, double lon1, double lat2, double lon2) {
         double dLat = Math.toRadians(lat2 - lat1);
@@ -146,6 +152,8 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
     public void init(ProcessorContext<String, String> context) {
         this.context = context;
         this.store = context.getStateStore(ConsumerKafka.getNomeStore());
+        setNumeroIstanze();
+        this.id_istanza = NUMERO_ISTANZE;
     }
 
     @Override
@@ -164,6 +172,9 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
             
             campioniAnalisi.add(sample);
             campioniDB.add(sample);
+            for(int i = 0; i < id_istanza; i++) {
+                System.out.print("-------");
+            }
             System.out.println(campioniDB.size());
             if (campioniDB.size() >= MAX_CAMPIONI) {
                 List<HeartRateSample> batchToFlush = new ArrayList<>(campioniDB.subList(0, MAX_CAMPIONI));

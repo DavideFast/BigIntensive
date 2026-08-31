@@ -138,6 +138,7 @@ app.get("/api/v1/readClickhouse", async (req, res) => {
       format: "JSONEachRow",
     });
     const data = await valore.json();
+    console.log("Dati letti da ClickHouse:", data);
     res.json({ success: true, count: data.length, data });
   } catch (error) {
     console.error("Errore query ClickHouse:", error.message);
