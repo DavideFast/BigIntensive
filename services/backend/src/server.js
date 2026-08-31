@@ -132,6 +132,11 @@ app.get("/api/v1/writePostgresql", (req, res) => {
 });
 
 app.get("/api/v1/readClickhouse", async (req, res) => {
+  console.log("Leggo da : " + createClickhouseClient.url);
+  console.log("Leggo da ClickHouse con utente: " + createClickhouseClient.username);
+  console.log("Leggo da ClickHouse con database: " + createClickhouseClient.database);
+  console.log("Leggo da ClickHouse con password: " + (createClickhouseClient.password ? "****" : "(vuota)"));
+  console.log("Leggo da ClickHouse con formato: JSONEachRow");
   try {
     const valore = await createClickhouseClient.query({
       query: "SELECT * FROM bigintensive.running_samples WHERE session_id = (SELECT session_id FROM bigintensive.running_samples WHERE athlete_id = 1 LIMIT 1)",
