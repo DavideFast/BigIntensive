@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import analisi_immediata.ConsumerKafka.StatoSessione;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,10 +64,13 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
             System.out.printf("Inserimento batch di %d campioni nel database ClickHouse%n", samples.size());
             try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
                 for (HeartRateSample sample : samples) {
+                    String rawTimestamp = sample.timestamp();
+                    OffsetDateTime odt = OffsetDateTime.parse(rawTimestamp);
+                    String formattedTimestamp = odt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                     stmt.setInt(1, sample.sample_index());
                     stmt.setLong(2, sample.session_id());
-                    stmt.setInt(3, sample.athlete_id());
-                    stmt.setString(4, sample.timestamp());
+                    stmt.setLong(3, sample.athlete_id());
+                    stmt.setString(4, formattedTimestamp);
                     stmt.setDouble(5, sample.heart_rate_bpm());
                     stmt.setDouble(6, sample.latitude());
                     stmt.setDouble(7, sample.longitude());
