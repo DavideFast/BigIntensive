@@ -71,6 +71,31 @@ spec:
             - configMapRef:
                 name: bigintensive-config
           env:
+            - name: CLICKHOUSE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: bigintensive-config
+                  key: CLICKHOUSE_HOST
+            - name: CLICKHOUSE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: bigintensive-config
+                  key: CLICKHOUSE_PORT
+            - name: CLICKHOUSE_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: bigintensive-config
+                  key: CLICKHOUSE_USER
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: bigintensive-config
+                  key: CLICKHOUSE_PASSWORD
+            - name: CLICKHOUSE_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: bigintensive-config
+                  key: CLICKHOUSE_DATABASE
             - name: PORT
               valueFrom:
                 configMapKeyRef:
