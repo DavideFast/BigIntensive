@@ -32,8 +32,8 @@ public class StreamsAllarmi {
     private static final int SECONDI_IMMOBILE = 30;
     private static final double RAGGIO_TERRA_M = 6_371_000.0;
     private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    private static final List<HeartRateSample> campioniAnalisi = new ArrayList<>();
-    private static final List<HeartRateSample> campioniDB = new ArrayList<>();
+    //private static final List<HeartRateSample> campioniAnalisi = new ArrayList<>();
+    //private static final List<HeartRateSample> campioniDB = new ArrayList<>();
     private static double distanzaTotale= 0.0;
     private static double velocitaMedia= 0.0;
     private static double velocitaMax= 0.0;
@@ -61,11 +61,14 @@ public class StreamsAllarmi {
 
         private KeyValueStore<String, String> store;
         private ProcessorContext<String, String> context;
+        private final List<HeartRateSample> campioniAnalisi = new ArrayList<>();
+        private final List<HeartRateSample> campioniDB = new ArrayList<>();
 
         @Override
         public void init(ProcessorContext<String, String> context) {
             this.context = context;
             this.store = context.getStateStore(NOME_STORE);
+            this.campioniAnalisi.clear();
         }
 
         public void flushBatch(long timestamp) {
