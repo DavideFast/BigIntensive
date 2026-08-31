@@ -56,6 +56,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
         if (password == null) {
             password = "";
         }
+        System.out.printf("Connessione al database ClickHouse %s con utente %s%n", url, user);
         try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, password)) {
             String sql = "INSERT INTO running_samples (sample_id, session_id, athlete_id, timestamp, heart_rate, latitude, longitude, altitude, temperature, cadence, event_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             System.out.printf("Inserimento batch di %d campioni nel database ClickHouse%n", samples.size());
