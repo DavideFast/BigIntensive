@@ -75,6 +75,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
                     stmt.setString(11, sample.event_type());
                     stmt.addBatch();
                 }
+                System.out.printf("Esecuzione batch di %d campioni nel database ClickHouse%n", samples.size());
                 stmt.executeBatch();
                 conn.commit();
             }
