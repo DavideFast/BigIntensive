@@ -132,14 +132,18 @@ app.get("/api/v1/writePostgresql", (req, res) => {
 });
 
 app.get("/api/v1/readClickhouse", async (req, res) => {
-  console.log("Leggo da : " + createClickhouseClient.url);
+  console.log("Leggo da : " + process.env.CLICKHOUSE_HOST + ":" + process.env.CLICKHOUSE_PORT);
   console.log("Leggo da ClickHouse con utente: " + process.env.CLICKHOUSE_USER);
   console.log("Leggo da ClickHouse con database: " + process.env.CLICKHOUSE_DATABASE);
-  console.log("Leggo da ClickHouse con password: " + (process.env.CLICKHOUSE_PASSWORD ? "****" : "(vuota)"));
+  console.log("Leggo da ClickHouse con url: " + (process.env.CLICKHOUSE_URL ? "****" : "(vuota)"));
   console.log("Leggo da ClickHouse con formato: JSONEachRow");
+  const query_grande = "SELECT * FROM bigintensive.running_samples WHERE session_id = ";
+  const query_media = "(SELECT session_id FROM bigintensive.running_samples WHERE athlete_id = () LIMIT 1)";
+  const query_piccola = "(SELECT athlete_id FROM bigintensive.running_samples LIMIT 1)";
+  const query = query_grande + query_media.replace("()", query_piccola);
   try {
     const valore = await createClickhouseClient.query({
-      query: "SELECT * FROM bigintensive.running_samples WHERE session_id = (SELECT session_id FROM bigintensive.running_samples WHERE athlete_id = 1 LIMIT 1)",
+      query: query,
       format: "JSONEachRow",
     });
     const data = await valore.json();
