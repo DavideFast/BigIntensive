@@ -134,7 +134,7 @@ app.get("/api/v1/writePostgresql", (req, res) => {
 app.get("/api/v1/readClickhouse", async (req, res) => {
   try {
     const valore = await createClickhouseClient.query({
-      query: "SELECT * FROM running_samples WHERE session_id = (SELECT session_id FROM running_samples WHERE athlete_id = 1 LIMIT 1)",
+      query: "SELECT * FROM bigintensive.running_samples WHERE session_id = (SELECT session_id FROM bigintensive.running_samples WHERE athlete_id = 1 LIMIT 1)",
       format: "JSONEachRow",
     });
     const data = await valore.json();
