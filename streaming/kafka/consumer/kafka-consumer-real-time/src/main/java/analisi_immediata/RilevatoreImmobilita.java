@@ -24,8 +24,10 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
     private int campioniRicevuti = 0;
     private KeyValueStore<String, String> store;
     private ProcessorContext<String, String> context;
+
     private final List<HeartRateSample> campioniAnalisi = new ArrayList<>();
     private final List<HeartRateSample> campioniDB = new ArrayList<>();
+
     private static final int MAX_CAMPIONI = 2000;
     private static final int MAX_CAMPIONI_ANALISI = 1000;
     private static final double SOGLIA_MOVIMENTO_M = 10.0;
@@ -41,12 +43,6 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
         return 2 * RAGGIO_TERRA_M * Math.asin(Math.min(1.0, Math.sqrt(a)));
     } 
     
-    @Override
-    public void init(ProcessorContext<String, String> context) {
-        this.context = context;
-        this.store = context.getStateStore(ConsumerKafka.getNomeStore());
-    }
-
     public void flushBatch(long timestamp) {
         if (!campioniDB.isEmpty()) {
             System.out.printf("Flushing batch of %d samples to database at timestamp %d%n", campioniDB.size(), timestamp);
@@ -126,6 +122,32 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
         }
     }
 
+    private StatoSessione leggiStato(String chiave) {
+        String json = store.get(chiave);
+        if (json == null) {
+            return null;
+        }
+        try {
+            return MAPPER.readValue(json, StatoSessione.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void salvaStato(String chiave, StatoSessione stato) {
+        try {
+            store.put(chiave, MAPPER.writeValueAsString(stato));
+        } catch (Exception e) {
+            System.err.println("Stato non salvabile per " + chiave + ": " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void init(ProcessorContext<String, String> context) {
+        this.context = context;
+        this.store = context.getStateStore(ConsumerKafka.getNomeStore());
+    }
+
     @Override
     public void process(Record<String, String> record) {
         
@@ -143,7 +165,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
             campioniAnalisi.add(sample);
             campioniDB.add(sample);
             System.out.println(campioniDB.size());
-            if (campioniDB.size() > MAX_CAMPIONI) {
+            if (campioniDB.size() >= MAX_CAMPIONI) {
                 System.out.printf("Raggiunto limite di %d campioni, invio batch al database%n", MAX_CAMPIONI);
                 flushBatch(context.currentStreamTimeMs());
             }
@@ -205,24 +227,5 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
         }
     }
 
-    private StatoSessione leggiStato(String chiave) {
-        String json = store.get(chiave);
-        if (json == null) {
-            return null;
-        }
-        try {
-            return MAPPER.readValue(json, StatoSessione.class);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private void salvaStato(String chiave, StatoSessione stato) {
-        try {
-            store.put(chiave, MAPPER.writeValueAsString(stato));
-        } catch (Exception e) {
-            System.err.println("Stato non salvabile per " + chiave + ": " + e.getMessage());
-        }
-    }
 }
 
