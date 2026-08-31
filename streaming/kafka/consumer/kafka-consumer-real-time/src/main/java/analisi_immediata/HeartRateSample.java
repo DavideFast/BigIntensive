@@ -4,7 +4,7 @@ package analisi_immediata;
 public record HeartRateSample(
          int athlete_id,
          String sport,
-         double heart_rate_bpm,
+         double heart_rate,
          double cadence_spm,
          double latitude,
          double longitude,

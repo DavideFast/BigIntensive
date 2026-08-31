@@ -78,7 +78,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
                     stmt.setLong(3, sample.athlete_id());
                     stmt.setString(4, formattedTimestamp);
                     stmt.setDouble(5, velocitaMediaTratto);
-                    stmt.setDouble(6, sample.heart_rate_bpm());
+                    stmt.setDouble(6, sample.heart_rate());
                     stmt.setDouble(7, sample.latitude());
                     stmt.setDouble(8, sample.longitude());
                     stmt.setDouble(9, sample.altitude());
@@ -166,8 +166,8 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
         try {
             sample = MAPPER.readValue(record.value(), HeartRateSample.class);
 
-            frequenzaCardiacaMedia += sample.heart_rate_bpm();
-            frequenzaCardiacaMax = Math.max(frequenzaCardiacaMax, sample.heart_rate_bpm());
+            frequenzaCardiacaMedia += sample.heart_rate();
+            frequenzaCardiacaMax = Math.max(frequenzaCardiacaMax, sample.heart_rate());
             cadenzaMedia += sample.cadence_spm();
             campioniRicevuti++;
 
@@ -227,11 +227,11 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
 
             // Calcolo da quanto tempo l'atleta è fermo
             int fermoDaSecondi = sample.sample_id() - precedente.indice();
-            if (fermoDaSecondi >= SECONDI_IMMOBILE && !precedente.allarmeInviato() && sample.heart_rate_bpm() > 180) {
+            if (fermoDaSecondi >= SECONDI_IMMOBILE && !precedente.allarmeInviato() && sample.heart_rate() > 180) {
                 salvaStato(chiave, new StatoSessione(precedente.latitudine(), precedente.longitudine(),precedente.indice(), true));
 
                 String messaggio = String.format("Atleta %s fermo da %d s in posizione %.6f, %.6f (bpm %.0f)",
-                        sample.athlete_id(), fermoDaSecondi, sample.latitude(), sample.longitude(),sample.heart_rate_bpm());
+                        sample.athlete_id(), fermoDaSecondi, sample.latitude(), sample.longitude(),sample.heart_rate());
 
                 AllarmeNotifier.invia(messaggio);
                 context.forward(record.withValue(messaggio));
