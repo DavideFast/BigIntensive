@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS running_samples (
   session_id UInt64,
   timestamp DateTime DEFAULT now(),
   heart_rate UInt8,
+  velocity DECIMAL(5, 2) DEFAULT 0.0,
   latitude DECIMAL(9, 6),
   longitude DECIMAL(9, 6),
   altitude DECIMAL(5, 2),

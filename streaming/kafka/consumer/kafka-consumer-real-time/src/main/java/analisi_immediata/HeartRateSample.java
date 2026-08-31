@@ -13,6 +13,5 @@ public record HeartRateSample(
          double temperature,
          int sample_id,
          long session_id,
-         double velocity,
          String event_type) {
 }
