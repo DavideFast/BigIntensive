@@ -42,14 +42,6 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
                 * Math.sin(dLon / 2) * Math.sin(dLon / 2);
         return 2 * RAGGIO_TERRA_M * Math.asin(Math.min(1.0, Math.sqrt(a)));
     } 
-    
-    public void flushBatch(long timestamp) {
-        if (!campioniDB.isEmpty()) {
-            System.out.printf("Flushing batch of %d samples to database at timestamp %d%n", campioniDB.size(), timestamp);
-            databaseBulkInsert(campioniDB, timestamp);
-            campioniDB.clear();
-        }
-    }
 
     private void databaseBulkInsert(List<HeartRateSample> samples, long timestamp) {
         String url = System.getenv("CLICKHOUSE_URL");
@@ -166,8 +158,10 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
             campioniDB.add(sample);
             System.out.println(campioniDB.size());
             if (campioniDB.size() >= MAX_CAMPIONI) {
+                List<HeartRateSample> batchToFlush = new ArrayList<>(campioniDB.subList(0, MAX_CAMPIONI));
                 System.out.printf("Raggiunto limite di %d campioni, invio batch al database%n", MAX_CAMPIONI);
-                flushBatch(context.currentStreamTimeMs());
+                campioniDB.subList(0, MAX_CAMPIONI).clear();
+                databaseBulkInsert(batchToFlush, context.currentStreamTimeMs());
             }
             if (campioniAnalisi.size() > MAX_CAMPIONI_ANALISI) {
                 campioniAnalisi.remove(0);
