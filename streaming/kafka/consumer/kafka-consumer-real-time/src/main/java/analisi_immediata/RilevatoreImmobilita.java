@@ -67,7 +67,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
                     String rawTimestamp = sample.timestamp();
                     OffsetDateTime odt = OffsetDateTime.parse(rawTimestamp);
                     String formattedTimestamp = odt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                    stmt.setInt(1, sample.sample_index());
+                    stmt.setInt(1, sample.sample_id());
                     stmt.setLong(2, sample.session_id());
                     stmt.setLong(3, sample.athlete_id());
                     stmt.setString(4, formattedTimestamp);
@@ -197,14 +197,14 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
         //Se non c'è uno stato precedente lo creo e esco
         StatoSessione precedente = leggiStato(chiave);
         if (precedente == null) {
-            salvaStato(chiave, new StatoSessione(sample.latitude(), sample.longitude(), sample.sample_index(), false));
+            salvaStato(chiave, new StatoSessione(sample.latitude(), sample.longitude(), sample.sample_id(), false));
             return;
         }
 
         // Calcolo lo spostamento tra la posizione precedente e quella dell'evento corrente
         double spostamento = distanzaMetri(precedente.latitudine(), precedente.longitudine(),sample.latitude(), sample.longitude());
         distanzaTotale += spostamento;
-        double velocitaTratto = spostamento / (sample.sample_index() - precedente.indice());
+        double velocitaTratto = spostamento / (sample.sample_id() - precedente.indice());
         velocitaMedia = velocitaMedia + velocitaTratto;
         velocitaMax = Math.max(velocitaMax, velocitaTratto);
         //System.out.printf("Atleta %s: spostamento %.2f m, velocità %.2f m/s, velocità media %.2f m/s, velocità max %.2f m/s, distanza totale %.2f m%n",
@@ -212,12 +212,12 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
 
         // Se lo spostamento è maggiore della soglia, aggiorno lo stato e non faccio altro
         if (spostamento > SOGLIA_MOVIMENTO_M) {
-            salvaStato(chiave, new StatoSessione(sample.latitude(), sample.longitude(), sample.sample_index(), false));
+            salvaStato(chiave, new StatoSessione(sample.latitude(), sample.longitude(), sample.sample_id(), false));
             return;
         }
 
         // Calcolo da quanto tempo l'atleta è fermo
-        int fermoDaSecondi = sample.sample_index() - precedente.indice();
+        int fermoDaSecondi = sample.sample_id() - precedente.indice();
         if (fermoDaSecondi >= SECONDI_IMMOBILE && !precedente.allarmeInviato() && sample.heart_rate_bpm() > 180) {
             salvaStato(chiave, new StatoSessione(precedente.latitudine(), precedente.longitudine(),precedente.indice(), true));
 
