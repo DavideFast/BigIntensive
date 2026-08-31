@@ -11,11 +11,9 @@ export function createDbPool() {
   });
 }
 
-const clickhouseHost = process.env.CLICKHOUSE_HOST || "localhost";
+const clickhouseHost = process.env.CLICKHOUSE_HOST || "clickhouse";
 const clickhousePort = process.env.CLICKHOUSE_PORT || "8123";
-const clickhouseUrl = /^https?:\/\//i.test(clickhouseHost)
-  ? clickhouseHost
-  : `http://${clickhouseHost}:${clickhousePort}`;
+const clickhouseUrl = /^https?:\/\//i.test(clickhouseHost) ? clickhouseHost : `http://${clickhouseHost}:${clickhousePort}`;
 
 export const createClickhouseClient = createClient({
   url: clickhouseUrl,
