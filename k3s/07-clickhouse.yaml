@@ -491,6 +491,7 @@ data:
       altitude DECIMAL(5, 2),
       temperature DECIMAL(4, 2),
       cadence UInt8,
+      velocity DECIMAL(5, 2) DEFAULT 0.0,
       event_type String,
       created_at DateTime DEFAULT now()
     ) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/bigintensive/running_samples', '{replica}')
@@ -507,6 +508,7 @@ data:
       longitude DECIMAL(9, 6),
       altitude DECIMAL(5, 2),
       temperature DECIMAL(4, 2),
+      velocity DECIMAL(5, 2) DEFAULT 0.0,
       cadence UInt8,
       event_type String,
       created_at DateTime DEFAULT now()
