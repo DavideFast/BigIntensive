@@ -82,7 +82,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
                 }
                 System.out.printf("Esecuzione batch di %d campioni nel database ClickHouse%n", samples.size());
                 stmt.executeBatch();
-                conn.commit();
+                //conn.commit();
             }
         } catch (java.sql.SQLException e) {
             System.err.println("Errore durante l'inserimento batch nel database: " + e.getMessage());
