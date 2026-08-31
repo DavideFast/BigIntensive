@@ -8,7 +8,7 @@ import org.apache.kafka.streams.processor.api.Record;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import analisi_immediata.StreamsAllarmi.StatoSessione;
+import analisi_immediata.ConsumerKafka.StatoSessione;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,8 +44,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
     @Override
     public void init(ProcessorContext<String, String> context) {
         this.context = context;
-        this.store = context.getStateStore(StreamsAllarmi.getNomeStore());
-        this.campioniAnalisi.clear();
+        this.store = context.getStateStore(ConsumerKafka.getNomeStore());
     }
 
     public void flushBatch(long timestamp) {

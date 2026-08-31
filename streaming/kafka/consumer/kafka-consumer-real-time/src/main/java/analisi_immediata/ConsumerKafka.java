@@ -13,7 +13,7 @@ import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
 /** Rilevamento immobilita con Kafka Streams: lo stato sopravvive a riavvii e rebalance. */
-public class StreamsAllarmi {
+public class ConsumerKafka {
 
     private static final String TOPIC_INGRESSO_PREDEFINITO = "heart-rate-events";
     private static final String NOME_STORE = "stato-sessioni";
