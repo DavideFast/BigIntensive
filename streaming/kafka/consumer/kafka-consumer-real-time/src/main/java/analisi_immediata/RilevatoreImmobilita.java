@@ -76,6 +76,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
                     stmt.addBatch();
                 }
                 stmt.executeBatch();
+                conn.commit();
             }
         } catch (java.sql.SQLException e) {
             System.err.println("Errore durante l'inserimento batch nel database: " + e.getMessage());
