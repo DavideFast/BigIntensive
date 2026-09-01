@@ -107,7 +107,7 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: bigintensive-config
-                  key: PORT
+                  key: BACKEND_PORT
             - name: KUBERNETES_NAMESPACE
               valueFrom:
                 fieldRef:
