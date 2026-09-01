@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 export default function PostgresConnectionPage() {
   const [rows, setRows] = useState([]);
+  const [indice, setIndice] = useState(0);
 
   useEffect(() => {
     const url = "/api/v1/readPostgresql";
@@ -19,12 +20,14 @@ export default function PostgresConnectionPage() {
         console.log("Dati letti da PostgreSQL:", data);
         console.log("Dati letti da PostgreSQL:", data.data);
         console.log("Dati letti da PostgreSQL:", data.data[0].struttura_allenamento.esercizi);
-        var datiEstratti = data.data[0].struttura_allenamento.esercizi.map((row) => {
-          return {
-            struttura: row.nome + " " + row.serie + "x" + row.ripetizioni ? row.ripetizioni : row.durata_secondi + " rec. " + row.recupero_secondi + "s",
-          };
-        });
-        setRows(datiEstratti || []);
+        const arrayData = data.length > 0 ? data.data : [];
+        for (let i = 0; i < arrayData.length; i++)
+          arrayData[i] = data.data[i].struttura_allenamento.esercizi.map((row) => {
+            return {
+              struttura: row.nome + " " + row.serie + "x" + row.ripetizioni ? row.ripetizioni : row.durata_secondi + " rec. " + row.recupero_secondi + "s",
+            };
+          });
+        setRows(arrayData || []);
       })
       .catch((err) => {
         console.error("Errore nel fetch dei dati degli allenamenti:", err);
@@ -36,7 +39,22 @@ export default function PostgresConnectionPage() {
       <h2>Esempio di allenamento</h2>
       <p className="panel-subtitle">Allenamento recente</p>
       <div className="table-wrap workouts-wrap">
-        {rows.length > 0 ? (
+        <Select
+          value={indice}
+          onChange={(e) => {
+            const selectedIndex = parseInt(e.target.value, 10);
+            if (!isNaN(selectedIndex)) {
+              setIndice(selectedIndex);
+            }
+          }}
+        >
+          {rows.map((row, index) => (
+            <MenuItem key={index} value={index}>
+              {row.struttura}
+            </MenuItem>
+          ))}
+        </Select>
+        {rows[indice] ? (
           <table className="table workouts-table">
             <thead>
               <tr>
@@ -44,7 +62,7 @@ export default function PostgresConnectionPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, index) => (
+              {rows[indice].map((row, index) => (
                 <tr key={index}>
                   <td>{row.struttura}</td>
                 </tr>
