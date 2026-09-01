@@ -32,6 +32,8 @@ spec:
                 configMapKeyRef:
                   name: bigintensive-config
                   key: POSTGRES_HOST
+            - name: CLEAR_EXISTING_DATA
+              value: "true"
             - name: POSTGRES_PORT
               valueFrom:
                 configMapKeyRef:
