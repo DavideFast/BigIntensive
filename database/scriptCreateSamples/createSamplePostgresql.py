@@ -1292,9 +1292,9 @@ def insert_anthropometric_values(
 
     batch = []
 
-    with conn.cursor() as cur:
+    with conn.cursor() as read_cur, conn.cursor() as write_cur:
 
-        cur.execute(
+        read_cur.execute(
             """
             SELECT
                 id,
@@ -1309,7 +1309,7 @@ def insert_anthropometric_values(
 
         while True:
 
-            rows = cur.fetchmany(
+            rows = read_cur.fetchmany(
                 BATCH_SIZE
             )
 
@@ -1347,7 +1347,7 @@ def insert_anthropometric_values(
                     if len(batch) >= BATCH_SIZE:
 
                         copy_anthropometry(
-                            cur,
+                            write_cur,
                             batch
                         )
 
@@ -1366,7 +1366,7 @@ def insert_anthropometric_values(
         if batch:
 
             copy_anthropometry(
-                cur,
+                write_cur,
                 batch
             )
 
