@@ -1428,9 +1428,9 @@ def insert_workouts(conn):
     total_workouts = 0
     processed = 0
 
-    with conn.cursor() as cur:
+    with conn.cursor() as read_cur, conn.cursor() as write_cur:
 
-        cur.execute(
+        read_cur.execute(
             """
             SELECT
                 id,
@@ -1443,7 +1443,7 @@ def insert_workouts(conn):
 
         while True:
 
-            rows = cur.fetchmany(
+            rows = read_cur.fetchmany(
                 BATCH_SIZE
             )
 
@@ -1521,7 +1521,7 @@ def insert_workouts(conn):
                     if len(batch) >= BATCH_SIZE:
 
                         copy_workouts(
-                            cur,
+                            write_cur,
                             batch
                         )
 
@@ -1549,7 +1549,7 @@ def insert_workouts(conn):
         if batch:
 
             copy_workouts(
-                cur,
+                write_cur,
                 batch
             )
 
