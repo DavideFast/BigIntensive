@@ -19,7 +19,7 @@ export default function PostgresConnectionPage() {
         console.log("Dati letti da PostgreSQL:", data);
         var datiEstratti = data.data.map((row) => {
           return {
-            struttura: row.struttura_allenamento,
+            struttura: row.struttura_allenamento.struttura.esercizi,
           };
         });
         setRows(datiEstratti || []);
