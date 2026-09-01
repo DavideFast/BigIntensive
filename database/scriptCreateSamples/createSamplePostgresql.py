@@ -437,6 +437,10 @@ CARICHI_BASE = {
     "Push down": (15, 60),
     "French press": (15, 50),
     "Dip alle parallele": (0, 20),
+
+    "Crunch": (0, 10),
+    "Russian twist": (0, 16),
+    "Leg raise": (0, 10),
 }
 
 
