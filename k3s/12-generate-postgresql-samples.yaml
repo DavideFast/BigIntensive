@@ -32,8 +32,6 @@ spec:
                 configMapKeyRef:
                   name: bigintensive-config
                   key: POSTGRES_HOST
-            - name: CLEAR_EXISTING_DATA
-              value: "true"
             - name: POSTGRES_PORT
               valueFrom:
                 configMapKeyRef:
@@ -86,7 +84,7 @@ spec:
             - name: MAX_WORKOUTS
               value: "120"
             - name: CLEAR_EXISTING_DATA
-              value: "false"
+              value: "true"
           resources:
             requests:
               cpu: "100m"
