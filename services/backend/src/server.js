@@ -236,6 +236,23 @@ app.post("/api/v1/startELTProcess", async (req, res) => {
       body: [{ op: "add", path: "/spec/suspend", value: false }],
     });
 
+    // I job manuali bypassano concurrencyPolicy del CronJob: evitiamo run sovrapposti.
+    const existingJobs = await k8sBatchApi.listNamespacedJob({
+      namespace: kubernetesNamespace,
+      labelSelector: `app=${eltCronJobName}`,
+    });
+
+    const runningJob = existingJobs.items.find(
+      (job) => (job.status?.active || 0) > 0
+    );
+
+    if (runningJob) {
+      return res.status(200).json({
+        success: true,
+        message: `Processo ELT gia' in esecuzione (${runningJob.metadata.name})`,
+      });
+    }
+
     await k8sBatchApi.createNamespacedJob({
       namespace: kubernetesNamespace,
       body: {
@@ -245,7 +262,11 @@ app.post("/api/v1/startELTProcess", async (req, res) => {
           generateName: `${eltCronJobName}-manual-`,
           labels: cronJob.metadata?.labels,
         },
-        spec: cronJob.spec.jobTemplate.spec,
+        spec: {
+          ...cronJob.spec.jobTemplate.spec,
+          // I job con generateName non rientrano negli history limit del CronJob.
+          ttlSecondsAfterFinished: 1800,
+        },
       },
     });
 
