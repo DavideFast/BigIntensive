@@ -18,7 +18,8 @@ export default function PostgresConnectionPage() {
       .then((data) => {
         console.log("Dati letti da PostgreSQL:", data);
         console.log("Dati letti da PostgreSQL:", data.data);
-        var datiEstratti = data[0].data.struttura_allenamento.esercizi.map((row) => {
+        console.log("Dati letti da PostgreSQL:", data.data[0].struttura_allenamento.esercizi);
+        var datiEstratti = data.data[0].struttura_allenamento.esercizi.map((row) => {
           return {
             struttura: row.nome + " " + row.serie + "x" + row.ripetizioni + " rec. " + row.recupero + "s",
           };
