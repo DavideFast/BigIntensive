@@ -38,13 +38,14 @@ pre_deploy_cleanup() {
     echo -e "${BLUE}Pre-deploy cleanup${NC}"
 
     if [ "$RESET_NAMESPACE" = "true" ]; then
-        echo "RESET_NAMESPACE=true -> deleting namespace $NAMESPACE"
+        echo "RESET_NAMESPACE=true -> deleting PVCs and namespace $NAMESPACE"
+        $KUBECTL_CMD delete pvc -n "$NAMESPACE" --all --ignore-not-found=true
         $KUBECTL_CMD delete namespace "$NAMESPACE" --ignore-not-found=true
         while $KUBECTL_CMD get namespace "$NAMESPACE" >/dev/null 2>&1; do
             echo "waiting namespace delete..."
             sleep 2
         done
-        echo -e "${GREEN}✓ Namespace cleanup completed${NC}\n"
+        echo -e "${GREEN}✓ Namespace and persistent data cleanup completed${NC}\n"
         return
     fi
 
