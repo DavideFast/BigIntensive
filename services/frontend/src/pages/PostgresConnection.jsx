@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Select, MenuItem } from "@mui/material";
 
 export default function PostgresConnectionPage() {
   const [rows, setRows] = useState([]);
@@ -50,7 +51,7 @@ export default function PostgresConnectionPage() {
         >
           {rows.map((row, index) => (
             <MenuItem key={index} value={index}>
-              {row.struttura}
+              Allenamento n{index + 1}:
             </MenuItem>
           ))}
         </Select>
