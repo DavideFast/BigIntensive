@@ -1,5 +1,6 @@
 import random
 import json
+import os
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -12,18 +13,18 @@ from faker import Faker
 # ============================================================
 
 DB_CONFIG = {
-    "host": "localhost",
-    "port": 5432,
-    "dbname": "nome_database",
-    "user": "postgres",
-    "password": "password",
+    "host": os.getenv("POSTGRES_HOST", "localhost"),
+    "port": int(os.getenv("POSTGRES_PORT", "5432")),
+    "dbname": os.getenv("POSTGRES_DB", "bigintensive"),
+    "user": os.getenv("POSTGRES_USER", "postgres"),
+    "password": os.getenv("POSTGRES_PASSWORD", "postgres"),
 }
 
 # ------------------------------------------------------------
 # NUMERO ATLETI
 # ------------------------------------------------------------
 
-NUM_ATHLETES = 50_000
+NUM_ATHLETES = int(os.getenv("NUM_ATHLETES", "50000"))
 
 
 # ------------------------------------------------------------
@@ -42,8 +43,8 @@ MAX_ANTHROPOMETRIC = 8
 # di allenamenti nel periodo 2021-2026.
 # ------------------------------------------------------------
 
-MIN_WORKOUTS = 750
-MAX_WORKOUTS = 1500
+MIN_WORKOUTS = int(os.getenv("MIN_WORKOUTS", "750"))
+MAX_WORKOUTS = int(os.getenv("MAX_WORKOUTS", "1500"))
 
 
 # ------------------------------------------------------------
@@ -92,7 +93,7 @@ SEED = 42
 # in riepilogo_corse e training_status_results.
 # ------------------------------------------------------------
 
-CLEAR_EXISTING_DATA = False
+CLEAR_EXISTING_DATA = os.getenv("CLEAR_EXISTING_DATA", "false").lower() == "true"
 
 
 # ============================================================
