@@ -73,6 +73,7 @@ bash "$SCRIPT_DIR/install-spark-operator.sh"
 # Apply in order
 apply_manifest "$SCRIPT_DIR/00-namespace-and-secrets.yaml" "Namespace, Secrets & ConfigMaps"
 apply_manifest "$SCRIPT_DIR/01-postgresql.yaml" "PostgreSQL Database"
+apply_manifest "$SCRIPT_DIR/12-generate-postgresql-samples.yaml" "PostgreSQL Sample Generator"
 apply_manifest "$SCRIPT_DIR/02-kafka.yaml" "Kafka & Kafka UI"
 apply_manifest "$SCRIPT_DIR/02b-kafka-topics.yaml" "Kafka Topic Bootstrap Job"
 apply_manifest "$SCRIPT_DIR/03-backend.yaml" "Backend"
