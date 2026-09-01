@@ -109,6 +109,20 @@ def create_raw_table(ch):
 
 def get_last_allenamento_id(ch):
 
+    # La tabella finale viene creata da script.sql, quindi al primo run non esiste ancora.
+    exists = ch.query(
+        """
+        SELECT count()
+        FROM system.tables
+        WHERE database = 'bigintensive'
+          AND name = 'allenamenti'
+        """
+    )
+
+    if not exists.result_rows or exists.result_rows[0][0] == 0:
+        print("Tabella bigintensive.allenamenti non ancora presente: checkpoint = 0.")
+        return 0
+
     result = ch.query(
         """
         SELECT max(allenamento_id)
