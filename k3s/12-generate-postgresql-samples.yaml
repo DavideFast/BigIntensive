@@ -78,11 +78,11 @@ spec:
                   name: bigintensive-secrets
                   key: POSTGRES_PASSWORD
             - name: NUM_ATHLETES
-              value: "10"
+              value: "1000"
             - name: MIN_WORKOUTS
-              value: "5"
+              value: "100"
             - name: MAX_WORKOUTS
-              value: "10"
+              value: "120"
             - name: CLEAR_EXISTING_DATA
               value: "false"
           resources:
