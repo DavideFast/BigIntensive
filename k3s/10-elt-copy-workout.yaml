@@ -24,7 +24,7 @@ spec:
           containers:
             - name: elt-copy-workout
               image: davidefast/elt-mirror-postgresql-to-clickhouse:latest
-              imagePullPolicy: IfNotPresent
+              imagePullPolicy: Always
               env:
                 - name: POSTGRES_HOST
                   valueFrom:

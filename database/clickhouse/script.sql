@@ -64,76 +64,63 @@ INSERT INTO bigintensive.allenamenti
 )
 
 SELECT
-    expanded.allenamento_id,
+    r.allenamento_id,
 
-    expanded.athlete_id,
+    r.athlete_id,
 
-    expanded.data_allenamento,
+    r.data_allenamento,
 
-    expanded.exercise.1 AS nome_esercizio,
+    serie.1 AS nome_esercizio,
 
-    serie_numero AS serie_allenamento,
+    serie.2 AS serie_allenamento,
 
     toUInt8(
         JSONExtractUInt(
-            expanded.exercise.2,
+            serie.3,
             'ripetizioni'
         )
     ) AS ripetizioni_allenamento,
 
     toUInt8(
         JSONExtractUInt(
-            expanded.exercise.2,
+            serie.3,
             'recupero_secondi'
         )
     ) AS recupero_allenamento,
 
     toDecimal32(
         JSONExtractFloat(
-            expanded.exercise.2,
+            serie.3,
             'carico_kg'
         ),
         2
     ) AS peso_allenamento,
 
-    expanded.created_at
+    r.created_at
 
-FROM
-(
-    SELECT
-        r.allenamento_id,
-        r.athlete_id,
-        r.data_allenamento,
-        r.created_at,
-        exercise
-    FROM bigintensive.allenamenti_raw AS r
+FROM bigintensive.allenamenti_raw AS r
 
-    ARRAY JOIN
+ARRAY JOIN
+    arrayFlatten(
         arrayMap(
-            x ->
-            (
-                JSONExtractString(x, 'nome'),
-
-                x,
-
-                JSONExtractUInt(
-                    x,
-                    'serie'
+            exercise -> arrayMap(
+                serie_numero ->
+                (
+                    JSONExtractString(exercise, 'nome'),
+                    serie_numero,
+                    exercise
+                ),
+                range(
+                    1,
+                    toUInt64(JSONExtractUInt(exercise, 'serie')) + 1
                 )
             ),
-
             JSONExtractArrayRaw(
                 r.struttura_allenamento,
                 'esercizi'
             )
-        ) AS exercise
-) AS expanded
-
-ARRAY JOIN
-    range(
-        1,
-        toUInt64(expanded.exercise.3) + 1
-    ) AS serie_numero;
+        )
+    ) AS serie;
 
 
 -- ============================================================
