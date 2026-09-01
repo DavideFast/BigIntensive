@@ -34,7 +34,24 @@ export default function PostgresConnectionPage() {
       <h2>Esempio di allenamento</h2>
       <p className="panel-subtitle">Allenamento recente</p>
       <div className="table-wrap workouts-wrap">
-        <p>{JSON.stringify(rows)}</p>
+        {rows.length > 0 ? (
+          <table className="table workouts-table">
+            <thead>
+              <tr>
+                <th>Struttura allenamento</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, index) => (
+                <tr key={index}>
+                  <td>{row.struttura}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p>Nessun allenamento disponibile.</p>
+        )}
       </div>
       <button
         onClick={() => {
