@@ -14,6 +14,13 @@ rules:
     resources: ["deployments"]
     resourceNames: ["smartwatch-simulator"]
     verbs: ["get", "patch"]
+  - apiGroups: ["batch"]
+    resources: ["cronjobs"]
+    resourceNames: ["elt-copy-workout"]
+    verbs: ["get", "patch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "deletecollection"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -100,7 +107,7 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: bigintensive-config
-                  key: BACKEND_PORT
+                  key: PORT
             - name: KUBERNETES_NAMESPACE
               valueFrom:
                 fieldRef:

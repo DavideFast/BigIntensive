@@ -6,7 +6,7 @@ import { createSystemRouter } from "./routes/systemRoutes.js";
 import { createServerContext } from "./bootstrap/serverContext.js";
 import { createClickhouseClient } from "./db/pool.js";
 import { Kafka } from "kafkajs";
-import { AppsV1Api, KubeConfig } from "@kubernetes/client-node";
+import { AppsV1Api, BatchV1Api, KubeConfig } from "@kubernetes/client-node";
 
 // ============================ CONFIGURAZIONE ===============================
 
@@ -14,7 +14,9 @@ import { AppsV1Api, KubeConfig } from "@kubernetes/client-node";
 const kubeConfig = new KubeConfig();
 kubeConfig.loadFromDefault();
 const k8sApi = kubeConfig.makeApiClient(AppsV1Api);
+const k8sBatchApi = kubeConfig.makeApiClient(BatchV1Api);
 const kubernetesNamespace = process.env.KUBERNETES_NAMESPACE || "bigintensive";
+const eltCronJobName = "elt-copy-workout";
 
 // Configurazione del produttore Kafka
 const kafkaBrokers = String(process.env.KAFKA_BOOTSTRAP_SERVERS || "kafka:19092")
@@ -223,15 +225,33 @@ app.post("/api/v1/stopSmartWatchPodSimulator", async (req, res) => {
 
 app.post("/api/v1/startELTProcess", async (req, res) => {
   try {
-    const patch = [{ op: "replace", path: "/spec/replicas", value: 1 }];
-    await k8sApi.patchNamespacedDeployment({
-      name: "elt-process",
+    const cronJob = await k8sBatchApi.readNamespacedCronJob({
+      name: eltCronJobName,
       namespace: kubernetesNamespace,
-      body: patch,
     });
+
+    await k8sBatchApi.patchNamespacedCronJob({
+      name: eltCronJobName,
+      namespace: kubernetesNamespace,
+      body: [{ op: "replace", path: "/spec/suspend", value: false }],
+    });
+
+    await k8sBatchApi.createNamespacedJob({
+      namespace: kubernetesNamespace,
+      body: {
+        apiVersion: "batch/v1",
+        kind: "Job",
+        metadata: {
+          generateName: `${eltCronJobName}-manual-`,
+          labels: cronJob.metadata?.labels,
+        },
+        spec: cronJob.spec.jobTemplate.spec,
+      },
+    });
+
     res.status(200).json({
       success: true,
-      message: "Processo ELT avviato",
+      message: "Processo ELT avviato immediatamente",
     });
   } catch (error) {
     const message = getKubernetesErrorMessage(error);
@@ -245,11 +265,15 @@ app.post("/api/v1/startELTProcess", async (req, res) => {
 
 app.post("/api/v1/stopELTProcess", async (req, res) => {
   try {
-    const patch = [{ op: "replace", path: "/spec/replicas", value: 0 }];
-    await k8sApi.patchNamespacedDeployment({
-      name: "elt-process",
+    await k8sBatchApi.patchNamespacedCronJob({
+      name: eltCronJobName,
       namespace: kubernetesNamespace,
-      body: patch,
+      body: [{ op: "replace", path: "/spec/suspend", value: true }],
+    });
+    await k8sBatchApi.deleteCollectionNamespacedJob({
+      namespace: kubernetesNamespace,
+      labelSelector: "app=elt-copy-workout",
+      propagationPolicy: "Background",
     });
     res.status(200).json({
       success: true,
