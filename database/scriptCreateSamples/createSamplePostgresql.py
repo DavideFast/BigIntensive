@@ -476,13 +476,13 @@ def safe_date(year, month, day):
 
 def random_birth_date():
 
-    min_birth = date(
+    min_birth = safe_date(
         END_DATE.year - 55,
         END_DATE.month,
         END_DATE.day
     )
 
-    max_birth = date(
+    max_birth = safe_date(
         END_DATE.year - 18,
         END_DATE.month,
         END_DATE.day
