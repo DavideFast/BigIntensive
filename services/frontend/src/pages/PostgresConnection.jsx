@@ -17,7 +17,12 @@ export default function PostgresConnectionPage() {
       })
       .then((data) => {
         console.log("Dati letti da PostgreSQL:", data);
-        setRows(data || []);
+        var datiEstratti = data.data.map((row) => {
+          return {
+            struttura: row.struttura_allenamento,
+          };
+        });
+        setRows(datiEstratti || []);
       })
       .catch((err) => {
         console.error("Errore nel fetch dei dati degli allenamenti:", err);
