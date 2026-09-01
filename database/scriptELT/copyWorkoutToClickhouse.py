@@ -1,10 +1,23 @@
 import time
 import json
 import os
+import signal
 from datetime import date, datetime, time as dtime
 
 import psycopg
 import clickhouse_connect
+
+
+# ============================================================
+# ARRESTO CONTROLLATO
+# ============================================================
+
+class GracefulStop(Exception):
+    """Sollevata alla ricezione di SIGTERM (stop del Job da Kubernetes)."""
+
+
+def handle_sigterm(signum, frame):
+    raise GracefulStop()
 
 
 # ============================================================
@@ -442,6 +455,8 @@ def sync_allenamenti(
 
 def main():
 
+    signal.signal(signal.SIGTERM, handle_sigterm)
+
     start_time = time.time()
 
     print()
@@ -517,6 +532,17 @@ def main():
 
         print(
             "Lo script è stato interrotto."
+        )
+
+    except GracefulStop:
+
+        print()
+        print("=" * 70)
+        print("ARRESTO RICHIESTO (SIGTERM)")
+        print("=" * 70)
+
+        print(
+            "Job fermato dall'esterno: i batch già inseriti restano validi."
         )
 
     except Exception as e:

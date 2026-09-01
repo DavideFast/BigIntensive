@@ -16,7 +16,8 @@ export default function PostgresConnectionPage() {
         return data;
       })
       .then((data) => {
-        setRows(data.data || []);
+        console.log("Dati letti da PostgreSQL:", data);
+        setRows(data || []);
       })
       .catch((err) => {
         console.error("Errore nel fetch dei dati degli allenamenti:", err);
@@ -28,7 +29,7 @@ export default function PostgresConnectionPage() {
       <h2>Esempio di allenamento</h2>
       <p className="panel-subtitle">Allenamento recente</p>
       <div className="table-wrap workouts-wrap">
-        <p>{rows}</p>
+        <p>{JSON.stringify(rows)}</p>
       </div>
       <button
         onClick={() => {
