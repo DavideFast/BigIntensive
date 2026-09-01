@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Select, MenuItem } from "@mui/material";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
 
 export default function PostgresConnectionPage() {
   const [rows, setRows] = useState([]);
@@ -21,7 +22,7 @@ export default function PostgresConnectionPage() {
         console.log("Dati letti da PostgreSQL:", data);
         console.log("Dati letti da PostgreSQL:", data.data);
         console.log("Dati letti da PostgreSQL:", data.data[0].struttura_allenamento.esercizi);
-        const arrayData = data.length > 0 ? data.data : [];
+        const arrayData = data.data.length > 0 ? new Array(data.data.length) : [];
         for (let i = 0; i < arrayData.length; i++)
           arrayData[i] = data.data[i].struttura_allenamento.esercizi.map((row) => {
             return {
