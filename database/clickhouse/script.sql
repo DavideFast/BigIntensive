@@ -64,66 +64,75 @@ INSERT INTO bigintensive.allenamenti
 )
 
 SELECT
-    r.allenamento_id,
+    expanded.allenamento_id,
 
-    r.athlete_id,
+    expanded.athlete_id,
 
-    r.data_allenamento,
+    expanded.data_allenamento,
 
-    exercise.1 AS nome_esercizio,
+    expanded.exercise.1 AS nome_esercizio,
 
     serie_numero AS serie_allenamento,
 
     toUInt8(
         JSONExtractUInt(
-            exercise.2,
+            expanded.exercise.2,
             'ripetizioni'
         )
     ) AS ripetizioni_allenamento,
 
     toUInt8(
         JSONExtractUInt(
-            exercise.2,
+            expanded.exercise.2,
             'recupero_secondi'
         )
     ) AS recupero_allenamento,
 
     toDecimal32(
         JSONExtractFloat(
-            exercise.2,
+            expanded.exercise.2,
             'carico_kg'
         ),
         2
     ) AS peso_allenamento,
 
-    r.created_at
+    expanded.created_at
 
-FROM bigintensive.allenamenti_raw AS r
+FROM
+(
+    SELECT
+        r.allenamento_id,
+        r.athlete_id,
+        r.data_allenamento,
+        r.created_at,
+        exercise
+    FROM bigintensive.allenamenti_raw AS r
 
-ARRAY JOIN
-    arrayMap(
-        x ->
-        (
-            JSONExtractString(x, 'nome'),
+    ARRAY JOIN
+        arrayMap(
+            x ->
+            (
+                JSONExtractString(x, 'nome'),
 
-            x,
-
-            JSONExtractUInt(
                 x,
-                'serie'
-            )
-        ),
 
-        JSONExtractArrayRaw(
-            r.struttura_allenamento,
-            'esercizi'
-        )
-    ) AS exercise
+                JSONExtractUInt(
+                    x,
+                    'serie'
+                )
+            ),
+
+            JSONExtractArrayRaw(
+                r.struttura_allenamento,
+                'esercizi'
+            )
+        ) AS exercise
+) AS expanded
 
 ARRAY JOIN
     range(
         1,
-        toUInt64(exercise.3) + 1
+        toUInt64(expanded.exercise.3) + 1
     ) AS serie_numero;
 
 
