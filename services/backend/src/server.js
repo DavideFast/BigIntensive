@@ -70,6 +70,7 @@ app.get("/api/v1/readPostgresql", (req, res) => {
       console.error("Errore query PostgreSQL:", err.message);
       return res.status(500).json({ success: false, error: err.message });
     }
+    console.log("Dati letti da PostgreSQL:", result.rows);
     res.json({ success: true, count: result.rows.length, data: result.rows });
   });
 });
@@ -242,9 +243,7 @@ app.post("/api/v1/startELTProcess", async (req, res) => {
       labelSelector: `app=${eltCronJobName}`,
     });
 
-    const runningJob = existingJobs.items.find(
-      (job) => (job.status?.active || 0) > 0
-    );
+    const runningJob = existingJobs.items.find((job) => (job.status?.active || 0) > 0);
 
     if (runningJob) {
       return res.status(200).json({
