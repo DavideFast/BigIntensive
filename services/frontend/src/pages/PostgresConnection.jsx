@@ -26,7 +26,7 @@ export default function PostgresConnectionPage() {
         for (let i = 0; i < arrayData.length; i++)
           arrayData[i] = data.data[i].struttura_allenamento.esercizi.map((row) => {
             return {
-              struttura: row.nome + " " + row.serie + "x" + row.ripetizioni ? row.ripetizioni : row.durata_secondi + " rec. " + row.recupero_secondi + "s",
+              struttura: row.nome + " " + row.serie + "x" + (row.ripetizioni ? row.ripetizioni : row.durata_secondi) + " rec. " + row.recupero_secondi + "s",
             };
           });
         setRows(arrayData || []);
@@ -52,7 +52,7 @@ export default function PostgresConnectionPage() {
         >
           {rows.map((row, index) => (
             <MenuItem key={index} value={index}>
-              Allenamento n{index + 1}:
+              Allenamento n°{index + 1}
             </MenuItem>
           ))}
         </Select>
