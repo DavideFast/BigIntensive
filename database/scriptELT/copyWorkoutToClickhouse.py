@@ -1,7 +1,7 @@
 import time
 import json
 import os
-from datetime import datetime
+from datetime import date, datetime, time as dtime
 
 import psycopg
 import clickhouse_connect
@@ -171,6 +171,25 @@ def json_to_string(value):
 
 
 # ============================================================
+# NORMALIZZAZIONE DATE → DATETIME
+# ============================================================
+
+def to_datetime(value):
+
+    # Le colonne ClickHouse sono DateTime: un datetime.date puro non ha .timestamp().
+    if value is None:
+        return datetime(1970, 1, 1)
+
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None)
+
+    if isinstance(value, date):
+        return datetime.combine(value, dtime.min)
+
+    return value
+
+
+# ============================================================
 # INSERT BATCH CLICKHOUSE
 # ============================================================
 
@@ -324,11 +343,11 @@ def sync_allenamenti(
 
                         int(athlete_id),
 
-                        workout_date,
+                        to_datetime(workout_date),
 
                         json_string,
 
-                        created_at
+                        to_datetime(created_at)
                     )
                 )
 
