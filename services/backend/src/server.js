@@ -233,7 +233,7 @@ app.post("/api/v1/startELTProcess", async (req, res) => {
     await k8sBatchApi.patchNamespacedCronJob({
       name: eltCronJobName,
       namespace: kubernetesNamespace,
-      body: [{ op: "replace", path: "/spec/suspend", value: false }],
+      body: [{ op: "add", path: "/spec/suspend", value: false }],
     });
 
     await k8sBatchApi.createNamespacedJob({
@@ -268,7 +268,7 @@ app.post("/api/v1/stopELTProcess", async (req, res) => {
     await k8sBatchApi.patchNamespacedCronJob({
       name: eltCronJobName,
       namespace: kubernetesNamespace,
-      body: [{ op: "replace", path: "/spec/suspend", value: true }],
+      body: [{ op: "add", path: "/spec/suspend", value: true }],
     });
     await k8sBatchApi.deleteCollectionNamespacedJob({
       namespace: kubernetesNamespace,
