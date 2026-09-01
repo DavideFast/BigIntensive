@@ -1,6 +1,7 @@
 import random
 import json
 import os
+from calendar import monthrange
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -460,6 +461,15 @@ def random_date(start, end):
     )
 
 
+def safe_date(year, month, day):
+
+    try:
+        return date(year, month, day)
+    except ValueError:
+        last_day = monthrange(year, month)[1]
+        return date(year, month, min(day, last_day))
+
+
 # ============================================================
 # DATA DI NASCITA
 # ============================================================
@@ -573,7 +583,7 @@ def generate_anthropometric_values(
 
     first_date = max(
         START_DATE,
-        date(
+        safe_date(
             birth_date.year + 18,
             birth_date.month,
             birth_date.day
@@ -1454,7 +1464,7 @@ def insert_workouts(conn):
 
                 training_start = max(
                     START_DATE,
-                    date(
+                    safe_date(
                         birth_date.year + 18,
                         birth_date.month,
                         birth_date.day
