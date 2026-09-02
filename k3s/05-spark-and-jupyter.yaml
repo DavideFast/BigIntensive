@@ -186,3 +186,6 @@ spec:
     - port: 7078
       targetPort: 7078
       name: spark-driver
+    - port: 7079
+      targetPort: 7079
+      name: spark-blockmgr
