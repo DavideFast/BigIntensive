@@ -145,13 +145,14 @@ spec:
           volumeMounts:
             - name: notebooks
               mountPath: /root/work
+          # Il pod ospita anche la JVM del driver Spark in client mode: sotto i 4Gi viene OOMKilled.
           resources:
             requests:
-              memory: "1Gi"
+              memory: "2Gi"
               cpu: "500m"
             limits:
-              memory: "2Gi"
-              cpu: "1000m"
+              memory: "5Gi"
+              cpu: "2000m"
           livenessProbe:
             tcpSocket:
               port: 8888
