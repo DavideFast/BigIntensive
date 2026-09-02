@@ -16,7 +16,7 @@ SPARK_MASTER=${SPARK_MASTER:-"k8s://https://kubernetes.default:443"}
 SPARK_NAMESPACE=${SPARK_NAMESPACE:-"bigintensive"}
 SPARK_SERVICE_ACCOUNT=${SPARK_SERVICE_ACCOUNT:-"spark"}
 SPARK_CONTAINER_IMAGE=${SPARK_CONTAINER_IMAGE:-"apache/spark:3.5.3"}
-SPARK_DRIVER_HOST=${SPARK_DRIVER_HOST:-"jupyter.bigintensive.svc.cluster.local"}
+SPARK_DRIVER_HOST=${SPARK_DRIVER_HOST:-"$(hostname -i | awk '{print $1}')"}
 SPARK_DRIVER_PORT=${SPARK_DRIVER_PORT:-"4040"}
 SPARK_DRIVER_MEMORY=${SPARK_DRIVER_MEMORY:-"2g"}
 SPARK_EXECUTOR_MEMORY=${SPARK_EXECUTOR_MEMORY:-"2g"}
@@ -92,5 +92,5 @@ echo ""
 echo "✅ Job submitted successfully!"
 echo ""
 echo "View logs:"
-echo "  - Spark Web UI: http://spark-master:8080"
+echo "  - Spark Web UI: http://$SPARK_DRIVER_HOST:4040"
 echo "  - Application logs: spark-submit output"
