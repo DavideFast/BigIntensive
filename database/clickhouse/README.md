@@ -24,3 +24,15 @@ SELECT TABLES FROM <nome_database>;
 ```sql
 SELECT * FROM <nome_database>.<nome_tabella>;
 ```
+
+## Struttura del database Clickhouse
+
+Ogni tabella nel database Clickhouse è progettata per memorizzare dati specifici relativi alle corse degli utenti. La struttura delle tabelle è ottimizzata per l'analisi dei dati in tempo reale, consentendo query rapide e efficienti.
+
+Le tabelle principali nel database Clickhouse includono:
+
+- **allenamenti**: memorizza i dati relativi agli allenamenti degli utenti, inclusi i parametri di frequenza cardiaca, velocità e distanza percorsa.
+- **allenamenti_raw**: memorizza i dati grezzi degli allenamenti degli utenti, inclusi i parametri di frequenza cardiaca, velocità e distanza percorsa, senza alcuna elaborazione o aggregazione.
+- **running_samples**: memorizza i campioni di dati relativi alle corse degli utenti, inclusi i parametri di frequenza cardiaca, velocità e distanza percorsa, raccolti durante le sessioni di allenamento.
+
+Per ogni tabella esiste la versione distribuita e la versione locale (.local).
