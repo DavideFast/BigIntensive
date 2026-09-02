@@ -98,9 +98,6 @@ spec:
           env:
             - name: SPARK_HOME
               value: /opt/spark
-            # I binding pyspark sono gia' nell'immagine Spark: li esponiamo invece di reinstallarli da PyPI.
-            - name: PYTHONPATH
-              value: /opt/spark/python:/opt/spark/python/lib/py4j-0.10.9.7-src.zip
             - name: POSTGRES_HOST
               valueFrom:
                 configMapKeyRef:
@@ -132,6 +129,14 @@ spec:
             - |
               echo "Installing Jupyter and dependencies..."
               pip install --no-cache-dir jupyter jupyterlab psycopg2-binary kafka-python pandas numpy
+              # Il nome dello zip py4j cambia tra le release di Spark: lo risolviamo a runtime.
+              PY4J=$(ls /opt/spark/python/lib/py4j-*-src.zip 2>/dev/null | head -1)
+              export PYTHONPATH="/opt/spark/python:$PY4J:$PYTHONPATH"
+              if ! python -c "import pyspark" 2>/dev/null; then
+                echo "PySpark non presente nell'immagine, installazione da PyPI..."
+                pip install --no-cache-dir pyspark==3.5.3
+              fi
+              python -c "import pyspark; print('PySpark', pyspark.__version__)"
               echo "Starting Jupyter Lab..."
               jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --notebook-dir=/root/work --NotebookApp.token=bigintensive
           volumeMounts:
