@@ -183,3 +183,6 @@ spec:
     - port: 8888
       targetPort: 8888
       name: jupyter
+    - port: 4040
+      targetPort: 4040
+      name: spark-driver

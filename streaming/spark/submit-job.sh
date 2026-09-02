@@ -12,7 +12,12 @@ echo "===================================================="
 echo ""
 
 # Configurazione Spark
-SPARK_MASTER=${SPARK_MASTER:-"spark://spark-master:7077"}
+SPARK_MASTER=${SPARK_MASTER:-"k8s://https://kubernetes.default:443"}
+SPARK_NAMESPACE=${SPARK_NAMESPACE:-"bigintensive"}
+SPARK_SERVICE_ACCOUNT=${SPARK_SERVICE_ACCOUNT:-"spark"}
+SPARK_CONTAINER_IMAGE=${SPARK_CONTAINER_IMAGE:-"apache/spark:3.5.3"}
+SPARK_DRIVER_HOST=${SPARK_DRIVER_HOST:-"jupyter.bigintensive.svc.cluster.local"}
+SPARK_DRIVER_PORT=${SPARK_DRIVER_PORT:-"4040"}
 SPARK_DRIVER_MEMORY=${SPARK_DRIVER_MEMORY:-"2g"}
 SPARK_EXECUTOR_MEMORY=${SPARK_EXECUTOR_MEMORY:-"2g"}
 SPARK_EXECUTOR_CORES=${SPARK_EXECUTOR_CORES:-"2"}
@@ -31,6 +36,8 @@ KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-"kafka:19092"}
 
 echo "Configuration:"
 echo "  Spark Master: $SPARK_MASTER"
+echo "  Spark Namespace: $SPARK_NAMESPACE"
+echo "  Driver Host: $SPARK_DRIVER_HOST:$SPARK_DRIVER_PORT"
 echo "  Driver Memory: $SPARK_DRIVER_MEMORY"
 echo "  Executor Memory: $SPARK_EXECUTOR_MEMORY"
 echo "  JDBC jars: $SPARK_JARS_DIR"
@@ -67,9 +74,15 @@ fi
 # Submit the job
 spark-submit \
     --master "$SPARK_MASTER" \
+    --deploy-mode client \
     --driver-memory "$SPARK_DRIVER_MEMORY" \
     --executor-memory "$SPARK_EXECUTOR_MEMORY" \
     --executor-cores "$SPARK_EXECUTOR_CORES" \
+    --conf "spark.kubernetes.namespace=$SPARK_NAMESPACE" \
+    --conf "spark.kubernetes.authenticate.driver.serviceAccountName=$SPARK_SERVICE_ACCOUNT" \
+    --conf "spark.kubernetes.container.image=$SPARK_CONTAINER_IMAGE" \
+    --conf "spark.driver.host=$SPARK_DRIVER_HOST" \
+    --conf "spark.driver.port=$SPARK_DRIVER_PORT" \
     --conf "spark.sql.shuffle.partitions=200" \
     --jars "$JDBC_JARS" \
     --py-files "$JOB_DIR/config.py" \
