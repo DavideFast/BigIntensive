@@ -50,7 +50,7 @@ data:
     spark.kubernetes.authenticate.executor.mounted true
     spark.kubernetes.container.image              apache/spark:3.5.3
     spark.kubernetes.container.image.pullPolicy   IfNotPresent
-    spark.kubernetes.driver.pod.name              spark-driver
+    spark.kubernetes.executor.deleteOnTermination true
     spark.kubernetes.driver.label.version         3.5.0
     spark.kubernetes.executor.label.version       3.5.0
     spark.executor.cores                          2
@@ -99,6 +99,11 @@ spec:
             - containerPort: 8888
               name: jupyter
           env:
+            # Serve a Spark client mode per legare gli executor a questo pod (ownerReference).
+            - name: SPARK_DRIVER_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: SPARK_HOME
               value: /opt/spark
             - name: POSTGRES_HOST
