@@ -96,6 +96,11 @@ spec:
             - containerPort: 8888
               name: jupyter
           env:
+            - name: SPARK_HOME
+              value: /opt/spark
+            # I binding pyspark sono gia' nell'immagine Spark: li esponiamo invece di reinstallarli da PyPI.
+            - name: PYTHONPATH
+              value: /opt/spark/python:/opt/spark/python/lib/py4j-0.10.9.7-src.zip
             - name: POSTGRES_HOST
               valueFrom:
                 configMapKeyRef:
