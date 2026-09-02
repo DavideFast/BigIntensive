@@ -1,5 +1,6 @@
 import asyncio
 import math
+import os
 import random
 import time
 from datetime import datetime, timezone
@@ -11,30 +12,36 @@ import httpx
 # CONFIGURAZIONE
 # ============================================================
 
-ENDPOINT_URL = (
-    "http://backend:3001/api/v1/pushToKafka"
+ENDPOINT_URL = os.getenv(
+    "ENDPOINT_URL",
+    "http://backend:3001/api/v1/pushToKafka",
 )
+NUM_ATHLETES = int(os.getenv("NUM_ATHLETES", "20000"))
+SAMPLE_INTERVAL = float(os.getenv("SAMPLE_INTERVAL", "5.0"))
 
-NUM_ATHLETES = 20_000
-
-# Un dispositivo invia un campione ogni 5 secondi
-SAMPLE_INTERVAL = 5.0
+if NUM_ATHLETES < 1:
+    raise ValueError("NUM_ATHLETES deve essere almeno 1")
+if SAMPLE_INTERVAL <= 0:
+    raise ValueError("SAMPLE_INTERVAL deve essere maggiore di 0")
 
 # ------------------------------------------------------------
 # SESSIONI
 # ------------------------------------------------------------
 
-MIN_SESSION_MINUTES = 15
-MAX_SESSION_MINUTES = 120
+MIN_SESSION_MINUTES = int(os.getenv("MIN_SESSION_MINUTES", "15"))
+MAX_SESSION_MINUTES = int(os.getenv("MAX_SESSION_MINUTES", "120"))
+MIN_REST_MINUTES = int(os.getenv("MIN_REST_MINUTES", "5"))
+MAX_REST_MINUTES = int(os.getenv("MAX_REST_MINUTES", "60"))
+INITIAL_START_WINDOW_MINUTES = int(
+    os.getenv("INITIAL_START_WINDOW_MINUTES", "60")
+)
 
-# Tempo di riposo tra una sessione e la successiva
-MIN_REST_MINUTES = 5
-MAX_REST_MINUTES = 60
-
-# Distribuzione iniziale degli atleti.
-#
-# Evitiamo che tutti inizino nello stesso istante.
-INITIAL_START_WINDOW_MINUTES = 60
+if MIN_SESSION_MINUTES < 1 or MAX_SESSION_MINUTES < MIN_SESSION_MINUTES:
+    raise ValueError("Intervallo durata sessione non valido")
+if MIN_REST_MINUTES < 0 or MAX_REST_MINUTES < MIN_REST_MINUTES:
+    raise ValueError("Intervallo riposo non valido")
+if INITIAL_START_WINDOW_MINUTES < 0:
+    raise ValueError("INITIAL_START_WINDOW_MINUTES non puo' essere negativo")
 
 
 # ============================================================

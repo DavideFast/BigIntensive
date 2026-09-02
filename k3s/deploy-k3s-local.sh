@@ -10,6 +10,7 @@ BACKEND_IMAGE="bigintensive/backend:local"
 FRONTEND_IMAGE="bigintensive/frontend:local"
 CONSUMER_IMAGE="bigintensive/kafka-consumer:local"
 ELT_IMAGE="bigintensive/elt-copy-workout:local"
+SIMULATOR_IMAGE="bigintensive/smartwatch-simulator:local"
 LOCAL_IMAGES_LABEL="bigintensive.io/local-images=true"
 
 if [[ ! -f "$DEPLOY_ALL_SCRIPT" ]]; then
@@ -83,14 +84,18 @@ sudo docker build -f streaming/kafka/consumer/Dockerfile -t "$CONSUMER_IMAGE" st
 echo "Build immagine ELT..."
 sudo docker build -f database/scriptELT/Dockerfile -t "$ELT_IMAGE" database
 
+echo "Build immagine simulatore smartwatch..."
+sudo docker build -f services/simulatoreUtenti/Dockerfile.simulator -t "$SIMULATOR_IMAGE" services
+
 echo "Import immagini in containerd di k3s..."
 sudo docker save "$BACKEND_IMAGE" | sudo k3s ctr -n k8s.io images import -
 sudo docker save "$FRONTEND_IMAGE" | sudo k3s ctr -n k8s.io images import -
 sudo docker save "$CONSUMER_IMAGE" | sudo k3s ctr -n k8s.io images import -
 sudo docker save "$ELT_IMAGE" | sudo k3s ctr -n k8s.io images import -
+sudo docker save "$SIMULATOR_IMAGE" | sudo k3s ctr -n k8s.io images import -
 
 echo "Verifica immagini importate (namespace k8s.io)..."
-sudo k3s ctr -n k8s.io images ls | grep -E 'bigintensive/(backend|frontend|kafka-consumer|elt-copy-workout).*local' || {
+sudo k3s ctr -n k8s.io images ls | grep -E 'bigintensive/(backend|frontend|kafka-consumer|elt-copy-workout|smartwatch-simulator).*local' || {
   echo "Immagini non trovate nel namespace containerd k8s.io."
   exit 1
 }
@@ -103,9 +108,11 @@ sudo k3s kubectl set image deployment/backend backend="$BACKEND_IMAGE" -n "$NAME
 sudo k3s kubectl set image deployment/frontend frontend="$FRONTEND_IMAGE" -n "$NAMESPACE"
 sudo k3s kubectl set image deployment/kafka-consumer-realtime kafka-consumer="$CONSUMER_IMAGE" -n "$NAMESPACE"
 sudo k3s kubectl set image cronjob/elt-copy-workout elt-copy-workout="$ELT_IMAGE" -n "$NAMESPACE"
+sudo k3s kubectl set image deployment/smartwatch-simulator smartwatch-simulator="$SIMULATOR_IMAGE" -n "$NAMESPACE"
 sudo k3s kubectl patch deployment/backend -n "$NAMESPACE" --type=strategic -p '{"spec":{"template":{"spec":{"containers":[{"name":"backend","imagePullPolicy":"IfNotPresent"}]}}}}'
 sudo k3s kubectl patch deployment/frontend -n "$NAMESPACE" --type=strategic -p '{"spec":{"template":{"spec":{"containers":[{"name":"frontend","imagePullPolicy":"IfNotPresent"}]}}}}'
 sudo k3s kubectl patch deployment/kafka-consumer-realtime -n "$NAMESPACE" --type=strategic -p '{"spec":{"template":{"spec":{"nodeSelector":{"bigintensive.io/local-images":"true"},"containers":[{"name":"kafka-consumer","imagePullPolicy":"IfNotPresent"}]}}}}'
+sudo k3s kubectl patch deployment/smartwatch-simulator -n "$NAMESPACE" --type=strategic -p '{"spec":{"template":{"spec":{"nodeSelector":{"bigintensive.io/local-images":"true"},"containers":[{"name":"smartwatch-simulator","imagePullPolicy":"IfNotPresent"}]}}}}'
 echo "Riavvio deployment applicativi..."
 sudo k3s kubectl rollout restart deployment/backend -n "$NAMESPACE"
 sudo k3s kubectl rollout restart deployment/frontend -n "$NAMESPACE"

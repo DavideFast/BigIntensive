@@ -210,7 +210,7 @@ services:
   heart-rate-simulator:
     build:
       context: ../services
-      dockerfile: Dockerfile.simulator
+      dockerfile: simulatoreUtenti/Dockerfile.simulator
     container_name: heart-rate-simulator
     depends_on:
       - backend
