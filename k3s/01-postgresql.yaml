@@ -59,7 +59,7 @@ spec:
               mountPath: /docker-entrypoint-initdb.d/01-schema.sql
               subPath: schema.sql
               readOnly: true
-          readinessProbe:
+              readinessProbe:
             exec:
               command:
                 - sh
@@ -75,10 +75,3 @@ spec:
         resources:
           requests:
             storage: 150Gi
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: postgresql-schema
-  namespace: bigintensive
-data:

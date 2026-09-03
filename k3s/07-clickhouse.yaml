@@ -470,13 +470,6 @@ spec:
       name: native
 
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: clickhouse-schema
-  namespace: bigintensive
-data:
----
 # ClickHouse Init Job (crea tabelle)
 apiVersion: batch/v1
 kind: Job
