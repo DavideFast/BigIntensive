@@ -357,12 +357,9 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
                   imagePullPolicy: "IfNotPresent",
                   command: ["/bin/bash", "-lc"],
                   args: [
-                    "/opt/spark/bin/spark-submit --master k8s://https://kubernetes.default:443 --deploy-mode client --name running-population-analysis --conf spark.kubernetes.namespace=${KUBERNETES_NAMESPACE} --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark --conf spark.kubernetes.container.image=apache/spark:3.5.3 --conf spark.driver.host=${POD_IP} --conf spark.driver.bindAddress=0.0.0.0 --conf spark.driver.port=4040 --conf spark.jars.packages=com.clickhouse:clickhouse-jdbc:0.6.3,org.postgresql:postgresql:42.7.2 --conf spark.kubernetes.driverEnv.CLICKHOUSE_JDBC_URL=jdbc:clickhouse://clickhouse:8123/bigintensive --conf spark.kubernetes.driverEnv.CLICKHOUSE_USER=default --conf spark.kubernetes.driverEnv.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} --conf spark.kubernetes.driverEnv.POSTGRES_JDBC_URL=jdbc:postgresql://postgres:5432/bigintensive --conf spark.kubernetes.driverEnv.POSTGRES_USER=${POSTGRES_USER} --conf spark.kubernetes.driverEnv.POSTGRES_PASSWORD=${POSTGRES_PASSWORD} --py-files /opt/jobs/config.py /opt/jobs/RunningPopolationAnalysis.py",
+                    'SPARK_SUBMIT=/opt/spark/bin/spark-submit; if [ ! -x "$SPARK_SUBMIT" ]; then SPARK_SUBMIT="$(command -v spark-submit || true)"; fi; if [ -z "$SPARK_SUBMIT" ]; then echo \'ERROR: spark-submit is not installed in the Spark image\'; find /opt -name spark-submit -type f 2>/dev/null; exit 127; fi; echo "Using $SPARK_SUBMIT"; exec "$SPARK_SUBMIT" --master k8s://https://kubernetes.default:443 --deploy-mode client --name running-population-analysis --conf spark.kubernetes.namespace=${KUBERNETES_NAMESPACE} --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark --conf spark.kubernetes.container.image=apache/spark:3.5.3 --conf spark.driver.host=${POD_IP} --conf spark.driver.bindAddress=0.0.0.0 --conf spark.driver.port=4040 --conf spark.jars.packages=com.clickhouse:clickhouse-jdbc:0.6.3,org.postgresql:postgresql:42.7.2 --conf spark.kubernetes.driverEnv.CLICKHOUSE_JDBC_URL=jdbc:clickhouse://clickhouse:8123/bigintensive --conf spark.kubernetes.driverEnv.CLICKHOUSE_USER=default --conf spark.kubernetes.driverEnv.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} --conf spark.kubernetes.driverEnv.POSTGRES_JDBC_URL=jdbc:postgresql://postgres:5432/bigintensive --conf spark.kubernetes.driverEnv.POSTGRES_USER=${POSTGRES_USER} --conf spark.kubernetes.driverEnv.POSTGRES_PASSWORD=${POSTGRES_PASSWORD} --py-files /opt/jobs/config.py /opt/jobs/RunningPopolationAnalysis.py',
                   ],
-                  envFrom: [
-                    { configMapRef: { name: "bigintensive-config" } },
-                    { secretRef: { name: "bigintensive-secrets" } },
-                  ],
+                  envFrom: [{ configMapRef: { name: "bigintensive-config" } }, { secretRef: { name: "bigintensive-secrets" } }],
                   env: [
                     {
                       name: "KUBERNETES_NAMESPACE",
@@ -373,9 +370,7 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
                       valueFrom: { fieldRef: { fieldPath: "status.podIP" } },
                     },
                   ],
-                  volumeMounts: [
-                    { name: "running-population-scripts", mountPath: "/opt/jobs", readOnly: true },
-                  ],
+                  volumeMounts: [{ name: "running-population-scripts", mountPath: "/opt/jobs", readOnly: true }],
                 },
               ],
               volumes: [
