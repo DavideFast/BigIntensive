@@ -186,9 +186,15 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
             // Calcolo lo spostamento tra la posizione precedente e quella dell'evento corrente
             double spostamento = distanzaMetri(precedente.latitudine(), precedente.longitudine(),sample.latitude(), sample.longitude());
             distanzaTotale += spostamento;
-            double velocitaTratto = spostamento / (sample.sample_id() - precedente.indice());
-            velocitaMedia = velocitaMedia + velocitaTratto;
-            velocitaMax = Math.max(velocitaMax, velocitaTratto);
+            if(sample.sample_id() == precedente.indice()) {
+                System.out.printf("Campione duplicato per atleta %d, sessione %d, sample_id %d%n", sample.athlete_id(), sample.session_id(), sample.sample_id());
+            }
+            double velocitaTratto = 0;
+            if(sample.sample_id() != precedente.indice()) {
+                velocitaTratto = spostamento / (sample.sample_id() - precedente.indice());
+                velocitaMedia = velocitaMedia + velocitaTratto;
+                velocitaMax = Math.max(velocitaMax, velocitaTratto);
+            }
 
             
             campioniAnalisi.add(sample);

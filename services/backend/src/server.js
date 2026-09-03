@@ -353,11 +353,11 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
               containers: [
                 {
                   name: runningPopulationJobName,
-                  image: "bitnami/spark:3.5.0",
+                  image: "apache/spark:3.5.3",
                   imagePullPolicy: "IfNotPresent",
                   command: ["/bin/bash", "-lc"],
                   args: [
-                    "spark-submit --master k8s://https://kubernetes.default:443 --deploy-mode cluster --name running-population-analysis --conf spark.kubernetes.namespace=${KUBERNETES_NAMESPACE} --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark --conf spark.kubernetes.container.image=bitnami/spark:3.5.0 --conf spark.jars.packages=com.clickhouse:clickhouse-jdbc:0.6.3,org.postgresql:postgresql:42.7.2 --conf spark.kubernetes.driverEnv.CLICKHOUSE_JDBC_URL=jdbc:clickhouse://clickhouse:8123/bigintensive --conf spark.kubernetes.driverEnv.CLICKHOUSE_USER=default --conf spark.kubernetes.driverEnv.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} --conf spark.kubernetes.driverEnv.POSTGRES_JDBC_URL=jdbc:postgresql://postgres:5432/bigintensive --conf spark.kubernetes.driverEnv.POSTGRES_USER=${POSTGRES_USER} --conf spark.kubernetes.driverEnv.POSTGRES_PASSWORD=${POSTGRES_PASSWORD} --py-files /opt/jobs/config.py /opt/jobs/RunningPopolationAnalysis.py",
+                    "spark-submit --master k8s://https://kubernetes.default:443 --deploy-mode cluster --name running-population-analysis --conf spark.kubernetes.namespace=${KUBERNETES_NAMESPACE} --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark --conf spark.kubernetes.container.image=apache/spark:3.5.3 --conf spark.jars.packages=com.clickhouse:clickhouse-jdbc:0.6.3,org.postgresql:postgresql:42.7.2 --conf spark.kubernetes.driverEnv.CLICKHOUSE_JDBC_URL=jdbc:clickhouse://clickhouse:8123/bigintensive --conf spark.kubernetes.driverEnv.CLICKHOUSE_USER=default --conf spark.kubernetes.driverEnv.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} --conf spark.kubernetes.driverEnv.POSTGRES_JDBC_URL=jdbc:postgresql://postgres:5432/bigintensive --conf spark.kubernetes.driverEnv.POSTGRES_USER=${POSTGRES_USER} --conf spark.kubernetes.driverEnv.POSTGRES_PASSWORD=${POSTGRES_PASSWORD} --py-files /opt/jobs/config.py /opt/jobs/RunningPopolationAnalysis.py",
                   ],
                   envFrom: [
                     { configMapRef: { name: "bigintensive-config" } },
