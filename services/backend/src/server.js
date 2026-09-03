@@ -393,6 +393,8 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
                     "--conf",
                     "spark.executor.memory=2g",
                     "--conf",
+                    "spark.driver.host=${POD_IP}",
+                    "--conf",
                     "spark.driver.bindAddress=0.0.0.0",
                     "--conf",
                     "spark.driver.port=4040",
@@ -405,6 +407,10 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
                     {
                       name: "KUBERNETES_NAMESPACE",
                       valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } },
+                    },
+                    {
+                      name: "POD_IP",
+                      valueFrom: { fieldRef: { fieldPath: "status.podIP" } },
                     },
                   ],
                   volumeMounts: [{ name: "running-population-scripts", mountPath: "/opt/jobs", readOnly: true }],
