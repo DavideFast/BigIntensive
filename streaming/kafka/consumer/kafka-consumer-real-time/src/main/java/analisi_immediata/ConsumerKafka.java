@@ -3,6 +3,7 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
+import org.apache.kafka.streams.errors.MissingSourceTopicException;
 import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
@@ -11,6 +12,8 @@ import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /** Rilevamento immobilita con Kafka Streams: lo stato sopravvive a riavvii e rebalance. */
 public class ConsumerKafka {
@@ -36,10 +39,10 @@ public class ConsumerKafka {
         if (bootstrapServers == null || bootstrapServers.isEmpty()) {
             bootstrapServers = "localhost:9092";
         }
-        String topicIngresso = System.getenv("KAFKA_TOPIC");
-        if (topicIngresso == null || topicIngresso.isBlank()) {
-            topicIngresso = TOPIC_INGRESSO_PREDEFINITO;
-        }
+        String topicEnv = System.getenv("KAFKA_TOPIC");
+        final String topicIngresso = (topicEnv == null || topicEnv.isBlank())
+                ? TOPIC_INGRESSO_PREDEFINITO
+                : topicEnv;
 
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "rilevatore-immobilita");
@@ -65,27 +68,37 @@ public class ConsumerKafka {
         // Processamento dei messaggi con il rilevatore di immobilità
         sorgente.process(RilevatoreImmobilita::new, NOME_STORE);
         boolean waiting = true;
-        
+
+        AtomicReference<KafkaStreams> istanzaCorrente = new AtomicReference<>();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            KafkaStreams streams = istanzaCorrente.get();
+            if (streams != null) {
+                streams.close();
+            }
+        }));
+
         while (waiting) {
             try {
-                
+
                 // Avvio del flusso di elaborazione
                 final KafkaStreams streams  = new KafkaStreams(builder.build(), props);
+                istanzaCorrente.set(streams);
                 CountDownLatch shutdownLatch = new CountDownLatch(1);
-
-                // Gestione della chiusura dell'applicazione
-                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                    streams.close();
-                    shutdownLatch.countDown();
-                }));
+                AtomicBoolean topicMancante = new AtomicBoolean(false);
 
                 //Avvio del flusso di elaborazione
                 streams.setStateListener((newState, oldState)->{System.out.println(">>> STATO KAFKA STREAMS CAMBIATO DA "+oldState+ " a " +newState);});
                 streams.setUncaughtExceptionHandler((Throwable exception) -> {
-                    System.out.println(">>> ERRORE CRITICO FINALE IN KAFKA STREAMS:");
-                    exception.printStackTrace();
+                    if (isTopicSorgenteMancante(exception)) {
+                        topicMancante.set(true);
+                        System.out.println(">>> Topic sorgente " + topicIngresso
+                                + " non ancora disponibile durante il rebalance: nuovo tentativo tra 10 secondi.");
+                    } else {
+                        System.out.println(">>> ERRORE CRITICO FINALE IN KAFKA STREAMS:");
+                        exception.printStackTrace();
+                    }
                     shutdownLatch.countDown();
-                    return StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.SHUTDOWN_APPLICATION;
+                    return StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.SHUTDOWN_CLIENT;
                 });
                 System.out.println("Attendo che Kafka Streams si inizializzi e crei lo state store...");
                 Thread.sleep(5000); // Attendo 5 secondi per permettere a Kafka Streams di inizializzarsi
@@ -95,9 +108,20 @@ public class ConsumerKafka {
                 System.out.println("Rilevatore di immobilità in esecuzione. Premere Ctrl+C per terminare.");
 
                 shutdownLatch.await();
+                streams.close();
+                istanzaCorrente.set(null);
+
+                if (topicMancante.get()) {
+                    Thread.sleep(10000);
+                    continue;
+                }
+
                 System.out.println("Rilevatore di immobilità terminato.");
                 waiting = false;
 
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                waiting = false;
             } catch (Exception e) {
                 System.err.println("Errore durante l'esecuzione del rilevatore di immobilità: " + e.getMessage());
                 try {
@@ -108,5 +132,18 @@ public class ConsumerKafka {
                 }
             }
         }
+    }
+
+    /** Il topic puo non esistere ancora se il consumer parte prima del job di creazione dei topic. */
+    private static boolean isTopicSorgenteMancante(Throwable errore) {
+        for (Throwable causa = errore; causa != null; causa = causa.getCause()) {
+            if (causa instanceof MissingSourceTopicException) {
+                return true;
+            }
+            if (causa.getCause() == causa) {
+                break;
+            }
+        }
+        return false;
     }
 }

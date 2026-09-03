@@ -55,12 +55,22 @@ spec:
                 echo "Kafka bootstrap is not ready; retrying in 5 seconds..."
                 sleep 5
               done
+              # Kafka Streams fallisce con MissingSourceTopicException se il topic non esiste ancora
+              until /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$KAFKA_BOOTSTRAP_SERVERS" --describe --topic "$KAFKA_TOPIC" >/dev/null 2>&1; do
+                echo "Topic $KAFKA_TOPIC not available yet; retrying in 5 seconds..."
+                sleep 5
+              done
           env:
             - name: KAFKA_BOOTSTRAP_SERVERS
               valueFrom:
                 configMapKeyRef:
                   name: kafka-consumer-config
                   key: KAFKA_BOOTSTRAP_SERVERS
+            - name: KAFKA_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-consumer-config
+                  key: KAFKA_TOPIC
 
       containers:
         - name: kafka-consumer
