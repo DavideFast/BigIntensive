@@ -67,19 +67,19 @@ export default function ManageSmartwatchConnections() {
 
   return (
     <section aria-label="Dati workouts">
-      <h1>Gestione connessioni Smartwatch e processo ELT</h1>
+      <h1>Gestione connessioni Smartwatch </h1>
       <button onClick={avviaSimulazione}>Avvia simulazione</button>
       <button onClick={fermaSimulazione}>Ferma simulazione</button>
 
       <br />
       <br />
-
+      <h1>Gestione processo ELT</h1>
       <button onClick={avviaELT}>Avvia processo ELT</button>
       <button onClick={fermaELT}>Ferma processo ELT</button>
 
       <br />
       <br />
-
+      <h1>Gestione job Spark</h1>
       <button
         onClick={() =>
           fetch(`${apiBaseUrl}/api/v1/startRunningPopulation`, { method: "POST" })
