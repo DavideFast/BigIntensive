@@ -78,44 +78,6 @@ cd streaming/kafka/consumer
 
 ## Deployment
 
-### Docker Compose (Local Development)
-
-1. Aggiunto il servizio `kafka-consumer` nel `dev/docker-compose.yml`
-2. Avvia il container:
-
-```bash
-cd dev
-docker-compose up -d kafka-consumer
-```
-
-**Configurazione nel docker-compose.yml:**
-
-```yaml
-kafka-consumer:
-  build:
-    context: ../streaming/kafka/consumer
-    dockerfile: Dockerfile
-  container_name: kafka-consumer-realtime
-  depends_on:
-    - kafka
-    - postgres
-    - clickhouse
-  environment:
-    - KAFKA_BOOTSTRAP_SERVERS=kafka:19092
-    - CLICKHOUSE_URL=jdbc:clickhouse://clickhouse:8123/bigintensive
-    - POSTGRES_URL=jdbc:postgresql://postgres:5432/bigintensive
-    # ... altre variabili
-  networks:
-    - spark-net
-  restart: unless-stopped
-```
-
-**Verificare i log:**
-
-```bash
-docker-compose logs -f kafka-consumer
-```
-
 ### Kubernetes (K3s)
 
 1. Creare l'immagine Docker:
@@ -276,11 +238,10 @@ telnet kafka 19092
 ## Prossimi Passi
 
 1. ✅ Implementare consumer Kafka Streams
-2. ✅ Aggiungere nel docker-compose
-3. ✅ Aggiungere nei manifesti K3s
-4. ⏳ Implementare metriche Prometheus
-5. ⏳ Aggiungere alerting per anomalie critiche
-6. ⏳ Implementare graceful shutdown
+2. ✅ Aggiungere nei manifesti K3s
+3. ⏳ Implementare metriche Prometheus
+4. ⏳ Aggiungere alerting per anomalie critiche
+5. ⏳ Implementare graceful shutdown
 
 ## Supporto e Contatti
 

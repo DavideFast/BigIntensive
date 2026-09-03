@@ -21,22 +21,17 @@ NC='\033[0m' # No Color
 # Check if Maven is available
 if ! command -v mvn &> /dev/null; then
     echo -e "${RED}❌ Maven is not installed${NC}"
-    echo "Please install Maven or use --docker flag"
+    echo "Please install Maven"
     exit 1
 fi
 
 # Parse arguments
-DEPLOY_DOCKER=false
 DEPLOY_K3S=false
 PUSH_REGISTRY=false
 REGISTRY="davidefast"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --docker)
-            DEPLOY_DOCKER=true
-            shift
-            ;;
         --k3s)
             DEPLOY_K3S=true
             shift
@@ -61,7 +56,7 @@ echo -e "${GREEN}✅ JAR built successfully${NC}"
 echo ""
 
 # Build Docker image
-if [ "$DEPLOY_DOCKER" = true ] || [ "$DEPLOY_K3S" = true ]; then
+if [ "$DEPLOY_K3S" = true ]; then
     echo -e "${YELLOW}🐳 Building Docker image...${NC}"
     cd "$DOCKER_DIR"
     docker build -t consumer-kafka:latest .
@@ -75,16 +70,6 @@ if [ "$DEPLOY_DOCKER" = true ] || [ "$DEPLOY_K3S" = true ]; then
         echo -e "${GREEN}✅ Image pushed to $REGISTRY/consumer-kafka:latest${NC}"
         echo ""
     fi
-fi
-
-# Deploy to Docker Compose
-if [ "$DEPLOY_DOCKER" = true ]; then
-    echo -e "${YELLOW}🐳 Deploying to Docker Compose...${NC}"
-    cd "$DOCKER_DIR/../dev"
-    docker-compose up -d kafka-consumer
-    echo -e "${GREEN}✅ Kafka Consumer deployed to Docker Compose${NC}"
-    echo ""
-    echo "View logs with: docker-compose logs -f kafka-consumer"
 fi
 
 # Deploy to K3s
@@ -126,10 +111,8 @@ echo "  - PostgreSQL: postgres:5432/bigintensive"
 echo ""
 
 # Next steps
-if [ "$DEPLOY_DOCKER" = false ] && [ "$DEPLOY_K3S" = false ]; then
+if [ "$DEPLOY_K3S" = false ]; then
     echo "Next steps:"
-    echo "1. Docker Compose: ./deploy.sh --docker"
-    echo "2. K3s: ./deploy.sh --k3s"
-    echo "3. Both: ./deploy.sh --docker --k3s"
-    echo "4. With registry push: ./deploy.sh --docker --push davidefast"
+    echo "1. K3s: ./deploy.sh --k3s"
+    echo "2. Build and push image: ./deploy.sh --k3s --push davidefast"
 fi

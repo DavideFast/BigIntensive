@@ -35,12 +35,6 @@ Per usare un namespace o bootstrap server diverso:
 bash ./k3s/create-kafka-topics.sh --namespace bigintensive --bootstrap-server kafka:19092
 ```
 
-### Locale con Docker Compose
-
-```bash
-bash ./streaming/kafka/scripts/create-topics.sh --bootstrap-server localhost:9094
-```
-
 ### Windows PowerShell
 
 ```powershell

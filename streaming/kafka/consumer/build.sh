@@ -32,5 +32,4 @@ fi
 
 echo ""
 echo "Next steps:"
-echo "1. Docker Compose: docker-compose -f dev/docker-compose.yml up -d kafka-consumer"
-echo "2. K3s: kubectl apply -f k3s/09-kafka-consumer.yaml"
+echo "1. K3s: kubectl apply -f k3s/09-kafka-consumer.yaml"

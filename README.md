@@ -5,7 +5,6 @@ This is a project for the "Big Intensive Application and Big Data Exams" of the 
 This project gives:
 
 - Kubernetes deployment [k3s/README.md](k3s/README.md).
-- Docker compose deployment (testing)
 
 ## What is FitnessHub
 
@@ -84,7 +83,6 @@ It is used as orchestrator to manage all the components of the project and scale
 ## Quale percorso usare
 
 - Deploy completo k3s (raccomandato): `bash k3s/deploy-all.sh`
-- Solo sviluppo locale rapido: `dev/docker-compose.yml`
 - Diagnostica k3s: `kubectl get all -n bigintensive` e `kubectl get ingress -n bigintensive`
 
 ## Artefatti generati
@@ -96,9 +94,6 @@ It is used as orchestrator to manage all the components of the project and scale
 
 Per partire con il cluster, segui la guida in [k3s/README.md](k3s/README.md).
 
-Se vuoi solo provare l'app rapidamente senza Kubernetes, la vecchia strada Compose e' ancora presente, ma non e' piu il percorso raccomandato.
-
-Il file Compose locale si trova in `dev/docker-compose.yml`.
 
 ## Comandi utili
 
