@@ -62,17 +62,17 @@ The expected order is fixed and implemented by `deploy-all.sh`:
 
 1. `00-namespace-and-secrets.yaml`
 2. `01-postgresql.yaml`
-3. `02-kafka.yaml`
-4. `02b-kafka-topics.yaml`
-5. `03-backend.yaml`
-6. `04-frontend.yaml`
-7. `05-spark-and-jupyter.yaml`
-8. `06-ingress.yaml`
-9. `07-clickhouse.yaml`
-10. `08-kafka-consumer.yaml` (requires Kafka, PostgreSQL, ClickHouse ready)
-11. `09-elt-copy-workout.yaml` (requires PostgreSQL and ClickHouse ready)
-12. `10-smartwatch-simulator.yaml`
-13. `11-generate-postgresql-samples.yaml`
+3. `11-generate-postgresql-samples.yaml`
+4. `02-kafka.yaml`
+5. `02b-kafka-topics.yaml`
+6. `03-backend.yaml`
+7. `04-frontend.yaml`
+8. `05-spark-and-jupyter.yaml`
+9. `06-ingress.yaml`
+10. `07-clickhouse.yaml`
+11. `08-kafka-consumer.yaml` (requires Kafka, PostgreSQL, ClickHouse ready)
+12. `09-elt-copy-workout.yaml` (requires PostgreSQL and ClickHouse ready)
+13. `10-smartwatch-simulator.yaml`
 
 Kafka topic replication is configured for three brokers with `min.insync.replicas=2`.
 The topic bootstrap Job does not change the replication factor of topics that already
