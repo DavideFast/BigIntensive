@@ -30,4 +30,3 @@ Il database comprende le seguenti tabelle:
 - **anthropometric_values**: memorizza i valori antropometrici degli utenti, come altezza, peso e età.
 - **riepilogo_corse**: memorizza i dati riepilogativi delle corse degli utenti.
 - **esercizi**: memorizza l'elenco degli esercizi disponibili per gli allenamenti degli utenti.
-- **training_status_result**: memorizza lo stato degli allenamenti degli utenti, come completato, in corso o non iniziato.
