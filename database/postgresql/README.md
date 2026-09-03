@@ -6,7 +6,7 @@
 
 ```bash
 # Avviare il container PostgreSQL
-sudo kubectl exec -it postgresql-0 -- --psql -U <nome_utente> -d <nome_database>
+sudo kubectl exec -it -n bigintensive postgresql-0 -- psql -U <nome_utente> -d <nome_database>
 ```
 
 2. Eseguire query SQL:
@@ -15,7 +15,7 @@ sudo kubectl exec -it postgresql-0 -- --psql -U <nome_utente> -d <nome_database>
 SELECT * FROM <nome_tabella>;
 ```
 
-3. Vedere peso del database:
+3. Vedere peso del database nel suo intero (dimensione totale):
 
 ```sql
 SELECT pg_size_pretty(pg_database_size('<nome_database>'));
