@@ -20,7 +20,7 @@ rules:
     verbs: ["get", "patch"]
   - apiGroups: ["batch"]
     resources: ["jobs"]
-    verbs: ["create", "list", "deletecollection"]
+    verbs: ["create", "list", "delete", "deletecollection"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
