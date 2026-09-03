@@ -1,7 +1,6 @@
 # Sezione database e script per il salvataggio dei dati
 
-In questa sezione troverai informazioni sui servizi di database e sugli script per il salvataggio dei dati disponibili nel progetto BigIntensive. Ogni servizio è descritto con dettagli sulle sue funzionalità, requisiti e modalità di utilizzo.
-In particolare questa sezione comprende:
+In questa sezione sono presenti i componenti principali del database e degli script legati ad essi.
 
 - **PostgreSQL**: si occupa di memorizzare i dati ricevuti dai client e fornire un'interfaccia per l'accesso e la gestione dei dati.
 - **Clickhouse**: si occupa di memorizzare i dati ricevuti dai client e fornire un'interfaccia per l'accesso e la gestione dei dati, ottimizzata per l'analisi dei dati in tempo reale.
