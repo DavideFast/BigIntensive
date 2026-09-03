@@ -3,8 +3,8 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Copia lo script e le dipendenze dal contesto services
-COPY simulatoreUtenti/heartRateSimulation.py .
-COPY simulatoreUtenti/requirements-simulator.txt .
+COPY heartRateSimulation.py .
+COPY requirements-simulator.txt .
 
 # Installa dipendenze Python
 RUN pip install --no-cache-dir -r requirements-simulator.txt

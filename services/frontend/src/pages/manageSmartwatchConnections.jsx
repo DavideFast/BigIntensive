@@ -76,6 +76,22 @@ export default function ManageSmartwatchConnections() {
 
       <button onClick={avviaELT}>Avvia processo ELT</button>
       <button onClick={fermaELT}>Ferma processo ELT</button>
+
+      <button
+        onClick={() =>
+          fetch(`${apiBaseUrl}/api/v1/startRunningPopulation`, { method: "POST" })
+            .then((response) => response.json())
+            .then((data) => {
+              if (!data.success) {
+                throw new Error(data.error || "Impossibile avviare RunningPopulation");
+              }
+              alert(`${data.message}: ${data.jobName || "job gia' attivo"}`);
+            })
+            .catch((err) => alert(`Errore nell'avvio di RunningPopulation: ${err.message}`))
+        }
+      >
+        Avvia RunningPopulation
+      </button>
     </section>
   );
 }

@@ -79,6 +79,13 @@ apply_manifest "$SCRIPT_DIR/02b-kafka-topics.yaml" "Kafka Topic Bootstrap Job"
 apply_manifest "$SCRIPT_DIR/03-backend.yaml" "Backend"
 apply_manifest "$SCRIPT_DIR/04-frontend.yaml" "Frontend"
 apply_manifest "$SCRIPT_DIR/05-spark-and-jupyter.yaml" "Spark & Jupyter"
+
+# The analysis source is mounted into the submitter Job as a ConfigMap.
+$KUBECTL_CMD -n "$NAMESPACE" create configmap running-population-job-script \
+    --from-file=RunningPopolationAnalysis.py="$SCRIPT_DIR/../streaming/spark/jobs/RunningPopolationAnalysis.py" \
+    --from-file=config.py="$SCRIPT_DIR/../streaming/spark/jobs/config.py" \
+    --dry-run=client -o yaml | $KUBECTL_CMD apply -f -
+
 apply_manifest "$SCRIPT_DIR/06-ingress.yaml" "Ingress Routes"
 apply_manifest "$SCRIPT_DIR/07-clickhouse.yaml" "ClickHouse & ClickHouse Keeper"
 apply_manifest "$SCRIPT_DIR/08-trainingstatus-cronjob.yaml" "Training Status CronJob"

@@ -17,6 +17,7 @@ const k8sApi = kubeConfig.makeApiClient(AppsV1Api);
 const k8sBatchApi = kubeConfig.makeApiClient(BatchV1Api);
 const kubernetesNamespace = process.env.KUBERNETES_NAMESPACE || "bigintensive";
 const eltCronJobName = "elt-copy-workout";
+const runningPopulationJobName = "running-population-analysis";
 
 // Configurazione del produttore Kafka
 const kafkaBrokers = String(process.env.KAFKA_BOOTSTRAP_SERVERS || "kafka:19092")
@@ -309,7 +310,97 @@ app.post("/api/v1/stopELTProcess", async (req, res) => {
   }
 });
 
-// ============================ AVVIO ===============================
+app.post("/api/v1/startRunningPopulation", async (req, res) => {
+  try {
+    const existingJobs = await k8sBatchApi.listNamespacedJob({
+      namespace: kubernetesNamespace,
+      labelSelector: `app=${runningPopulationJobName}`,
+    });
+
+    const runningJob = existingJobs.items.find((job) => (job.status?.active || 0) > 0);
+    if (runningJob) {
+      return res.status(200).json({
+        success: true,
+        jobName: runningJob.metadata.name,
+        message: `RunningPopulation gia' in esecuzione (${runningJob.metadata.name})`,
+      });
+    }
+
+    const jobName = `${runningPopulationJobName}-${Date.now()}`;
+    await k8sBatchApi.createNamespacedJob({
+      namespace: kubernetesNamespace,
+      body: {
+        apiVersion: "batch/v1",
+        kind: "Job",
+        metadata: {
+          name: jobName,
+          labels: {
+            app: runningPopulationJobName,
+          },
+        },
+        spec: {
+          backoffLimit: 0,
+          ttlSecondsAfterFinished: 1800,
+          template: {
+            metadata: {
+              labels: {
+                app: runningPopulationJobName,
+              },
+            },
+            spec: {
+              serviceAccountName: "spark",
+              restartPolicy: "Never",
+              containers: [
+                {
+                  name: runningPopulationJobName,
+                  image: "bitnami/spark:3.5.0",
+                  imagePullPolicy: "IfNotPresent",
+                  command: ["/bin/bash", "-lc"],
+                  args: [
+                    "spark-submit --master k8s://https://kubernetes.default:443 --deploy-mode cluster --name running-population-analysis --conf spark.kubernetes.namespace=${KUBERNETES_NAMESPACE} --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark --conf spark.kubernetes.container.image=bitnami/spark:3.5.0 --conf spark.jars.packages=com.clickhouse:clickhouse-jdbc:0.6.3,org.postgresql:postgresql:42.7.2 --conf spark.kubernetes.driverEnv.CLICKHOUSE_JDBC_URL=jdbc:clickhouse://clickhouse:8123/bigintensive --conf spark.kubernetes.driverEnv.CLICKHOUSE_USER=default --conf spark.kubernetes.driverEnv.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} --conf spark.kubernetes.driverEnv.POSTGRES_JDBC_URL=jdbc:postgresql://postgres:5432/bigintensive --conf spark.kubernetes.driverEnv.POSTGRES_USER=${POSTGRES_USER} --conf spark.kubernetes.driverEnv.POSTGRES_PASSWORD=${POSTGRES_PASSWORD} --py-files /opt/jobs/config.py /opt/jobs/RunningPopolationAnalysis.py",
+                  ],
+                  envFrom: [
+                    { configMapRef: { name: "bigintensive-config" } },
+                    { secretRef: { name: "bigintensive-secrets" } },
+                  ],
+                  env: [
+                    {
+                      name: "KUBERNETES_NAMESPACE",
+                      valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } },
+                    },
+                  ],
+                  volumeMounts: [
+                    { name: "running-population-scripts", mountPath: "/opt/jobs", readOnly: true },
+                  ],
+                },
+              ],
+              volumes: [
+                {
+                  name: "running-population-scripts",
+                  configMap: { name: "running-population-job-script" },
+                },
+              ],
+            },
+          },
+        },
+      },
+    });
+    res.status(200).json({
+      success: true,
+      jobName,
+      message: "Job RunningPopulation avviato",
+    });
+  } catch (error) {
+    const message = getKubernetesErrorMessage(error);
+    console.error("Errore avviando lo Spark job:", message);
+    res.status(500).json({
+      success: false,
+      error: message,
+    });
+  }
+});
+
+// ============================ START SERVER ===============================
 
 async function start() {
   app.listen(context.port, () => {
