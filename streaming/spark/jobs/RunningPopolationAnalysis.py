@@ -106,6 +106,15 @@ def main():
 
     df_ml = df_preanalisi.select(colonne_da_analizzare).na.drop()
 
+    righe_ml = df_ml.count()
+    if righe_ml < 2:
+        print(
+            f"Correlazione non calcolabile: disponibili {righe_ml} righe complete, "
+            "ne servono almeno 2."
+        )
+        spark.stop()
+        return
+
     assembler = VectorAssembler(inputCols=colonne_da_analizzare, outputCol="features")
     df_ml = assembler.transform(df_ml)
 
