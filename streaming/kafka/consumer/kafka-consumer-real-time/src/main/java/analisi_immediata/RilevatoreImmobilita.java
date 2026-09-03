@@ -214,6 +214,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
             }
             //Se il campo event_type è "session_end" allora elimino lo stato della sessione e non faccio altro
             if ("session_end".equals(sample.event_type())) {
+                System.out.printf("Sessione terminata per atleta %d, sessione %d, sample_id %d%n", sample.athlete_id(), sample.session_id(), sample.sample_id());
                 velocitaMedia = velocitaMedia / campioniRicevuti;
                 cadenzaMedia = cadenzaMedia / campioniRicevuti;
                 frequenzaCardiacaMedia = frequenzaCardiacaMedia / campioniRicevuti;

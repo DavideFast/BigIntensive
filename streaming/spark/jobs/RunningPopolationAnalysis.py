@@ -91,11 +91,36 @@ def main():
 
     df_conteggio_corse = primo_punto_di_crisi_per_sessione.groupBy("athlete_id").agg(countDistinct("session_id").alias("numero_corse"))
     # join con Postgres eseguito qui: una sola riga per sessione, non tutte le righe di crisi
-    primo_punto_di_crisi_per_sessione = primo_punto_di_crisi_per_sessione.join(
-        df_postgres_ridotto,
-        (primo_punto_di_crisi_per_sessione["athlete_id"] == df_postgres_ridotto["athlete_id"]) & (to_date(col("timestamp")) == col("data_rilevazione")),
-        how="inner"
-    ).drop(df_postgres_ridotto["athlete_id"])
+    crisi = primo_punto_di_crisi_per_sessione.alias("crisi")
+    antropometria = df_postgres_ridotto.alias("antropometria")
+
+    # Associa la misura piu recente disponibile prima della data della crisi.
+    crisi_con_antropometria = crisi.join(
+        antropometria,
+        (col("crisi.athlete_id") == col("antropometria.athlete_id"))
+        & (col("antropometria.data_rilevazione") <= to_date(col("crisi.timestamp"))),
+        how="inner",
+    )
+
+    finestra_antropometria = Window.partitionBy(
+        "crisi.athlete_id", "crisi.session_id"
+    ).orderBy(col("antropometria.data_rilevazione").desc())
+
+    primo_punto_di_crisi_per_sessione = (
+        crisi_con_antropometria
+        .withColumn("riga_antropometria", row_number().over(finestra_antropometria))
+        .filter(col("riga_antropometria") == 1)
+        .select(
+            col("crisi.timestamp").alias("timestamp"),
+            col("crisi.velocita_media").alias("velocita_media"),
+            col("crisi.Deriva_cardiaca_percentuale").alias("Deriva_cardiaca_percentuale"),
+            col("crisi.athlete_id").alias("athlete_id"),
+            col("crisi.session_id").alias("session_id"),
+            col("antropometria.peso_kg").alias("peso_kg"),
+            col("antropometria.altezza_cm").alias("altezza_cm"),
+            col("antropometria.BMI").alias("BMI"),
+        )
+    )
 
     
     df_preanalisi = primo_punto_di_crisi_per_sessione.join(df_conteggio_corse, ["athlete_id"], how="left")
