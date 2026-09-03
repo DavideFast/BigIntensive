@@ -53,12 +53,3 @@ CREATE TABLE esercizi (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Risultati del training status
-
-CREATE TABLE training_status_results (
-    id SERIAL PRIMARY KEY,
-    athlete_id INT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE,
-    result_date DATE NOT NULL,
-    valore DECIMAL(5, 2),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);

@@ -90,8 +90,7 @@ SEED = 42
 # True  = cancella le tabelle prima di iniziare
 #
 # ATTENZIONE:
-# se True vengono cancellati anche i dati presenti
-# in riepilogo_corse e training_status_results.
+# se True vengono cancellati anche i dati presenti in riepilogo_corse.
 # ------------------------------------------------------------
 
 CLEAR_EXISTING_DATA = os.getenv("CLEAR_EXISTING_DATA", "false").lower() == "true"
@@ -1087,7 +1086,6 @@ def clear_database(conn):
         cur.execute(
             """
             TRUNCATE TABLE
-                training_status_results,
                 riepilogo_corse,
                 allenamenti,
                 anthropometric_values,
@@ -1735,7 +1733,6 @@ def main():
 
     print("Tabelle NON popolate:")
     print("  - riepilogo_corse")
-    print("  - training_status_results")
 
     print()
 

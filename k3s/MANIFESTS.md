@@ -17,7 +17,6 @@ k3s/
 ├── 05-spark-and-jupyter.yaml
 ├── 06-ingress.yaml
 ├── 07-clickhouse.yaml
-├── 08-trainingstatus-cronjob.yaml
 ├── 09-kafka-consumer.yaml
 ├── 10-elt-copy-workout.yaml
 ├── deploy-all.sh
@@ -29,7 +28,7 @@ k3s/
 - `00-namespace-and-secrets.yaml`
   - Namespace, secrets and shared application ConfigMap.
 - `01-postgresql.yaml`
-  - PostgreSQL service, StatefulSet, persistent volume and schema init ConfigMap.
+  - PostgreSQL service, StatefulSet and persistent volume. The schema ConfigMap is generated from `database/postgresql/schema.sql` by `deploy-all.sh`.
 - `02-kafka.yaml`
   - Three-node Kafka KRaft cluster (broker + controller on each node) and Kafka UI.
 - `03-backend.yaml`
@@ -44,8 +43,7 @@ k3s/
   - Three-node ClickHouse Keeper quorum.
   - Four ClickHouse servers arranged as two shards with two replicas each.
   - Replicated local tables and Distributed tables using `cityHash64(athlete_id)`.
-- `08-trainingstatus-cronjob.yaml`
-  - Training status CronJob for periodic jobs.
+  - The schema ConfigMap is generated from `database/clickhouse/schema.sql` by `deploy-all.sh`.
 - `09-kafka-consumer.yaml`
   - Kafka Consumer Real-Time Analysis (Kafka Streams application).
   - ConfigMap with environment variables.
@@ -69,9 +67,8 @@ The expected order is fixed and implemented by `deploy-all.sh`:
 7. `05-spark-and-jupyter.yaml`
 8. `06-ingress.yaml`
 9. `07-clickhouse.yaml`
-10. `08-trainingstatus-cronjob.yaml`
-11. `09-kafka-consumer.yaml` (requires Kafka, PostgreSQL, ClickHouse ready)
-12. `10-elt-copy-workout.yaml` (requires PostgreSQL and ClickHouse ready)
+10. `09-kafka-consumer.yaml` (requires Kafka, PostgreSQL, ClickHouse ready)
+11. `10-elt-copy-workout.yaml` (requires PostgreSQL and ClickHouse ready)
 
 Kafka topic replication is configured for three brokers with `min.insync.replicas=2`.
 The topic bootstrap Job does not change the replication factor of topics that already

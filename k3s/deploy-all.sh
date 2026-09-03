@@ -72,6 +72,11 @@ bash "$SCRIPT_DIR/install-spark-operator.sh"
 
 # Apply in order
 apply_manifest "$SCRIPT_DIR/00-namespace-and-secrets.yaml" "Namespace, Secrets & ConfigMaps"
+
+$KUBECTL_CMD -n "$NAMESPACE" create configmap postgresql-schema \
+    --from-file=schema.sql="$SCRIPT_DIR/../database/postgresql/schema.sql" \
+    --dry-run=client -o yaml | $KUBECTL_CMD apply -f -
+
 apply_manifest "$SCRIPT_DIR/01-postgresql.yaml" "PostgreSQL Database"
 apply_manifest "$SCRIPT_DIR/12-generate-postgresql-samples.yaml" "PostgreSQL Sample Generator"
 apply_manifest "$SCRIPT_DIR/02-kafka.yaml" "Kafka & Kafka UI"
@@ -87,8 +92,12 @@ $KUBECTL_CMD -n "$NAMESPACE" create configmap running-population-job-script \
     --dry-run=client -o yaml | $KUBECTL_CMD apply -f -
 
 apply_manifest "$SCRIPT_DIR/06-ingress.yaml" "Ingress Routes"
+
+$KUBECTL_CMD -n "$NAMESPACE" create configmap clickhouse-schema \
+    --from-file=schema.sql="$SCRIPT_DIR/../database/clickhouse/schema.sql" \
+    --dry-run=client -o yaml | $KUBECTL_CMD apply -f -
+
 apply_manifest "$SCRIPT_DIR/07-clickhouse.yaml" "ClickHouse & ClickHouse Keeper"
-apply_manifest "$SCRIPT_DIR/08-trainingstatus-cronjob.yaml" "Training Status CronJob"
 apply_manifest "$SCRIPT_DIR/09-kafka-consumer.yaml" "Kafka Consumer"
 apply_manifest "$SCRIPT_DIR/10-elt-copy-workout.yaml" "PostgreSQL to ClickHouse ELT"
 apply_manifest "$SCRIPT_DIR/11-smartwatch-simulator.yaml" "Smartwatch Simulator"

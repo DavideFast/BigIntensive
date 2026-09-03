@@ -76,7 +76,6 @@ It is used as orchestrator to manage all the components of the project and scale
 - Producer Kafka (backend)
 - Consumer Kafka (kafka stream)
 - Job Spark (find the correlation matrix among all exercises)
-- Job Spark (find the training status)
 - Job Spark (find performance among all other athletes)
 - Job Spark (check if running volume is potentially dangerous)
 
@@ -93,7 +92,6 @@ It is used as orchestrator to manage all the components of the project and scale
 ## Avvio consigliato
 
 Per partire con il cluster, segui la guida in [k3s/README.md](k3s/README.md).
-
 
 ## Comandi utili
 
