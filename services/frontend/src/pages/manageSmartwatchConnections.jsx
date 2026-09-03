@@ -77,6 +77,9 @@ export default function ManageSmartwatchConnections() {
       <button onClick={avviaELT}>Avvia processo ELT</button>
       <button onClick={fermaELT}>Ferma processo ELT</button>
 
+      <br />
+      <br />
+
       <button
         onClick={() =>
           fetch(`${apiBaseUrl}/api/v1/startRunningPopulation`, { method: "POST" })
