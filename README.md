@@ -84,7 +84,6 @@ It is used as orchestrator to manage all the components of the project and scale
 ## Quale percorso usare
 
 - Deploy completo k3s (raccomandato): `bash k3s/deploy-all.sh`
-- Deploy locale con build immagini + import in k3s: `bash k3s/deploy-k3s-local.sh`
 - Solo sviluppo locale rapido: `dev/docker-compose.yml`
 - Diagnostica k3s: `kubectl get all -n bigintensive` e `kubectl get ingress -n bigintensive`
 

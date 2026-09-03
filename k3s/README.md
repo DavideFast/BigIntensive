@@ -395,8 +395,6 @@ Poi apri:
 
 - Se compare `node password rejected`, ripulisci l'agent e rilancia il join con `--with-node-id`.
 
-- Se il browser mostra `Blocked request. This host is not allowed`, aggiorna la repo sulla VM server e rilancia `bash k3s/deploy-k3s-local.sh` per ricostruire il frontend con la configurazione Vite aggiornata.
-
 - Per controllare dove stanno girando i pod nel cluster a due nodi:
 
   ```bash

@@ -21,7 +21,7 @@ k3s/
 ├── 09-kafka-consumer.yaml
 ├── 10-elt-copy-workout.yaml
 ├── deploy-all.sh
-└── deploy-k3s-local.sh
+└── validate-deploy.sh
 ```
 
 ## Ownership by file
@@ -89,12 +89,6 @@ bash k3s/deploy-all.sh
 
 # clean start (recreate namespace)
 RESET_NAMESPACE=true bash k3s/deploy-all.sh
-```
-
-### Rebuild app images and force rollout on k3s
-
-```bash
-bash k3s/deploy-k3s-local.sh
 ```
 
 ### Component-only deploy
