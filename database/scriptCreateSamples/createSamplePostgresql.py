@@ -1650,7 +1650,6 @@ def main():
     )
 
     print(
-        "Training status:         NO"
     )
 
     print(
