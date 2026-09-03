@@ -88,7 +88,7 @@ if [ "$DEPLOY_K3S" = true ]; then
         KUBECTL_CMD="k3s kubectl"
     fi
     
-    $KUBECTL_CMD apply -f "$K3S_DIR/09-kafka-consumer.yaml"
+    $KUBECTL_CMD apply -f "$K3S_DIR/08-kafka-consumer.yaml"
     echo -e "${GREEN}✅ Kafka Consumer deployed to K3s${NC}"
     echo ""
     

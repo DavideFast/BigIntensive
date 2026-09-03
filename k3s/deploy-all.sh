@@ -78,7 +78,7 @@ $KUBECTL_CMD -n "$NAMESPACE" create configmap postgresql-schema \
     --dry-run=client -o yaml | $KUBECTL_CMD apply -f -
 
 apply_manifest "$SCRIPT_DIR/01-postgresql.yaml" "PostgreSQL Database"
-apply_manifest "$SCRIPT_DIR/12-generate-postgresql-samples.yaml" "PostgreSQL Sample Generator"
+apply_manifest "$SCRIPT_DIR/11-generate-postgresql-samples.yaml" "PostgreSQL Sample Generator"
 apply_manifest "$SCRIPT_DIR/02-kafka.yaml" "Kafka & Kafka UI"
 apply_manifest "$SCRIPT_DIR/02b-kafka-topics.yaml" "Kafka Topic Bootstrap Job"
 apply_manifest "$SCRIPT_DIR/03-backend.yaml" "Backend"
@@ -98,9 +98,9 @@ $KUBECTL_CMD -n "$NAMESPACE" create configmap clickhouse-schema \
     --dry-run=client -o yaml | $KUBECTL_CMD apply -f -
 
 apply_manifest "$SCRIPT_DIR/07-clickhouse.yaml" "ClickHouse & ClickHouse Keeper"
-apply_manifest "$SCRIPT_DIR/09-kafka-consumer.yaml" "Kafka Consumer"
-apply_manifest "$SCRIPT_DIR/10-elt-copy-workout.yaml" "PostgreSQL to ClickHouse ELT"
-apply_manifest "$SCRIPT_DIR/11-smartwatch-simulator.yaml" "Smartwatch Simulator"
+apply_manifest "$SCRIPT_DIR/08-kafka-consumer.yaml" "Kafka Consumer"
+apply_manifest "$SCRIPT_DIR/09-elt-copy-workout.yaml" "PostgreSQL to ClickHouse ELT"
+apply_manifest "$SCRIPT_DIR/10-smartwatch-simulator.yaml" "Smartwatch Simulator"
 
 echo -e "${GREEN}========================================"
 echo "✓ All resources deployed successfully!"

@@ -91,7 +91,7 @@ docker build -t davidefast/consumer-kafka:latest streaming/kafka/consumer/
 3. Applicare il manifesto:
 
 ```bash
-kubectl apply -f k3s/09-kafka-consumer.yaml
+kubectl apply -f k3s/08-kafka-consumer.yaml
 ```
 
 **Manifesto include:**

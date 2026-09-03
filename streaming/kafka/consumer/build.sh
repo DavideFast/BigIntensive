@@ -32,4 +32,4 @@ fi
 
 echo ""
 echo "Next steps:"
-echo "1. K3s: kubectl apply -f k3s/09-kafka-consumer.yaml"
+echo "1. K3s: kubectl apply -f k3s/08-kafka-consumer.yaml"

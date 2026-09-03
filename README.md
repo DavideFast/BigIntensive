@@ -128,7 +128,7 @@ Per partire con il cluster, segui la guida in [k3s/README.md](k3s/README.md).
 
 ## Inizializzare Citus
 
-Nel cluster k3s questa parte e' automatizzata dal job `citus-bootstrap` definito nei manifest modulari in `k3s/` (in particolare `k3s/01-citus.yaml`).
+Nel cluster k3s questa parte e' automatizzata dai manifest modulari in `k3s/`.
 
 ## Collegare Spark a Citus via JDBC
 

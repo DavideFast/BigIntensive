@@ -17,8 +17,10 @@ k3s/
 ├── 05-spark-and-jupyter.yaml
 ├── 06-ingress.yaml
 ├── 07-clickhouse.yaml
-├── 09-kafka-consumer.yaml
-├── 10-elt-copy-workout.yaml
+├── 08-kafka-consumer.yaml
+├── 09-elt-copy-workout.yaml
+├── 10-smartwatch-simulator.yaml
+├── 11-generate-postgresql-samples.yaml
 ├── deploy-all.sh
 └── validate-deploy.sh
 ```
@@ -44,13 +46,13 @@ k3s/
   - Four ClickHouse servers arranged as two shards with two replicas each.
   - Replicated local tables and Distributed tables using `cityHash64(athlete_id)`.
   - The schema ConfigMap is generated from `database/clickhouse/schema.sql` by `deploy-all.sh`.
-- `09-kafka-consumer.yaml`
+- `08-kafka-consumer.yaml`
   - Kafka Consumer Real-Time Analysis (Kafka Streams application).
   - ConfigMap with environment variables.
   - Deployment with 2 replicas for HA.
   - Service for metrics exposure.
   - Liveness and readiness probes.
-- `10-elt-copy-workout.yaml`
+- `09-elt-copy-workout.yaml`
   - Hourly CronJob that copies PostgreSQL workouts to ClickHouse staging.
   - Executes the ClickHouse transformation from `database/clickhouse/script.sql`.
 
@@ -67,8 +69,10 @@ The expected order is fixed and implemented by `deploy-all.sh`:
 7. `05-spark-and-jupyter.yaml`
 8. `06-ingress.yaml`
 9. `07-clickhouse.yaml`
-10. `09-kafka-consumer.yaml` (requires Kafka, PostgreSQL, ClickHouse ready)
-11. `10-elt-copy-workout.yaml` (requires PostgreSQL and ClickHouse ready)
+10. `08-kafka-consumer.yaml` (requires Kafka, PostgreSQL, ClickHouse ready)
+11. `09-elt-copy-workout.yaml` (requires PostgreSQL and ClickHouse ready)
+12. `10-smartwatch-simulator.yaml`
+13. `11-generate-postgresql-samples.yaml`
 
 Kafka topic replication is configured for three brokers with `min.insync.replicas=2`.
 The topic bootstrap Job does not change the replication factor of topics that already
