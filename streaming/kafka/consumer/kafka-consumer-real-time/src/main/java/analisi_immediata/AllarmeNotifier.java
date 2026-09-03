@@ -9,9 +9,9 @@ public final class AllarmeNotifier {
     }
 
     public static void invia(String messaggio) {
-        System.out.println("=== ALLARME ===");
+        System.out.println("=========== ALLARME ===========");
         System.out.println("SMS simulato verso " + NUMERO_DESTINATARIO);
         System.out.println(messaggio);
-        System.out.println("===============");
+        System.out.println("===============================");
     }
 }
