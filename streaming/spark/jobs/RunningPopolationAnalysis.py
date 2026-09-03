@@ -37,13 +37,14 @@ def main():
     df_pulito.show(5)
 
     df_pulito_null = df_pulito.filter(
-        col("athlete_id").isNotNull(),
-        col("session_id").isNotNull(),
-        col("sample_id").isNotNull(),
-        col("heart_rate").isNotNull(),
-        col("latitude").isNotNull(),
-        col("longitude").isNotNull(),
-        col("timestamp").isNotNull())
+        col("athlete_id").isNotNull()
+        & col("session_id").isNotNull()
+        & col("sample_id").isNotNull()
+        & col("heart_rate").isNotNull()
+        & col("latitude").isNotNull()
+        & col("longitude").isNotNull()
+        & col("timestamp").isNotNull()
+    )
 
     df_pulito_null.show(5)
 
