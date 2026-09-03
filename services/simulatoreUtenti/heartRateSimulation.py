@@ -18,11 +18,18 @@ ENDPOINT_URL = os.getenv(
 )
 NUM_ATHLETES = int(os.getenv("NUM_ATHLETES", "20000"))
 SAMPLE_INTERVAL = float(os.getenv("SAMPLE_INTERVAL", "5.0"))
+DANGER_EVENT_PROBABILITY = float(os.getenv("DANGER_EVENT_PROBABILITY", "0.05"))
+DANGER_MIN_SAMPLES = int(os.getenv("DANGER_MIN_SAMPLES", "6"))
+DANGER_MAX_SAMPLES = int(os.getenv("DANGER_MAX_SAMPLES", "18"))
 
 if NUM_ATHLETES < 1:
     raise ValueError("NUM_ATHLETES deve essere almeno 1")
 if SAMPLE_INTERVAL <= 0:
     raise ValueError("SAMPLE_INTERVAL deve essere maggiore di 0")
+if not 0 <= DANGER_EVENT_PROBABILITY <= 1:
+    raise ValueError("DANGER_EVENT_PROBABILITY deve essere compresa tra 0 e 1")
+if DANGER_MIN_SAMPLES < 1 or DANGER_MAX_SAMPLES < DANGER_MIN_SAMPLES:
+    raise ValueError("Intervallo durata evento pericoloso non valido")
 
 # ------------------------------------------------------------
 # SESSIONI
@@ -197,6 +204,8 @@ def initialize_athlete(
         "cadence": cadence,
 
         "temperature": temperature,
+
+        "danger_remaining_samples": 0,
     }
 
 
@@ -243,6 +252,12 @@ def start_session(
     athlete["temperature"] = random.uniform(
         36.5,
         37.1
+    )
+
+    athlete["danger_remaining_samples"] = (
+        random.randint(DANGER_MIN_SAMPLES, DANGER_MAX_SAMPLES)
+        if random.random() < DANGER_EVENT_PROBABILITY
+        else 0
     )
 
 
@@ -358,13 +373,15 @@ def update_position(
     # Velocità interna
     # --------------------------------------------------------
 
-    athlete["speed_kmh"] += random.uniform(
-        -0.20,
-        0.20
-    )
+    if athlete["danger_remaining_samples"] > 0:
+        athlete["speed_kmh"] *= random.uniform(0.35, 0.55)
+        minimum_speed = 1.0
+    else:
+        athlete["speed_kmh"] += random.uniform(-0.20, 0.20)
+        minimum_speed = 6.0
 
     athlete["speed_kmh"] = max(
-        6.0,
+        minimum_speed,
         min(
             athlete["speed_kmh"],
             18.0
@@ -395,10 +412,10 @@ def update_physiology(
     # Battito
     # --------------------------------------------------------
 
-    athlete["heart_rate"] += random.randint(
-        -3,
-        3
-    )
+    if athlete["danger_remaining_samples"] > 0:
+        athlete["heart_rate"] += random.randint(4, 8)
+    else:
+        athlete["heart_rate"] += random.randint(-3, 3)
 
     athlete["heart_rate"] = max(
         110,
@@ -412,10 +429,10 @@ def update_physiology(
     # Cadenza
     # --------------------------------------------------------
 
-    athlete["cadence"] += random.randint(
-        -2,
-        2
-    )
+    if athlete["danger_remaining_samples"] > 0:
+        athlete["cadence"] += random.randint(-15, -8)
+    else:
+        athlete["cadence"] += random.randint(-2, 2)
 
     athlete["cadence"] = max(
         145,
@@ -525,6 +542,9 @@ def generate_sample(
 
         "event_type": event_type,
     }
+
+    if athlete["danger_remaining_samples"] > 0:
+        athlete["danger_remaining_samples"] -= 1
 
 
 # ============================================================
@@ -743,11 +763,17 @@ async def simulate_athlete(
             # Campione normale
             # -----------------------------------------------
 
+            event_type = (
+                "danger_scenario"
+                if athlete["danger_remaining_samples"] > 0
+                else "sample"
+            )
+
             await send_sample(
                 client,
                 athlete_id,
                 athlete,
-                event_type="sample"
+                event_type=event_type
             )
 
             # -----------------------------------------------
