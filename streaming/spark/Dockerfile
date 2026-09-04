@@ -2,7 +2,7 @@ FROM apache/spark:3.5.1
 
 USER root
 
-RUN pip install --no-cache-dir delta-spark requests psycopg2-binary numpy
+RUN pip install --no-cache-dir delta-spark requests psycopg2-binary numpy matplotlib
 
 RUN mkdir -p /opt/spark/jars
 ADD https://jdbc.postgresql.org/download/postgresql-42.7.2.jar /opt/spark/jars/postgresql-42.7.2.jar
