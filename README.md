@@ -97,7 +97,7 @@ It runs as a Kubernetes Deployment with only one replica because it is mainly us
 Kafka stream is used to read events and to push them to Clickhouse. Kafka stream is a good choice because it is fast and distributed.
 Spark would be overkill for this project due to the relatively small volume of data and the simplicity of the analysis tasks.
 It is important to note that Kafka streams operate in real-time, providing low-latency data processing, which complements the batch-oriented nature of Spark for more complex analytics tasks.
-It runs as a Kubernetes StatefulSet with 2 replicas to ensure high availability and distributed processing among the partitions.
+It runs as a Kubernetes StatefulSet with 2 minimum replicas and can scale up to 6 replicas through KEDA, based on the Kafka consumer lag. Six replicas is the maximum useful value for `heart-rate-events`, which has six partitions.
 
 ### Spark
 
@@ -105,6 +105,8 @@ It is used to make data analysis reading data from Clickhouse and Postgresql dat
 It runs on Kubernetes in client mode to perform data analysis tasks as needed.
 When launched from the Jupyter notebook, the Jupyter pod acts as the Spark driver. The current notebook configuration disables dynamic allocation and requests 4 executor pods; this number can be changed in the notebook configuration.
 When launched from the backend, the backend creates a Kubernetes Job whose pod runs the Spark driver. Dynamic allocation is enabled for this job, so Spark starts with 1 executor pod and can dynamically scale up to 4 executor pods according to the workload and available cluster resources.
+
+At this moment Spark is used to compute the correlation matrix of the main features that act for the heart derived metrics.
 
 ### Jupyter notebook
 

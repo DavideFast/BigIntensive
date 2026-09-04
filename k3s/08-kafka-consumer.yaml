@@ -42,6 +42,36 @@ data:
   POSTGRES_USER: "postgres"
 
 ---
+# Scale the Kafka Streams consumer group from 2 to 6 pods according to lag.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: kafka-consumer-realtime-scaler
+  namespace: bigintensive
+spec:
+  scaleTargetRef:
+    name: kafka-consumer-realtime
+    kind: StatefulSet
+  pollingInterval: 15
+  cooldownPeriod: 120
+  minReplicaCount: 2
+  maxReplicaCount: 6
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 180
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka:19092
+        consumerGroup: rilevatore-immobilita
+        topic: heart-rate-events
+        lagThreshold: "1000"
+        activationLagThreshold: "100"
+        offsetResetPolicy: latest
+
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:

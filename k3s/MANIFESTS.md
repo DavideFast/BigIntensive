@@ -49,7 +49,7 @@ k3s/
 - `08-kafka-consumer.yaml`
   - Kafka Consumer Real-Time Analysis (Kafka Streams application).
   - ConfigMap with environment variables.
-  - Deployment with 2 replicas for HA.
+  - StatefulSet with 2 minimum and 6 maximum replicas, scaled by KEDA from Kafka consumer lag.
   - Service for metrics exposure.
   - Liveness and readiness probes.
 - `09-elt-copy-workout.yaml`

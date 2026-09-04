@@ -76,6 +76,7 @@ pre_deploy_cleanup
 
 # The operator installs cluster-wide CRDs and watches SparkApplication resources.
 bash "$SCRIPT_DIR/install-spark-operator.sh"
+bash "$SCRIPT_DIR/install-keda.sh"
 
 # Apply in order
 apply_manifest "$SCRIPT_DIR/00-namespace-and-secrets.yaml" "Namespace, Secrets & ConfigMaps"
