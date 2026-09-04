@@ -5,6 +5,9 @@ import java.util.List;
 
 public class Database {
 
+    public Database() {
+    }
+
     public void databaseBulkInsert(List<CampioneDaSalvare> campioni) {
         String url = Configurazione.getClickhouseUrl();
         String user = Configurazione.getClickhouseUser();

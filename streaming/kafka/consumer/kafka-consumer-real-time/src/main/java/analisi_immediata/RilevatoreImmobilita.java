@@ -1,4 +1,5 @@
 package analisi_immediata;
+import org.apache.kafka.streams.processor.PunctuationType;
 import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.state.KeyValueStore;
@@ -8,6 +9,7 @@ import org.apache.kafka.streams.processor.api.Record;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,6 +55,23 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
         this.store = context.getStateStore(ConsumerKafka.getNomeStore());
         setNumeroIstanze();
         this.id_istanza = NUMERO_ISTANZE;
+        // Senza timer i campioni residui resterebbero in memoria finche non si arriva al batch pieno
+        context.schedule(Duration.ofSeconds(Configurazione.getSecondiFlushBuffer()),
+                PunctuationType.WALL_CLOCK_TIME, timestamp -> svuotaBuffer());
+    }
+
+    @Override
+    public void close() {
+        svuotaBuffer();
+    }
+
+    private void svuotaBuffer() {
+        if (campioniDB.isEmpty()) {
+            return;
+        }
+        List<CampioneDaSalvare> batch = new ArrayList<>(campioniDB);
+        campioniDB.clear();
+        db.databaseBulkInsert(batch);
     }
 
     @Override
@@ -117,10 +136,8 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
             }
             System.out.println(campioniDB.size());
             if (campioniDB.size() >= Configurazione.getMaxCampioni()) {
-                List<CampioneDaSalvare> batchToFlush = new ArrayList<>(campioniDB.subList(0, Configurazione.getMaxCampioni()));
                 System.out.printf("Raggiunto limite di %d campioni, invio batch al database%n", Configurazione.getMaxCampioni());
-                campioniDB.subList(0, Configurazione.getMaxCampioni()).clear();
-                db.databaseBulkInsert(batchToFlush);
+                svuotaBuffer();
             }
             //Se il campo event_type è "session_end" allora elimino lo stato della sessione e non faccio altro
             if ("session_end".equals(sample.event_type())) {

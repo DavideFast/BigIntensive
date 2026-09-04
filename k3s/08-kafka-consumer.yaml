@@ -17,6 +17,8 @@ data:
   SAMPLE_INTERVAL: "5.0"
   # Campioni accumulati prima di scrivere il batch su ClickHouse
   MAX_CAMPIONI_BATCH: "2000"
+  # Svuotamento del buffer a tempo, se il batch non si riempie
+  SECONDI_FLUSH_BUFFER: "30"
   # Ampiezza in campioni della finestra usata per la velocita
   FINESTRA_VELOCITA: "5"
   # Spostamento oltre il quale l'atleta e considerato in movimento

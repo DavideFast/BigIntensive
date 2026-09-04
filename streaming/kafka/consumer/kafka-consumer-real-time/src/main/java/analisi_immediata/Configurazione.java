@@ -50,6 +50,7 @@ public final class Configurazione {
     /** Deve combaciare con SAMPLE_INTERVAL del simulatore: sample_id conta campioni, non secondi. */
     private static final double SECONDI_PER_CAMPIONE = leggiDouble("SAMPLE_INTERVAL", 5.0);
     private static final int MAX_CAMPIONI = leggiIntero("MAX_CAMPIONI_BATCH", 2000);
+    private static final int SECONDI_FLUSH_BUFFER = leggiIntero("SECONDI_FLUSH_BUFFER", 30);
     private static final int FINESTRA_VELOCITA = leggiIntero("FINESTRA_VELOCITA", 5);
     private static final double SOGLIA_MOVIMENTO_M = leggiDouble("SOGLIA_MOVIMENTO_M", 10.0);
     private static final int SECONDI_IMMOBILE = leggiIntero("SECONDI_IMMOBILE", 150);
@@ -86,6 +87,11 @@ public final class Configurazione {
 
     public static int getMaxCampioni() {
         return MAX_CAMPIONI;
+    }
+
+    /** Ogni quanti secondi svuotare il buffer anche se non ha raggiunto MAX_CAMPIONI. */
+    public static int getSecondiFlushBuffer() {
+        return SECONDI_FLUSH_BUFFER;
     }
 
     public static int getFinestraVelocita() {
