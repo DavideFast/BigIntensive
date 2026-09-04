@@ -1,15 +1,14 @@
-# BigIntensive
+# MyFitnessAppDemo
 
-This is a project for the "Big Intensive Application and Big Data Exams" of the Studies University of Perugia.
+This is a project for the "Big Intensive Application and Big Data" exam of the Perugia's University of Studies.
 
 This project gives:
 
 - Kubernetes deployment [k3s/README.md](k3s/README.md).
 
-## What is FitnessHub
+## What is MyFitnessAppDemo
 
-This project aim to simulate a fitness application that permit to store workout sessions and running sessions. Every choice has been made considering an a
-application with 500'000+ users.
+This project aims to simulate a fitness application that permits storing workout sessions and running sessions. Every choice has been made considering an application with 500'000+ users.
 This project is composed by the following components:
 
 - k3s cluster as orchestrator
