@@ -7,7 +7,7 @@ public final class Configurazione {
     }
 
     // ------------------------------------------------------------
-    // LETTORI GENERICI
+    // LETTURA VARIABILI
     // ------------------------------------------------------------
 
     private static String leggiStringa(String nome, String predefinito) {
@@ -77,7 +77,7 @@ public final class Configurazione {
     private static final String POSTGRES_PASSWORD = leggiStringa("POSTGRES_PASSWORD", "postgres");
 
     // ------------------------------------------------------------
-    // ACCESSORI
+    // GETTER PUBBLICI
     // ------------------------------------------------------------
 
     public static double getSecondiPerCampione() {
