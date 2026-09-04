@@ -24,7 +24,7 @@ This project is composed by the following components:
 
 ![Architettura rapida](./Schema-progetto-Big-Intensive-Data-Application.png)
 
-## Architectur and functionality
+# Architecture and functionality
 
 ### Frontend
 
@@ -72,11 +72,6 @@ It allow to show the Spark reports.
 
 It is used as orchestrator to manage all the components of the project and scale them if necessary.
 
-## Artefatti generati
+# Recommended Startup
 
-- `services/frontend/dist` e' output di build (non sorgente): puo' essere eliminata e rigenerata con `npm run build`.
-- `services/*/node_modules` e i dati runtime in `database/` e `streaming/kafka/data` non vanno versionati.
-
-## Avvio consigliato
-
-Per partire con il cluster, segui la guida in [k3s/README.md](k3s/README.md).
+To start the cluster, follow the guide in [k3s/README.md](k3s/README.md).
