@@ -385,21 +385,4 @@ Poi apri:
 <br>
 <br>
 
-# Troubleshooting rapido
-
-- Se il join della seconda VM fallisce con errori sui CA, verifica prima l'endpoint giusto del server:
-
-  ```bash
-  curl -vk https://<SERVER_IP>:6443/cacerts
-  ```
-
-- Se compare `node password rejected`, ripulisci l'agent e rilancia il join con `--with-node-id`.
-
-- Per controllare dove stanno girando i pod nel cluster a due nodi:
-
-  ```bash
-  sudo kubectl get nodes -o wide
-  sudo kubectl get pods -n bigintensive -o wide
-  ```
-
 Per operazioni avanzate (deploy selettivo componenti, runtime checks estesi, checklist modifiche), vedi [MANIFESTS.md](MANIFESTS.md).
