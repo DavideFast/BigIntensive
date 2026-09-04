@@ -532,7 +532,7 @@ def generate_sample(
             "heart_rate"
         ],
 
-        "cadence": athlete[
+        "cadence_spm": athlete[
             "cadence"
         ],
 
