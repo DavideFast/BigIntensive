@@ -8,26 +8,21 @@ import org.apache.kafka.streams.processor.api.Record;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import analisi_immediata.ConsumerKafka.Posizione;
-import analisi_immediata.ConsumerKafka.StatoSessione;
-
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 class RilevatoreImmobilita implements Processor<String, String, String, String> {
-
-    /** La velocita e calcolata sul tratto del singolo campione, quindi va conservata per campione. */
-    private record CampioneDaSalvare(HeartRateSample sample, double velocita) {
-    }
-
+    
     private KeyValueStore<String, String> store;
     private ProcessorContext<String, String> context;
     private int id_istanza = 0;
+    private final Database db = new Database();
 
     private final List<CampioneDaSalvare> campioniDB = new ArrayList<>();
 
+    private static int NUMERO_ISTANZE = 0;
     private static final int MAX_CAMPIONI = 2000;
     private static final int FINESTRA_VELOCITA = 5;
     private static final double SOGLIA_MOVIMENTO_M = 10.0;
@@ -35,7 +30,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
     private static final double RAGGIO_TERRA_M = 6_371_000.0;
     private static final double SECONDI_PER_CAMPIONE = leggiIntervalloCampionamento();
     private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    private static int NUMERO_ISTANZE = 0;
+   
 
     /** Deve combaciare con SAMPLE_INTERVAL del simulatore: sample_id conta campioni, non secondi. */
     private static double leggiIntervalloCampionamento() {
@@ -62,85 +57,6 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
                 * Math.sin(dLon / 2) * Math.sin(dLon / 2);
         return 2 * RAGGIO_TERRA_M * Math.asin(Math.min(1.0, Math.sqrt(a)));
     } 
-
-    private void databaseBulkInsert(List<CampioneDaSalvare> campioni) {
-        String url = System.getenv("CLICKHOUSE_URL");
-        if (url == null || url.isEmpty()) {
-            url = "jdbc:clickhouse://localhost:8123/default";
-        }
-        String user = System.getenv("CLICKHOUSE_USER");
-        if (user == null || user.isEmpty()) {
-            user = "default";
-        }
-        String password = System.getenv("CLICKHOUSE_PASSWORD");
-        if (password == null) {
-            password = "";
-        }
-        System.out.printf("Connessione al database ClickHouse %s con utente %s%n", url, user);
-        try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, password)) {
-            String sql = "INSERT INTO running_samples (sample_id, session_id, athlete_id, timestamp, velocity, heart_rate, latitude, longitude, altitude, temperature, cadence, event_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            System.out.printf("Inserimento batch di %d campioni nel database ClickHouse%n", campioni.size());
-            try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
-                for (CampioneDaSalvare campione : campioni) {
-                    HeartRateSample sample = campione.sample();
-                    String rawTimestamp = sample.timestamp();
-                    OffsetDateTime odt = OffsetDateTime.parse(rawTimestamp);
-                    String formattedTimestamp = odt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                    stmt.setInt(1, sample.sample_id());
-                    stmt.setLong(2, sample.session_id());
-                    stmt.setLong(3, sample.athlete_id());
-                    stmt.setString(4, formattedTimestamp);
-                    stmt.setDouble(5, campione.velocita());
-                    stmt.setDouble(6, sample.heart_rate());
-                    stmt.setDouble(7, sample.latitude());
-                    stmt.setDouble(8, sample.longitude());
-                    stmt.setDouble(9, sample.altitude());
-                    stmt.setDouble(10, sample.temperature());
-                    stmt.setDouble(11, sample.cadence_spm());
-                    stmt.setString(12, sample.event_type());
-                    stmt.addBatch();
-                }
-                System.out.printf("Esecuzione batch di %d campioni nel database ClickHouse%n", campioni.size());
-                stmt.executeBatch();
-                //conn.commit();
-            }
-        } catch (java.sql.SQLException e) {
-            System.err.println("Errore durante l'inserimento batch nel database: " + e.getMessage());
-        }
-    }
-
-    private void databaseSummary(double velocitaMedia, double velocitaMax, double frequenzaCardiacaMedia, double frequenzaCardiacaMax, double cadenzaMedia, double distanzaTotale, int campioni, HeartRateSample sample, long timestamp) {
-        String url = System.getenv("POSTGRES_URL");
-        if (url == null || url.isEmpty()) {
-            url = "jdbc:postgresql://localhost:5432/default";
-        }
-        String user = System.getenv("POSTGRES_USER");
-        if (user == null || user.isEmpty()) {
-            user = "postgres";
-        }
-        String password = System.getenv("POSTGRES_PASSWORD");
-        if (password == null) {
-            password = "postgres";
-        }
-        try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, password)) {
-            String sql = "INSERT INTO session_summary (athlete_id, velocita_media, velocita_max, frequenza_cardiaca_media, frequenza_cardiaca_max, cadenza_media, distanza_totale, campioni, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setInt(1, sample.athlete_id());
-                stmt.setDouble(2, velocitaMedia);
-                stmt.setDouble(3, velocitaMax);
-                stmt.setDouble(4, frequenzaCardiacaMedia);
-                stmt.setDouble(5, frequenzaCardiacaMax);
-                stmt.setDouble(6, cadenzaMedia);
-                stmt.setDouble(7, distanzaTotale);
-                stmt.setInt(8, campioni * 5);
-                stmt.setLong(9, timestamp);
-                stmt.executeUpdate();
-            }
-        
-        } catch (java.sql.SQLException e) {
-            System.err.println("Errore durante l'inserimento del riepilogo nel database: " + e.getMessage());
-        }
-    }
 
     private StatoSessione leggiStato(String chiave) {
         String json = store.get(chiave);
@@ -236,12 +152,13 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
                 List<CampioneDaSalvare> batchToFlush = new ArrayList<>(campioniDB.subList(0, MAX_CAMPIONI));
                 System.out.printf("Raggiunto limite di %d campioni, invio batch al database%n", MAX_CAMPIONI);
                 campioniDB.subList(0, MAX_CAMPIONI).clear();
-                databaseBulkInsert(batchToFlush);
+                db.databaseBulkInsert(batchToFlush);
             }
             //Se il campo event_type è "session_end" allora elimino lo stato della sessione e non faccio altro
             if ("session_end".equals(sample.event_type())) {
                 System.out.printf("Sessione terminata per atleta %d, sessione %d, sample_id %d%n", sample.athlete_id(), sample.session_id(), sample.sample_id());
-                databaseSummary(campioniVelocita > 0 ? sommaVelocita / campioniVelocita : 0.0, velocitaMax,
+                Database db = new Database();
+                db.databaseSummary(campioniVelocita > 0 ? sommaVelocita / campioniVelocita : 0.0, velocitaMax,
                         sommaFrequenza / campioni, frequenzaMax,
                         sommaCadenza / campioni, distanzaTotale, campioni,
                         sample, context.currentStreamTimeMs());

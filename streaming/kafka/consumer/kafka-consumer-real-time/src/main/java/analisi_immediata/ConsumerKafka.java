@@ -10,7 +10,6 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,26 +28,9 @@ public class ConsumerKafka {
         return TOPIC_INGRESSO_PREDEFINITO;
     }
     
-    /** Posizione di un campione, usata per la finestra scorrevole della velocita. */
-    public record Posizione(double latitudine, double longitudine, int indice) {
-    }
+    
 
-    /** Stato persistito nello state store, serializzato come JSON. Gli aggregati sono per (atleta, sessione). */
-    public record StatoSessione(
-            double latitudine,
-            double longitudine,
-            int indice,
-            boolean allarmeInviato,
-            double distanzaTotale,
-            double sommaVelocita,
-            double velocitaMax,
-            double sommaFrequenza,
-            double frequenzaMax,
-            double sommaCadenza,
-            int campioni,
-            int campioniVelocita,
-            List<Posizione> storico) {
-    }
+    
 
     public static void main(String[] args) {
 
