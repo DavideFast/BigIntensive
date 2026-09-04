@@ -317,9 +317,7 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
       labelSelector: `app=${runningPopulationJobName}`,
     });
 
-    const finishedJobs = existingJobs.items.filter(
-      (job) => job.status?.completionTime || job.status?.failed,
-    );
+    const finishedJobs = existingJobs.items.filter((job) => job.status?.completionTime || job.status?.failed);
     await Promise.all(
       finishedJobs.map((job) =>
         k8sBatchApi.deleteNamespacedJob({
@@ -370,7 +368,7 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
                   imagePullPolicy: "Always",
                   command: ["/bin/bash", "-lc"],
                   args: [
-                    "exec /opt/spark/bin/spark-submit --master k8s://https://kubernetes.default:443 --deploy-mode client --name running-population-analysis --conf spark.kubernetes.namespace=$KUBERNETES_NAMESPACE --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark --conf spark.kubernetes.container.image=davidefast/bigintensive-sparkwithdependencies:latest --conf spark.dynamicAllocation.enabled=false --conf spark.executor.instances=2 --conf spark.executor.cores=2 --conf spark.executor.memory=2g --conf spark.driver.host=$POD_IP --conf spark.driver.bindAddress=0.0.0.0 --conf spark.driver.port=4040 --jars /opt/spark/jars/clickhouse-jdbc-0.6.3-all.jar,/opt/spark/jars/postgresql-42.7.2.jar --py-files /opt/jobs/config.py /opt/jobs/RunningPopolationAnalysis.py",
+                    "exec /opt/spark/bin/spark-submit --master k8s://https://kubernetes.default:443 --deploy-mode client --name running-population-analysis --conf spark.kubernetes.namespace=$KUBERNETES_NAMESPACE --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark --conf spark.kubernetes.container.image=davidefast/bigintensive-sparkwithdependencies:latest --conf spark.dynamicAllocation.enabled=true --conf spark.dynamicAllocation.shuffleTracking.enabled=true --conf spark.dynamicAllocation.initialExecutors=1 --conf spark.dynamicAllocation.minExecutors=1 --conf spark.dynamicAllocation.maxExecutors=4 --conf spark.dynamicAllocation.executorIdleTimeout=60s --conf spark.dynamicAllocation.cachedExecutorIdleTimeout=120s --conf spark.executor.cores=2 --conf spark.executor.memory=2g --conf spark.driver.host=$POD_IP --conf spark.driver.bindAddress=0.0.0.0 --conf spark.driver.port=4040 --jars /opt/spark/jars/clickhouse-jdbc-0.6.3-all.jar,/opt/spark/jars/postgresql-42.7.2.jar --py-files /opt/jobs/config.py /opt/jobs/RunningPopolationAnalysis.py",
                   ],
                   envFrom: [{ configMapRef: { name: "bigintensive-config" } }, { secretRef: { name: "bigintensive-secrets" } }],
                   env: [
