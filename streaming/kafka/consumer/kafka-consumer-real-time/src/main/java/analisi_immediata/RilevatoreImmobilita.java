@@ -23,40 +23,11 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
     private final List<CampioneDaSalvare> campioniDB = new ArrayList<>();
 
     private static int NUMERO_ISTANZE = 0;
-    private static final int MAX_CAMPIONI = 2000;
-    private static final int FINESTRA_VELOCITA = 5;
-    private static final double SOGLIA_MOVIMENTO_M = 10.0;
-    private static final int SECONDI_IMMOBILE = 30;
-    private static final double RAGGIO_TERRA_M = 6_371_000.0;
-    private static final double SECONDI_PER_CAMPIONE = leggiIntervalloCampionamento();
     private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-   
-
-    /** Deve combaciare con SAMPLE_INTERVAL del simulatore: sample_id conta campioni, non secondi. */
-    private static double leggiIntervalloCampionamento() {
-        String valore = System.getenv("SAMPLE_INTERVAL");
-        if (valore == null || valore.isBlank()) {
-            return 5.0;
-        }
-        try {
-            double intervallo = Double.parseDouble(valore);
-            return intervallo > 0 ? intervallo : 5.0;
-        } catch (NumberFormatException e) {
-            return 5.0;
-        }
-    }
 
     private static void setNumeroIstanze() {
         NUMERO_ISTANZE++;
     }
-
-    private static double distanzaMetri(double lat1, double lon1, double lat2, double lon2) {
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        return 2 * RAGGIO_TERRA_M * Math.asin(Math.min(1.0, Math.sqrt(a)));
-    } 
 
     private StatoSessione leggiStato(String chiave) {
         String json = store.get(chiave);
@@ -112,7 +83,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
             }
 
             // Calcolo lo spostamento tra la posizione precedente e quella dell'evento corrente
-            double spostamento = distanzaMetri(precedente.latitudine(), precedente.longitudine(),sample.latitude(), sample.longitude());
+            double spostamento = CalcoliMatematici.distanzaMetri(precedente.latitudine(), precedente.longitudine(),sample.latitude(), sample.longitude());
             if(sample.sample_id() == precedente.indice()) {
                 System.out.printf("Campione duplicato per atleta %d, sessione %d, sample_id %d%n", sample.athlete_id(), sample.session_id(), sample.sample_id());
             }
@@ -124,13 +95,13 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
             double sommaVelocita = precedente.sommaVelocita();
             double velocitaMax = precedente.velocitaMax();
             int campioniVelocita = precedente.campioniVelocita();
-            if (storico.size() > FINESTRA_VELOCITA) {
+            if (storico.size() > Configurazione.getFinestraVelocita()) {
                 Posizione riferimento = storico.remove(0);
                 int deltaCampioni = sample.sample_id() - riferimento.indice();
                 if (deltaCampioni > 0) {
-                    double distanzaFinestra = distanzaMetri(riferimento.latitudine(), riferimento.longitudine(),
+                    double distanzaFinestra = CalcoliMatematici.distanzaMetri(riferimento.latitudine(), riferimento.longitudine(),
                             sample.latitude(), sample.longitude());
-                    velocitaTratto = distanzaFinestra / (deltaCampioni * SECONDI_PER_CAMPIONE);
+                    velocitaTratto = distanzaFinestra / (deltaCampioni * Configurazione.getSecondiPerCampione());
                     sommaVelocita += velocitaTratto;
                     velocitaMax = Math.max(velocitaMax, velocitaTratto);
                     campioniVelocita++;
@@ -148,10 +119,10 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
                 System.out.print("-------");
             }
             System.out.println(campioniDB.size());
-            if (campioniDB.size() >= MAX_CAMPIONI) {
-                List<CampioneDaSalvare> batchToFlush = new ArrayList<>(campioniDB.subList(0, MAX_CAMPIONI));
-                System.out.printf("Raggiunto limite di %d campioni, invio batch al database%n", MAX_CAMPIONI);
-                campioniDB.subList(0, MAX_CAMPIONI).clear();
+            if (campioniDB.size() >= Configurazione.getMaxCampioni()) {
+                List<CampioneDaSalvare> batchToFlush = new ArrayList<>(campioniDB.subList(0, Configurazione.getMaxCampioni()));
+                System.out.printf("Raggiunto limite di %d campioni, invio batch al database%n", Configurazione.getMaxCampioni());
+                campioniDB.subList(0, Configurazione.getMaxCampioni()).clear();
                 db.databaseBulkInsert(batchToFlush);
             }
             //Se il campo event_type è "session_end" allora elimino lo stato della sessione e non faccio altro
@@ -167,7 +138,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
             }
 
             // Se lo spostamento è maggiore della soglia, aggiorno la posizione di riferimento
-            if (spostamento > SOGLIA_MOVIMENTO_M) {
+            if (spostamento > Configurazione.getSogliaMovimentoM()) {
                 salvaStato(chiave, new StatoSessione(sample.latitude(), sample.longitude(), sample.sample_id(), false,
                         distanzaTotale, sommaVelocita, velocitaMax, sommaFrequenza, frequenzaMax, sommaCadenza,
                         campioni, campioniVelocita, storico));
@@ -178,7 +149,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
             int fermoDaSecondi = sample.sample_id() - precedente.indice();
             boolean allarmeInviato = precedente.allarmeInviato();
             String messaggio = null;
-            if (fermoDaSecondi >= SECONDI_IMMOBILE && !allarmeInviato && sample.heart_rate() > 180) {
+            if (fermoDaSecondi >= Configurazione.getSecondiImmobile() && !allarmeInviato && sample.heart_rate() > 180) {
                 allarmeInviato = true;
                 messaggio = String.format("Atleta %s fermo da %d s in posizione %.6f, %.6f (bpm %.0f)",
                         sample.athlete_id(), fermoDaSecondi, sample.latitude(), sample.longitude(),sample.heart_rate());
