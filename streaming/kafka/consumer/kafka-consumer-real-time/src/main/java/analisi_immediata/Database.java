@@ -47,6 +47,7 @@ public class Database {
 
 
     public void databaseSummary(double velocitaMedia, double velocitaMax, double frequenzaCardiacaMedia, double frequenzaCardiacaMax, double cadenzaMedia, double distanzaTotale, int campioni, HeartRateSample sample, long timestamp) {
+        System.out.printf("Scrittura riepilogo sessione per atleta %d, sessione %d, campioni %d%n", sample.athlete_id(), sample.session_id(), campioni);
         String url = Configurazione.getPostgresUrl();
         String user = Configurazione.getPostgresUser();
         String password = Configurazione.getPostgresPassword();

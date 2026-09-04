@@ -131,17 +131,11 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
             int campioni = precedente.campioni() + 1;
 
             campioniDB.add(new CampioneDaSalvare(sample, velocitaTratto));
-            for(int i = 0; i < id_istanza; i++) {
-                System.out.print("-------");
-            }
-            System.out.println(campioniDB.size());
             if (campioniDB.size() >= Configurazione.getMaxCampioni()) {
-                System.out.printf("Raggiunto limite di %d campioni, invio batch al database%n", Configurazione.getMaxCampioni());
                 svuotaBuffer();
             }
             //Se il campo event_type è "session_end" allora elimino lo stato della sessione e non faccio altro
             if ("session_end".equals(sample.event_type())) {
-                System.out.printf("Sessione terminata per atleta %d, sessione %d, sample_id %d%n", sample.athlete_id(), sample.session_id(), sample.sample_id());
                 db.databaseSummary(campioniVelocita > 0 ? sommaVelocita / campioniVelocita : 0.0, velocitaMax,
                         sommaFrequenza / campioni, frequenzaMax,
                         sommaCadenza / campioni, distanzaTotale, campioni,
