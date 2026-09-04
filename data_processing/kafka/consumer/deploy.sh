@@ -5,8 +5,8 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONSUMER_DIR="$SCRIPT_DIR/kafka-consumer-real-time"
-DOCKER_DIR="$SCRIPT_DIR/.."
-K3S_DIR="$SCRIPT_DIR/../../k3s"
+DOCKER_DIR="$SCRIPT_DIR"
+K3S_DIR="$SCRIPT_DIR/../../../k3s"
 
 echo "🚀 BigIntensive Kafka Consumer Deployment"
 echo "=========================================="

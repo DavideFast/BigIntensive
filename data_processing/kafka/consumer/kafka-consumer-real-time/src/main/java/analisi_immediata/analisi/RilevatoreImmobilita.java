@@ -159,8 +159,8 @@ public class RilevatoreImmobilita implements Processor<String, String, String, S
             if (campioniDB.size() >= Configurazione.getMaxCampioni()) {
                 svuotaBuffer();
             }
-            //Se il campo event_type è "session_end" allora elimino lo stato della sessione e non faccio altro
-            if ("session_end".equals(sample.event_type())) {
+            // Il simulatore usa "end"; manteniamo compatibilita con il precedente "session_end".
+            if ("end".equals(sample.event_type()) || "session_end".equals(sample.event_type())) {
                 db.databaseSummary(campioniVelocita > 0 ? sommaVelocita / campioniVelocita : 0.0, velocitaMax,
                         sommaFrequenza / campioni, frequenzaMax,
                         sommaCadenza / campioni, distanzaTotale, campioni,
