@@ -1,4 +1,5 @@
 package analisi_immediata;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -32,9 +33,15 @@ public class ConsumerKafka {
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, Configurazione.getKafkaApplicationId());
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(StreamsConfig.STATE_DIR_CONFIG, Configurazione.getStateDir());
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, org.apache.kafka.streams.errors.LogAndContinueExceptionHandler.class.getName());
+        // Le scritture su ClickHouse avvengono sullo stream thread: senza margine un DB lento causa un rebalance
+        props.put(StreamsConfig.consumerPrefix(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG),
+                Configurazione.getMaxPollIntervalMs());
+        props.put(StreamsConfig.consumerPrefix(ConsumerConfig.MAX_POLL_RECORDS_CONFIG),
+                Configurazione.getMaxPollRecords());
 
         // Creazione dello state store persistente
         StoreBuilder<KeyValueStore<String, String>> store = Stores.keyValueStoreBuilder(

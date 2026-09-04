@@ -6,6 +6,7 @@ import org.apache.kafka.streams.state.KeyValueStore;
 
 import org.apache.kafka.streams.processor.api.Record;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -20,6 +21,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
     
     private final Database db = new Database();
     private final List<CampioneDaSalvare> campioniDB = new ArrayList<>();
+    private long campioniScartati = 0;
     private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private void svuotaBuffer() {
@@ -28,13 +30,23 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
         }
         List<CampioneDaSalvare> batch = new ArrayList<>(campioniDB);
         campioniDB.clear();
-        db.databaseBulkInsert(batch);
+        if (db.databaseBulkInsert(batch)) {
+            return;
+        }
+        // Il tetto evita che un database irraggiungibile faccia crescere il buffer fino all'OutOfMemory
+        if (batch.size() + campioniDB.size() <= Configurazione.getMaxCampioniSospesi()) {
+            campioniDB.addAll(0, batch);
+            System.err.printf("Batch di %d campioni rimesso in coda per un nuovo tentativo%n", batch.size());
+        } else {
+            System.err.printf("Batch di %d campioni scartato: superato il limite di %d campioni in sospeso%n",
+                    batch.size(), Configurazione.getMaxCampioniSospesi());
+        }
     }
 
     private void salvaStato(String chiave, StatoSessione stato) {
         try {
             store.put(chiave, MAPPER.writeValueAsString(stato));
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             System.err.println("Stato non salvabile per " + chiave + ": " + e.getMessage());
         }
     }
@@ -46,7 +58,9 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
         }
         try {
             return MAPPER.readValue(json, StatoSessione.class);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
+            // Ripartire da zero e l'unica opzione, ma va segnalato: gli aggregati della sessione vanno persi
+            System.err.println("Stato illeggibile per " + chiave + ", sessione riavviata: " + e.getMessage());
             return null;
         }
     }
@@ -63,16 +77,24 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
     @Override
     public void close() {
         svuotaBuffer();
+        db.chiudi();
     }
 
     @Override
     public void process(Record<String, String> record) {
-        
-        // Provo a vedere se l'evento che arriva ha una struttura JSON corretta
+
         HeartRateSample sample;
         try {
             sample = MAPPER.readValue(record.value(), HeartRateSample.class);
+        } catch (JsonProcessingException e) {
+            campioniScartati++;
+            if (campioniScartati % 1000 == 1) {
+                System.err.printf("Messaggio malformato scartato (%d totali): %s%n", campioniScartati, e.getOriginalMessage());
+            }
+            return;
+        }
 
+        try {
             String chiave = record.key();
             if (chiave == null || chiave.isBlank()) {
                 chiave = sample.athlete_id() + "-" + sample.session_id();
@@ -97,6 +119,8 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
 
             // Velocita sulla finestra dei 5 campioni precedenti, in m/s
             List<Posizione> storico = new ArrayList<>(precedente.storico());
+            // L'ultimo elemento e ancora il campione precedente: serve per la distanza percorsa
+            Posizione campionePrecedente = storico.isEmpty() ? null : storico.get(storico.size() - 1);
             storico.add(new Posizione(sample.latitude(), sample.longitude(), sample.sample_id()));
             double velocitaTratto = 0;
             double sommaVelocita = precedente.sommaVelocita();
@@ -115,7 +139,10 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
                 }
             }
 
-            double distanzaTotale = precedente.distanzaTotale() + spostamento;
+            double passo = campionePrecedente == null ? 0.0
+                    : CalcoliMatematici.distanzaMetri(campionePrecedente.latitudine(), campionePrecedente.longitudine(),
+                            sample.latitude(), sample.longitude());
+            double distanzaTotale = precedente.distanzaTotale() + passo;
             double sommaFrequenza = precedente.sommaFrequenza() + sample.heart_rate();
             double frequenzaMax = Math.max(precedente.frequenzaMax(), sample.heart_rate());
             double sommaCadenza = precedente.sommaCadenza() + sample.cadence_spm();
@@ -164,9 +191,12 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
                 AllarmeNotifier.invia(messaggio);
                 context.forward(record.withValue(messaggio));
             }
-        } catch (Exception e) {
-            return; // messaggio malformato: scartato senza fermare la topologia
-        }      
+        } catch (RuntimeException e) {
+            // Un bug non deve fermare la topologia, ma nemmeno sparire in silenzio
+            System.err.printf("Errore elaborando il campione dell'atleta %d, sessione %d: %s%n",
+                    sample.athlete_id(), sample.session_id(), e);
+            e.printStackTrace();
+        }
     }
 }
 

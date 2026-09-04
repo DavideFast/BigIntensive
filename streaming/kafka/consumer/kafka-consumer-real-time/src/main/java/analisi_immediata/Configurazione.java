@@ -51,6 +51,7 @@ public final class Configurazione {
     private static final double SECONDI_PER_CAMPIONE = leggiDouble("SAMPLE_INTERVAL", 5.0);
     private static final int MAX_CAMPIONI = leggiIntero("MAX_CAMPIONI_BATCH", 2000);
     private static final int SECONDI_FLUSH_BUFFER = leggiIntero("SECONDI_FLUSH_BUFFER", 30);
+    private static final int MAX_CAMPIONI_SOSPESI = leggiIntero("MAX_CAMPIONI_SOSPESI", 20000);
     private static final int FINESTRA_VELOCITA = leggiIntero("FINESTRA_VELOCITA", 5);
     private static final double SOGLIA_MOVIMENTO_M = leggiDouble("SOGLIA_MOVIMENTO_M", 10.0);
     private static final int SECONDI_IMMOBILE = leggiIntero("SECONDI_IMMOBILE", 150);
@@ -65,6 +66,10 @@ public final class Configurazione {
     private static final String KAFKA_TOPIC = leggiStringa("KAFKA_TOPIC", "heart-rate-events");
     private static final String KAFKA_APPLICATION_ID = leggiStringa("KAFKA_APPLICATION_ID", "rilevatore-immobilita");
     private static final String NOME_STORE = leggiStringa("NOME_STATE_STORE", "stato-sessioni");
+    /** Deve puntare al volume montato nel pod, altrimenti RocksDB scrive in /tmp. */
+    private static final String STATE_DIR = leggiStringa("KAFKA_STATE_DIR", "/var/lib/kafka-streams");
+    private static final int MAX_POLL_INTERVAL_MS = leggiIntero("MAX_POLL_INTERVAL_MS", 600000);
+    private static final int MAX_POLL_RECORDS = leggiIntero("MAX_POLL_RECORDS", 500);
 
     // ------------------------------------------------------------
     // DATABASE
@@ -92,6 +97,11 @@ public final class Configurazione {
     /** Ogni quanti secondi svuotare il buffer anche se non ha raggiunto MAX_CAMPIONI. */
     public static int getSecondiFlushBuffer() {
         return SECONDI_FLUSH_BUFFER;
+    }
+
+    /** Tetto ai campioni trattenuti in memoria quando il database non risponde. */
+    public static int getMaxCampioniSospesi() {
+        return MAX_CAMPIONI_SOSPESI;
     }
 
     public static int getFinestraVelocita() {
@@ -135,6 +145,18 @@ public final class Configurazione {
         return NOME_STORE;
     }
 
+    public static String getStateDir() {
+        return STATE_DIR;
+    }
+
+    public static int getMaxPollIntervalMs() {
+        return MAX_POLL_INTERVAL_MS;
+    }
+
+    public static int getMaxPollRecords() {
+        return MAX_POLL_RECORDS;
+    }
+
     public static String getClickhouseUrl() {
         return CLICKHOUSE_URL;
     }
@@ -162,6 +184,7 @@ public final class Configurazione {
     public static void stampaRiepilogo() {
         System.out.println("=========== CONFIGURAZIONE ===========");
         System.out.println("Kafka        : " + KAFKA_BOOTSTRAP_SERVERS + " topic=" + KAFKA_TOPIC + " appId=" + KAFKA_APPLICATION_ID);
+        System.out.println("State dir    : " + STATE_DIR + " store=" + NOME_STORE);
         System.out.println("ClickHouse   : " + CLICKHOUSE_URL + " utente=" + CLICKHOUSE_USER);
         System.out.println("PostgreSQL   : " + POSTGRES_URL + " utente=" + POSTGRES_USER);
         System.out.printf("Campionamento: %.1f s/campione, finestra velocita %d campioni%n", SECONDI_PER_CAMPIONE, FINESTRA_VELOCITA);

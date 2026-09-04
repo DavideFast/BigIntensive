@@ -33,12 +33,12 @@ CREATE TABLE allenamenti (
 CREATE TABLE riepilogo_corse (
     id SERIAL PRIMARY KEY,
     athlete_id INT NOT NULL REFERENCES athletes(id) ON DELETE CASCADE ,
-    velocita_media DECIMAL(5, 2) CHECK (velocita_media > 0),
-    velocita_max DECIMAL(5, 2) CHECK (velocita_max > 0),
-    frequenza_media DECIMAL(5, 2) CHECK (frequenza_media > 0),
-    frequenza_max DECIMAL(5, 2) CHECK (frequenza_max > 0),
-    cadenza DECIMAL (5,2) CHECK (cadenza > 0),
-    distanza_km DECIMAL(5, 2) CHECK (distanza_km > 0),
+    velocita_media DECIMAL(6, 2) CHECK (velocita_media > 0),
+    velocita_max DECIMAL(6, 2) CHECK (velocita_max > 0),
+    frequenza_media DECIMAL(6, 2) CHECK (frequenza_media > 0),
+    frequenza_max DECIMAL(6, 2) CHECK (frequenza_max > 0),
+    cadenza DECIMAL (6,2) CHECK (cadenza > 0),
+    distanza_km DECIMAL(8, 2) CHECK (distanza_km > 0),
     durata_minuti INT CHECK (durata_minuti > 0),
     data_corsa DATE NOT NULL,    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

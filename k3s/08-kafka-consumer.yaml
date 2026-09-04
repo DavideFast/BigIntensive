@@ -11,6 +11,11 @@ data:
   KAFKA_TOPIC: "heart-rate-events"
   KAFKA_APPLICATION_ID: "rilevatore-immobilita"
   NOME_STATE_STORE: "stato-sessioni"
+  # Deve combaciare con il mountPath del volume state-store
+  KAFKA_STATE_DIR: "/var/lib/kafka-streams"
+  # Margine per le scritture su database prima che Kafka consideri il consumer bloccato
+  MAX_POLL_INTERVAL_MS: "600000"
+  MAX_POLL_RECORDS: "500"
 
   # --- Elaborazione ---
   # Deve combaciare con SAMPLE_INTERVAL del simulatore (10-smartwatch-simulator.yaml)
@@ -19,6 +24,8 @@ data:
   MAX_CAMPIONI_BATCH: "2000"
   # Svuotamento del buffer a tempo, se il batch non si riempie
   SECONDI_FLUSH_BUFFER: "30"
+  # Tetto ai campioni trattenuti in memoria se il database non risponde
+  MAX_CAMPIONI_SOSPESI: "20000"
   # Ampiezza in campioni della finestra usata per la velocita
   FINESTRA_VELOCITA: "5"
   # Spostamento oltre il quale l'atleta e considerato in movimento
@@ -36,7 +43,7 @@ data:
 
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: kafka-consumer-realtime
   namespace: bigintensive
@@ -44,7 +51,9 @@ metadata:
     app: kafka-consumer
     tier: streaming
 spec:
+  serviceName: kafka-consumer-headless
   replicas: 2
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       app: kafka-consumer
@@ -146,9 +155,6 @@ spec:
               mountPath: /var/log/kafka-consumer
 
       volumes:
-        - name: state-store
-          emptyDir:
-            sizeLimit: 500Mi
         - name: logs
           emptyDir:
             sizeLimit: 100Mi
@@ -173,6 +179,35 @@ spec:
           operator: "Equal"
           value: "streaming"
           effect: "NoSchedule"
+
+  # Lo state store di RocksDB sopravvive al riavvio del pod, evitando il restore dal changelog
+  volumeClaimTemplates:
+    - metadata:
+        name: state-store
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 2Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-consumer-headless
+  namespace: bigintensive
+  labels:
+    app: kafka-consumer
+    tier: streaming
+spec:
+  clusterIP: None
+  selector:
+    app: kafka-consumer
+  ports:
+    - name: metrics
+      port: 8888
+      targetPort: 8888
 
 ---
 apiVersion: v1
