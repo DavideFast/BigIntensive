@@ -1,4 +1,4 @@
-package analisi_immediata;
+package analisi_immediata.analisi;
 
 public class CalcoliMatematici {
     private static final double RAGGIO_TERRA_M = 6_371_000.0;

@@ -1,4 +1,4 @@
-package analisi_immediata;
+package analisi_immediata.config;
 
 /** Unico punto di lettura delle variabili d'ambiente iniettate da Kubernetes. */
 public final class Configurazione {

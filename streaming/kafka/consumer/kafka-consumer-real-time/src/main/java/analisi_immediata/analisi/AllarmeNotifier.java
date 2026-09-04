@@ -1,4 +1,6 @@
-package analisi_immediata;
+package analisi_immediata.analisi;
+
+import analisi_immediata.config.Configurazione;
 
 /** Notifica simulata: stampa a schermo al posto di inviare un SMS reale. */
 public final class AllarmeNotifier {

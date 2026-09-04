@@ -1,4 +1,4 @@
-package analisi_immediata;
+package analisi_immediata.modello;
 import java.util.List;
 /** Stato persistito nello state store, serializzato come JSON. Gli aggregati sono per (atleta, sessione). */
 public record StatoSessione(

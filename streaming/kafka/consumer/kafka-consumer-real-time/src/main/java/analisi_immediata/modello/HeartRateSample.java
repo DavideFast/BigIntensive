@@ -1,4 +1,4 @@
-package analisi_immediata;
+package analisi_immediata.modello;
 
 // I nomi dei campi devono combaciare con le chiavi JSON prodotte da heart_rate_simulator.py
 public record HeartRateSample(
