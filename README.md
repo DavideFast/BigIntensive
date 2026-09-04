@@ -51,7 +51,7 @@ The backend do the following operations:
 - Activate/Deactivate the ELT process script
 
 It runs as a Kubernetes Deployment with 2 replicas.
-It ensures high availability and load balancing for the backend component.
+This provides high availability and load balancing for the backend component.
 
 ### Smartwatch simulator script
 
@@ -62,8 +62,8 @@ A parallel python script is the best choice but to not overcomplicate the projec
 
 It's function is to read events from Postgresql and copy them to Clickhouse.
 It works periodically to synchronize the data between the two databases: it reads the last id of the events already copied and then copies only the new events.
-It is simulated as a simple script that runs when the frontend triggers it.
-Same for the smartwatch simulator script it is simulated as a simple script even though in a real-world scenario it could be a more complex parallel Python script.
+It runs periodically through a Kubernetes CronJob and can also be triggered manually from the frontend. Each execution reads only the new events that have not already been copied.
+As with the smartwatch simulator, it is implemented as a simple script even though in a real-world scenario it could be a more complex parallel Python process.
 
 ### Postgresql
 
@@ -74,12 +74,15 @@ This ensures that the Postgresql component is available, but with only 1 replica
 
 ### Clickhouse
 
-It store all the data about gym workouts and running sessions. It's used for analytics and data analysis through its efficient read and query capabilities.
+It stores all the data about gym workouts and running sessions. It is used for analytics and data analysis through its efficient read and query capabilities.
 
-It runs as a Kubernetes StatefulSet with 2 replicas for each of the two shards.
-This ensures that the Clickhouse component is available and provides high availability and fault tolerance for the data stored in Clickhouse.
+It runs as a Kubernetes StatefulSet with 2 shards and 2 replicas for each shard.
+This configuration improves availability and allows ClickHouse to tolerate the failure of one replica per shard.
+The sharding strategy uses a hash of `athlete_id` to distribute data across the two shards. Therefore, data for the same athlete is normally stored on the same shard. This is suitable for the application because its main access pattern is athlete-oriented and relationships between different athletes are not central to the queries.
 
-It needs a Clickhouse coordinator to manage queries and distribute them to the appropriate shards. In this project it is used ClickhouseKeeper as the coordinator. It runs as a Kubernetes StatefulSet with 3 replicas to ensure quorums even in case of failures of one replica.
+Each `_local` table is a physical `ReplicatedMergeTree` table present on every ClickHouse server. It stores the data belonging to that server's shard and replicates it to the other replica of the same shard. The table without the `_local` suffix is a logical `Distributed` table: it provides a single cluster-wide view, routes inserts using `cityHash64(athlete_id)`, and sends queries to the relevant shards before combining their results.
+
+It needs a coordinator to manage replicated tables and coordinate the ClickHouse servers. In this project, ClickHouse Keeper is used as the coordinator. It runs as a Kubernetes StatefulSet with 3 replicas, allowing the Keeper quorum to survive the failure of one replica.
 
 ### Kafka
 
@@ -97,9 +100,9 @@ It runs as a Kubernetes StatefulSet with 2 replicas to ensure high availability 
 ### Spark
 
 It is used to make data analysis reading data from Clickhouse and Postgresql databases.
-It runs onKubernetes in client mode to perform data analysis tasks as needed.
-If launched from Jupyter notebook, the Jupyter pod acts as the Spark driver, and the Spark executors run as separate pods in the Kubernetes cluster in a number from 1 to 4 depending on the user configuration.
-If launched from the backend, a Kubernetes pod running the Spark driver is created, and the Spark executors run as separate pods in the Kubernetes cluster in a number from 1 to 4 depending on the computational resources available and the user configuration (dinamically adjusted in real-time based on the workload).
+It runs on Kubernetes in client mode to perform data analysis tasks as needed.
+When launched from the Jupyter notebook, the Jupyter pod acts as the Spark driver. The current notebook configuration disables dynamic allocation and requests 4 executor pods; this number can be changed in the notebook configuration.
+When launched from the backend, the backend creates a Kubernetes Job whose pod runs the Spark driver. Dynamic allocation is enabled for this job, so Spark starts with 1 executor pod and can dynamically scale up to 4 executor pods according to the workload and available cluster resources.
 
 ### Jupyter notebook
 
