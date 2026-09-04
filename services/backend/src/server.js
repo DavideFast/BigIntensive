@@ -295,11 +295,6 @@ app.post("/api/v1/stopELTProcess", async (req, res) => {
 
 app.post("/api/v1/startRunningPopulation", async (req, res) => {
   try {
-    const { CustomObjectsApi } = await import("@kubernetes/client-node");
-    const k8sCustomObjectsApi = kubeConfig.makeApiClient(CustomObjectsApi);
-    const sparkApplicationGroup = "sparkoperator.k8s.io";
-    const sparkApplicationVersion = "v1beta2";
-    const sparkApplicationPlural = "sparkapplications";
     const existingApplications = await k8sCustomObjectsApi.listNamespacedCustomObject({
       group: sparkApplicationGroup,
       version: sparkApplicationVersion,
