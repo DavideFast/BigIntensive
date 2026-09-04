@@ -87,8 +87,8 @@ apply_manifest "$SCRIPT_DIR/05-spark-and-jupyter.yaml" "Spark & Jupyter"
 
 # The analysis source is mounted into the submitter Job as a ConfigMap.
 $KUBECTL_CMD -n "$NAMESPACE" create configmap running-population-job-script \
-    --from-file=RunningPopolationAnalysis.py="$SCRIPT_DIR/../streaming/spark/jobs/RunningPopolationAnalysis.py" \
-    --from-file=config.py="$SCRIPT_DIR/../streaming/spark/jobs/config.py" \
+    --from-file=RunningPopolationAnalysis.py="$SCRIPT_DIR/../data_processing/spark/jobs/RunningPopolationAnalysis.py" \
+    --from-file=config.py="$SCRIPT_DIR/../data_processing/spark/jobs/config.py" \
     --dry-run=client -o yaml | $KUBECTL_CMD apply -f -
 
 apply_manifest "$SCRIPT_DIR/06-ingress.yaml" "Ingress Routes"
