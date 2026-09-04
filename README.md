@@ -76,7 +76,7 @@ This ensures that the Postgresql component is available, but with only 1 replica
 
 It stores all the data about gym workouts and running sessions. It is used for analytics and data analysis through its efficient read and query capabilities.
 
-It runs as a Kubernetes StatefulSet with 2 shards and 2 replicas for each shard.
+It runs as two Kubernetes StatefulSets, one for each shard, with 2 replicas per shard.
 This configuration improves availability and allows ClickHouse to tolerate the failure of one replica per shard.
 The sharding strategy uses a hash of `athlete_id` to distribute data across the two shards. Therefore, data for the same athlete is normally stored on the same shard. This is suitable for the application because its main access pattern is athlete-oriented and relationships between different athletes are not central to the queries.
 
@@ -84,7 +84,7 @@ Each `_local` table is a physical `ReplicatedMergeTree` table present on every C
 
 It needs a coordinator to manage replicated tables and coordinate the ClickHouse servers. In this project, ClickHouse Keeper is used as the coordinator. It runs as a Kubernetes StatefulSet with 3 replicas, allowing the Keeper quorum to survive the failure of one replica.
 
-With 4 ClickHouse pods and 3 Kubernetes nodes, at least one node must host more than one pod. This is acceptable when the two pods on that node belong to different shards: losing the node then removes one replica from each shard, while the other replicas remain available. To enforce that the two replicas of the same shard are scheduled on different nodes, the deployment uses two separate StatefulSets with mandatory pod anti-affinity for each shard.
+With 4 ClickHouse pods and 3 Kubernetes nodes, at least one node must host more than one pod. This is acceptable when the two pods on that node belong to different shards: losing the node then removes one replica from each shard, while the other replicas remain available. To enforce that the two replicas of the same shard are scheduled on different nodes, the deployment uses two separate StatefulSets with mandatory pod anti-affinity for each shard. The application still connects through the shared `clickhouse` Service, while ClickHouse uses the shard-specific DNS names for internal communication.
 
 ### Kafka
 

@@ -57,6 +57,13 @@ pre_deploy_cleanup() {
     # Job template is immutable; remove legacy job before re-applying 07-clickhouse.yaml
     $KUBECTL_CMD delete job clickhouse-init -n "$NAMESPACE" --ignore-not-found=true >/dev/null 2>&1 || true
 
+    # Remove the previous single-StatefulSet topology before applying the two-shard topology.
+    # ClickHouse data is disposable in this development deployment.
+    $KUBECTL_CMD delete statefulset clickhouse -n "$NAMESPACE" --ignore-not-found=true >/dev/null 2>&1 || true
+    for pvc in data-clickhouse-0 data-clickhouse-1 data-clickhouse-2 data-clickhouse-3; do
+        $KUBECTL_CMD delete pvc "$pvc" -n "$NAMESPACE" --ignore-not-found=true >/dev/null 2>&1 || true
+    done
+
     # Remove stale ClickHouse pods so StatefulSets can recreate them with fresh config
     $KUBECTL_CMD delete pod -n "$NAMESPACE" -l app=clickhouse --ignore-not-found=true >/dev/null 2>&1 || true
     $KUBECTL_CMD delete pod -n "$NAMESPACE" -l app=clickhouse-keeper --ignore-not-found=true >/dev/null 2>&1 || true
