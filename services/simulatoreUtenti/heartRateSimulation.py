@@ -298,6 +298,8 @@ def update_position(
     speed_kmh = athlete[
         "speed_kmh"
     ]
+    if athlete["danger_remaining_samples"] > 0:
+        speed_kmh = min(speed_kmh, 0.1)
 
     direction = athlete[
         "direction"
