@@ -1,4 +1,4 @@
-package analisi_immediata;
+package analisi_immediata.analisi;
 import org.apache.kafka.streams.processor.PunctuationType;
 import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
@@ -10,11 +10,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import analisi_immediata.config.Configurazione;
+import analisi_immediata.modello.CampioneDaSalvare;
+import analisi_immediata.modello.HeartRateSample;
+import analisi_immediata.modello.Posizione;
+import analisi_immediata.modello.StatoSessione;
+import analisi_immediata.persistenza.Database;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-class RilevatoreImmobilita implements Processor<String, String, String, String> {
+public class RilevatoreImmobilita implements Processor<String, String, String, String> {
     
     private KeyValueStore<String, String> store;
     private ProcessorContext<String, String> context;
@@ -68,7 +75,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
     @Override
     public void init(ProcessorContext<String, String> context) {
         this.context = context;
-        this.store = context.getStateStore(ConsumerKafka.getNomeStore());
+        this.store = context.getStateStore(Configurazione.getNomeStore());
         // Senza timer i campioni residui resterebbero in memoria finche non si arriva al batch pieno
         context.schedule(Duration.ofSeconds(Configurazione.getSecondiFlushBuffer()),
                 PunctuationType.WALL_CLOCK_TIME, timestamp -> svuotaBuffer());

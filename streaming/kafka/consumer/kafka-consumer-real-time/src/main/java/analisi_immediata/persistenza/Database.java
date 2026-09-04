@@ -1,4 +1,7 @@
-package analisi_immediata;
+package analisi_immediata.persistenza;
+import analisi_immediata.config.Configurazione;
+import analisi_immediata.modello.CampioneDaSalvare;
+import analisi_immediata.modello.HeartRateSample;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;

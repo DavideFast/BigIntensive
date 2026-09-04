@@ -16,12 +16,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import analisi_immediata.analisi.RilevatoreImmobilita;
+import analisi_immediata.config.Configurazione;
+
 /** Rilevamento immobilita con Kafka Streams: lo stato sopravvive a riavvii e rebalance. */
 public class ConsumerKafka {
-
-    public static String getNomeStore() {
-        return Configurazione.getNomeStore();
-    }
 
     public static void main(String[] args) {
 
