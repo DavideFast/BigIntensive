@@ -161,6 +161,8 @@ public class RilevatoreImmobilita implements Processor<String, String, String, S
             }
             // Il simulatore usa "end"; manteniamo compatibilita con il precedente "session_end".
             if ("end".equals(sample.event_type()) || "session_end".equals(sample.event_type())) {
+                System.out.printf("Evento di fine ricevuto per atleta %d, sessione %d%n",
+                        sample.athlete_id(), sample.session_id());
                 db.databaseSummary(campioniVelocita > 0 ? sommaVelocita / campioniVelocita : 0.0, velocitaMax,
                         sommaFrequenza / campioni, frequenzaMax,
                         sommaCadenza / campioni, distanzaTotale, campioni,
