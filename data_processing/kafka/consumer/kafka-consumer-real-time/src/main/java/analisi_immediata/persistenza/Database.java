@@ -36,6 +36,11 @@ public class Database {
     private Connection postgres() throws SQLException {
         if (connessionePostgres == null || !connessionePostgres.isValid(2)) {
             chiudiSilenziosamente(connessionePostgres);
+            try {
+                Class.forName("org.postgresql.Driver");
+            } catch (ClassNotFoundException e) {
+                throw new SQLException("Driver PostgreSQL non presente nel classpath", e);
+            }
             connessionePostgres = DriverManager.getConnection(
                     Configurazione.getPostgresUrl(),
                     Configurazione.getPostgresUser(),
