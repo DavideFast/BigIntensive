@@ -8,6 +8,8 @@ metadata:
 data:
   KAFKA_BOOTSTRAP_SERVERS: "kafka:19092"
   KAFKA_TOPIC: "heart-rate-events"
+  # Deve combaciare con SAMPLE_INTERVAL del simulatore (10-smartwatch-simulator.yaml)
+  SAMPLE_INTERVAL: "5.0"
   CLICKHOUSE_HOST: "clickhouse"
   CLICKHOUSE_PORT: "8123"
   CLICKHOUSE_DB: "bigintensive"
@@ -96,6 +98,11 @@ spec:
                 configMapKeyRef:
                   name: kafka-consumer-config
                   key: KAFKA_TOPIC
+            - name: SAMPLE_INTERVAL
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-consumer-config
+                  key: SAMPLE_INTERVAL
             - name: CLICKHOUSE_URL
               value: "jdbc:clickhouse://clickhouse:8123/bigintensive"
             - name: CLICKHOUSE_HOST

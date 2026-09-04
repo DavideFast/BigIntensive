@@ -8,6 +8,7 @@ import org.apache.kafka.streams.processor.api.Record;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import analisi_immediata.ConsumerKafka.Posizione;
 import analisi_immediata.ConsumerKafka.StatoSessione;
 
 import java.time.OffsetDateTime;
@@ -16,28 +17,39 @@ import java.util.ArrayList;
 import java.util.List;
 
 class RilevatoreImmobilita implements Processor<String, String, String, String> {
-    
-    private double distanzaTotale= 0.0;
-    private double velocitaMedia= 0.0;
-    private double velocitaMax= 0.0;
-    private double frequenzaCardiacaMedia= 0.0;
-    private double frequenzaCardiacaMax= 0.0;
-    private double cadenzaMedia= 0.0;
-    private int campioniRicevuti = 0;
+
+    /** La velocita e calcolata sul tratto del singolo campione, quindi va conservata per campione. */
+    private record CampioneDaSalvare(HeartRateSample sample, double velocita) {
+    }
+
     private KeyValueStore<String, String> store;
     private ProcessorContext<String, String> context;
     private int id_istanza = 0;
 
-    private final List<HeartRateSample> campioniAnalisi = new ArrayList<>();
-    private final List<HeartRateSample> campioniDB = new ArrayList<>();
+    private final List<CampioneDaSalvare> campioniDB = new ArrayList<>();
 
     private static final int MAX_CAMPIONI = 2000;
-    private static final int MAX_CAMPIONI_ANALISI = 1000;
+    private static final int FINESTRA_VELOCITA = 5;
     private static final double SOGLIA_MOVIMENTO_M = 10.0;
     private static final int SECONDI_IMMOBILE = 30;
     private static final double RAGGIO_TERRA_M = 6_371_000.0;
+    private static final double SECONDI_PER_CAMPIONE = leggiIntervalloCampionamento();
     private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private static int NUMERO_ISTANZE = 0;
+
+    /** Deve combaciare con SAMPLE_INTERVAL del simulatore: sample_id conta campioni, non secondi. */
+    private static double leggiIntervalloCampionamento() {
+        String valore = System.getenv("SAMPLE_INTERVAL");
+        if (valore == null || valore.isBlank()) {
+            return 5.0;
+        }
+        try {
+            double intervallo = Double.parseDouble(valore);
+            return intervallo > 0 ? intervallo : 5.0;
+        } catch (NumberFormatException e) {
+            return 5.0;
+        }
+    }
 
     private static void setNumeroIstanze() {
         NUMERO_ISTANZE++;
@@ -51,7 +63,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
         return 2 * RAGGIO_TERRA_M * Math.asin(Math.min(1.0, Math.sqrt(a)));
     } 
 
-    private void databaseBulkInsert(List<HeartRateSample> samples, long timestamp, double velocitaMediaTratto) {
+    private void databaseBulkInsert(List<CampioneDaSalvare> campioni) {
         String url = System.getenv("CLICKHOUSE_URL");
         if (url == null || url.isEmpty()) {
             url = "jdbc:clickhouse://localhost:8123/default";
@@ -67,9 +79,10 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
         System.out.printf("Connessione al database ClickHouse %s con utente %s%n", url, user);
         try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, password)) {
             String sql = "INSERT INTO running_samples (sample_id, session_id, athlete_id, timestamp, velocity, heart_rate, latitude, longitude, altitude, temperature, cadence, event_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            System.out.printf("Inserimento batch di %d campioni nel database ClickHouse%n", samples.size());
+            System.out.printf("Inserimento batch di %d campioni nel database ClickHouse%n", campioni.size());
             try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
-                for (HeartRateSample sample : samples) {
+                for (CampioneDaSalvare campione : campioni) {
+                    HeartRateSample sample = campione.sample();
                     String rawTimestamp = sample.timestamp();
                     OffsetDateTime odt = OffsetDateTime.parse(rawTimestamp);
                     String formattedTimestamp = odt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
@@ -77,7 +90,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
                     stmt.setLong(2, sample.session_id());
                     stmt.setLong(3, sample.athlete_id());
                     stmt.setString(4, formattedTimestamp);
-                    stmt.setDouble(5, velocitaMediaTratto);
+                    stmt.setDouble(5, campione.velocita());
                     stmt.setDouble(6, sample.heart_rate());
                     stmt.setDouble(7, sample.latitude());
                     stmt.setDouble(8, sample.longitude());
@@ -87,7 +100,7 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
                     stmt.setString(12, sample.event_type());
                     stmt.addBatch();
                 }
-                System.out.printf("Esecuzione batch di %d campioni nel database ClickHouse%n", samples.size());
+                System.out.printf("Esecuzione batch di %d campioni nel database ClickHouse%n", campioni.size());
                 stmt.executeBatch();
                 //conn.commit();
             }
@@ -166,11 +179,6 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
         try {
             sample = MAPPER.readValue(record.value(), HeartRateSample.class);
 
-            frequenzaCardiacaMedia += sample.heart_rate();
-            frequenzaCardiacaMax = Math.max(frequenzaCardiacaMax, sample.heart_rate());
-            cadenzaMedia += sample.cadence_spm();
-            campioniRicevuti++;
-
             String chiave = record.key();
             if (chiave == null || chiave.isBlank()) {
                 chiave = sample.athlete_id() + "-" + sample.session_id();
@@ -179,67 +187,92 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
             //Se non c'è uno stato precedente lo creo e esco
             StatoSessione precedente = leggiStato(chiave);
             if (precedente == null) {
-                salvaStato(chiave, new StatoSessione(sample.latitude(), sample.longitude(), sample.sample_id(), false));
+                List<Posizione> storicoIniziale = new ArrayList<>();
+                storicoIniziale.add(new Posizione(sample.latitude(), sample.longitude(), sample.sample_id()));
+                salvaStato(chiave, new StatoSessione(sample.latitude(), sample.longitude(), sample.sample_id(), false,
+                        0.0, 0.0, 0.0,
+                        sample.heart_rate(), sample.heart_rate(), sample.cadence_spm(), 1, 0, storicoIniziale));
                 return;
             }
 
             // Calcolo lo spostamento tra la posizione precedente e quella dell'evento corrente
             double spostamento = distanzaMetri(precedente.latitudine(), precedente.longitudine(),sample.latitude(), sample.longitude());
-            distanzaTotale += spostamento;
             if(sample.sample_id() == precedente.indice()) {
                 System.out.printf("Campione duplicato per atleta %d, sessione %d, sample_id %d%n", sample.athlete_id(), sample.session_id(), sample.sample_id());
             }
+
+            // Velocita sulla finestra dei 5 campioni precedenti, in m/s
+            List<Posizione> storico = new ArrayList<>(precedente.storico());
+            storico.add(new Posizione(sample.latitude(), sample.longitude(), sample.sample_id()));
             double velocitaTratto = 0;
-            if(sample.sample_id() != precedente.indice()) {
-                velocitaTratto = spostamento / (sample.sample_id() - precedente.indice());
-                velocitaMedia = velocitaMedia + velocitaTratto;
-                velocitaMax = Math.max(velocitaMax, velocitaTratto);
+            double sommaVelocita = precedente.sommaVelocita();
+            double velocitaMax = precedente.velocitaMax();
+            int campioniVelocita = precedente.campioniVelocita();
+            if (storico.size() > FINESTRA_VELOCITA) {
+                Posizione riferimento = storico.remove(0);
+                int deltaCampioni = sample.sample_id() - riferimento.indice();
+                if (deltaCampioni > 0) {
+                    double distanzaFinestra = distanzaMetri(riferimento.latitudine(), riferimento.longitudine(),
+                            sample.latitude(), sample.longitude());
+                    velocitaTratto = distanzaFinestra / (deltaCampioni * SECONDI_PER_CAMPIONE);
+                    sommaVelocita += velocitaTratto;
+                    velocitaMax = Math.max(velocitaMax, velocitaTratto);
+                    campioniVelocita++;
+                }
             }
 
-            
-            campioniAnalisi.add(sample);
-            campioniDB.add(sample);
+            double distanzaTotale = precedente.distanzaTotale() + spostamento;
+            double sommaFrequenza = precedente.sommaFrequenza() + sample.heart_rate();
+            double frequenzaMax = Math.max(precedente.frequenzaMax(), sample.heart_rate());
+            double sommaCadenza = precedente.sommaCadenza() + sample.cadence_spm();
+            int campioni = precedente.campioni() + 1;
+
+            campioniDB.add(new CampioneDaSalvare(sample, velocitaTratto));
             for(int i = 0; i < id_istanza; i++) {
                 System.out.print("-------");
             }
             System.out.println(campioniDB.size());
             if (campioniDB.size() >= MAX_CAMPIONI) {
-                List<HeartRateSample> batchToFlush = new ArrayList<>(campioniDB.subList(0, MAX_CAMPIONI));
+                List<CampioneDaSalvare> batchToFlush = new ArrayList<>(campioniDB.subList(0, MAX_CAMPIONI));
                 System.out.printf("Raggiunto limite di %d campioni, invio batch al database%n", MAX_CAMPIONI);
                 campioniDB.subList(0, MAX_CAMPIONI).clear();
-                databaseBulkInsert(batchToFlush, context.currentStreamTimeMs(), velocitaTratto);
-            }
-            if (campioniAnalisi.size() > MAX_CAMPIONI_ANALISI) {
-                campioniAnalisi.remove(0);
+                databaseBulkInsert(batchToFlush);
             }
             //Se il campo event_type è "session_end" allora elimino lo stato della sessione e non faccio altro
             if ("session_end".equals(sample.event_type())) {
                 System.out.printf("Sessione terminata per atleta %d, sessione %d, sample_id %d%n", sample.athlete_id(), sample.session_id(), sample.sample_id());
-                velocitaMedia = velocitaMedia / campioniRicevuti;
-                cadenzaMedia = cadenzaMedia / campioniRicevuti;
-                frequenzaCardiacaMedia = frequenzaCardiacaMedia / campioniRicevuti;
-                distanzaTotale = distanzaTotale / campioniRicevuti;
-                databaseSummary(velocitaMedia, velocitaMax, frequenzaCardiacaMedia, frequenzaCardiacaMax, cadenzaMedia, distanzaTotale, campioniRicevuti,  sample, context.currentStreamTimeMs());
+                databaseSummary(campioniVelocita > 0 ? sommaVelocita / campioniVelocita : 0.0, velocitaMax,
+                        sommaFrequenza / campioni, frequenzaMax,
+                        sommaCadenza / campioni, distanzaTotale, campioni,
+                        sample, context.currentStreamTimeMs());
                 store.delete(chiave);
                 return;
             }
 
-        
-
-            // Se lo spostamento è maggiore della soglia, aggiorno lo stato e non faccio altro
+            // Se lo spostamento è maggiore della soglia, aggiorno la posizione di riferimento
             if (spostamento > SOGLIA_MOVIMENTO_M) {
-                salvaStato(chiave, new StatoSessione(sample.latitude(), sample.longitude(), sample.sample_id(), false));
+                salvaStato(chiave, new StatoSessione(sample.latitude(), sample.longitude(), sample.sample_id(), false,
+                        distanzaTotale, sommaVelocita, velocitaMax, sommaFrequenza, frequenzaMax, sommaCadenza,
+                        campioni, campioniVelocita, storico));
                 return;
             }
 
             // Calcolo da quanto tempo l'atleta è fermo
             int fermoDaSecondi = sample.sample_id() - precedente.indice();
-            if (fermoDaSecondi >= SECONDI_IMMOBILE && !precedente.allarmeInviato() && sample.heart_rate() > 180) {
-                salvaStato(chiave, new StatoSessione(precedente.latitudine(), precedente.longitudine(),precedente.indice(), true));
-
-                String messaggio = String.format("Atleta %s fermo da %d s in posizione %.6f, %.6f (bpm %.0f)",
+            boolean allarmeInviato = precedente.allarmeInviato();
+            String messaggio = null;
+            if (fermoDaSecondi >= SECONDI_IMMOBILE && !allarmeInviato && sample.heart_rate() > 180) {
+                allarmeInviato = true;
+                messaggio = String.format("Atleta %s fermo da %d s in posizione %.6f, %.6f (bpm %.0f)",
                         sample.athlete_id(), fermoDaSecondi, sample.latitude(), sample.longitude(),sample.heart_rate());
+            }
 
+            // La posizione di riferimento resta quella precedente: serve a misurare l'immobilita cumulata
+            salvaStato(chiave, new StatoSessione(precedente.latitudine(), precedente.longitudine(), precedente.indice(), allarmeInviato,
+                    distanzaTotale, sommaVelocita, velocitaMax, sommaFrequenza, frequenzaMax, sommaCadenza,
+                    campioni, campioniVelocita, storico));
+
+            if (messaggio != null) {
                 AllarmeNotifier.invia(messaggio);
                 context.forward(record.withValue(messaggio));
             }
