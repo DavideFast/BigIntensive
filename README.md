@@ -99,7 +99,7 @@ It runs as a Kubernetes StatefulSet with 2 replicas to ensure high availability 
 It is used to make data analysis reading data from Clickhouse and Postgresql databases.
 It runs onKubernetes in client mode to perform data analysis tasks as needed.
 If launched from Jupyter notebook, the Jupyter pod acts as the Spark driver, and the Spark executors run as separate pods in the Kubernetes cluster in a number from 1 to 4 depending on the user configuration.
-If launched from the backend, a Kubernetes pod running the Spark driver is created, and the Spark executors run as separate pods in the Kubernetes cluster in a number of 2.
+If launched from the backend, a Kubernetes pod running the Spark driver is created, and the Spark executors run as separate pods in the Kubernetes cluster in a number from 1 to 4 depending on the computational resources available and the user configuration (dinamically adjusted in real-time based on the workload).
 
 ### Jupyter notebook
 
