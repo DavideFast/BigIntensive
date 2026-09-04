@@ -6,18 +6,9 @@ import java.util.List;
 public class Database {
 
     public void databaseBulkInsert(List<CampioneDaSalvare> campioni) {
-        String url = System.getenv("CLICKHOUSE_URL");
-        if (url == null || url.isEmpty()) {
-            url = "jdbc:clickhouse://localhost:8123/default";
-        }
-        String user = System.getenv("CLICKHOUSE_USER");
-        if (user == null || user.isEmpty()) {
-            user = "default";
-        }
-        String password = System.getenv("CLICKHOUSE_PASSWORD");
-        if (password == null) {
-            password = "";
-        }
+        String url = Configurazione.getClickhouseUrl();
+        String user = Configurazione.getClickhouseUser();
+        String password = Configurazione.getClickhousePassword();
         System.out.printf("Connessione al database ClickHouse %s con utente %s%n", url, user);
         try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, password)) {
             String sql = "INSERT INTO running_samples (sample_id, session_id, athlete_id, timestamp, velocity, heart_rate, latitude, longitude, altitude, temperature, cadence, event_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -53,18 +44,9 @@ public class Database {
 
 
     public void databaseSummary(double velocitaMedia, double velocitaMax, double frequenzaCardiacaMedia, double frequenzaCardiacaMax, double cadenzaMedia, double distanzaTotale, int campioni, HeartRateSample sample, long timestamp) {
-        String url = System.getenv("POSTGRES_URL");
-        if (url == null || url.isEmpty()) {
-            url = "jdbc:postgresql://localhost:5432/default";
-        }
-        String user = System.getenv("POSTGRES_USER");
-        if (user == null || user.isEmpty()) {
-            user = "postgres";
-        }
-        String password = System.getenv("POSTGRES_PASSWORD");
-        if (password == null) {
-            password = "postgres";
-        }
+        String url = Configurazione.getPostgresUrl();
+        String user = Configurazione.getPostgresUser();
+        String password = Configurazione.getPostgresPassword();
         try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, password)) {
             String sql = "INSERT INTO session_summary (athlete_id, velocita_media, velocita_max, frequenza_cardiaca_media, frequenza_cardiaca_max, cadenza_media, distanza_totale, campioni, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -75,7 +57,7 @@ public class Database {
                 stmt.setDouble(5, frequenzaCardiacaMax);
                 stmt.setDouble(6, cadenzaMedia);
                 stmt.setDouble(7, distanzaTotale);
-                stmt.setInt(8, campioni * 5);
+                stmt.setInt(8, (int) Math.round(campioni * Configurazione.getSecondiPerCampione()));
                 stmt.setLong(9, timestamp);
                 stmt.executeUpdate();
             }

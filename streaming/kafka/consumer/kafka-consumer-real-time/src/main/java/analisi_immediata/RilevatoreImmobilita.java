@@ -8,8 +8,6 @@ import org.apache.kafka.streams.processor.api.Record;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,12 +16,12 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
     private KeyValueStore<String, String> store;
     private ProcessorContext<String, String> context;
     private int id_istanza = 0;
-    private final Database db = new Database();
-
-    private final List<CampioneDaSalvare> campioniDB = new ArrayList<>();
-
     private static int NUMERO_ISTANZE = 0;
+    
+    private final Database db = new Database();
+    private final List<CampioneDaSalvare> campioniDB = new ArrayList<>();
     private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
 
     private static void setNumeroIstanze() {
         NUMERO_ISTANZE++;
@@ -62,7 +60,6 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
         
         // Provo a vedere se l'evento che arriva ha una struttura JSON corretta
         HeartRateSample sample;
-        //System.out.printf("Ricevuto evento");
         try {
             sample = MAPPER.readValue(record.value(), HeartRateSample.class);
 
@@ -128,7 +125,6 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
             //Se il campo event_type è "session_end" allora elimino lo stato della sessione e non faccio altro
             if ("session_end".equals(sample.event_type())) {
                 System.out.printf("Sessione terminata per atleta %d, sessione %d, sample_id %d%n", sample.athlete_id(), sample.session_id(), sample.sample_id());
-                Database db = new Database();
                 db.databaseSummary(campioniVelocita > 0 ? sommaVelocita / campioniVelocita : 0.0, velocitaMax,
                         sommaFrequenza / campioni, frequenzaMax,
                         sommaCadenza / campioni, distanzaTotale, campioni,
@@ -145,14 +141,16 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
                 return;
             }
 
-            // Calcolo da quanto tempo l'atleta è fermo
-            int fermoDaSecondi = sample.sample_id() - precedente.indice();
+            // Calcolo da quanti campioni l'atleta e fermo
+            int campioniFermo = sample.sample_id() - precedente.indice();
             boolean allarmeInviato = precedente.allarmeInviato();
             String messaggio = null;
-            if (fermoDaSecondi >= Configurazione.getSecondiImmobile() && !allarmeInviato && sample.heart_rate() > 180) {
+            if (campioniFermo >= Configurazione.getCampioniImmobile() && !allarmeInviato
+                    && sample.heart_rate() > Configurazione.getSogliaBpmAllarme()) {
                 allarmeInviato = true;
-                messaggio = String.format("Atleta %s fermo da %d s in posizione %.6f, %.6f (bpm %.0f)",
-                        sample.athlete_id(), fermoDaSecondi, sample.latitude(), sample.longitude(),sample.heart_rate());
+                messaggio = String.format("Atleta %s fermo da %.0f s in posizione %.6f, %.6f (bpm %.0f)",
+                        sample.athlete_id(), campioniFermo * Configurazione.getSecondiPerCampione(),
+                        sample.latitude(), sample.longitude(), sample.heart_rate());
             }
 
             // La posizione di riferimento resta quella precedente: serve a misurare l'immobilita cumulata

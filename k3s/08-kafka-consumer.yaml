@@ -6,18 +6,30 @@ metadata:
   name: kafka-consumer-config
   namespace: bigintensive
 data:
+  # --- Kafka ---
   KAFKA_BOOTSTRAP_SERVERS: "kafka:19092"
   KAFKA_TOPIC: "heart-rate-events"
+  KAFKA_APPLICATION_ID: "rilevatore-immobilita"
+  NOME_STATE_STORE: "stato-sessioni"
+
+  # --- Elaborazione ---
   # Deve combaciare con SAMPLE_INTERVAL del simulatore (10-smartwatch-simulator.yaml)
   SAMPLE_INTERVAL: "5.0"
-  CLICKHOUSE_HOST: "clickhouse"
-  CLICKHOUSE_PORT: "8123"
-  CLICKHOUSE_DB: "bigintensive"
-  CLICKHOUSE_USER: "default"
+  # Campioni accumulati prima di scrivere il batch su ClickHouse
+  MAX_CAMPIONI_BATCH: "2000"
+  # Ampiezza in campioni della finestra usata per la velocita
+  FINESTRA_VELOCITA: "5"
+  # Spostamento oltre il quale l'atleta e considerato in movimento
+  SOGLIA_MOVIMENTO_M: "10.0"
+  # Secondi di immobilita prima dell'allarme (convertiti in campioni dal codice)
+  SECONDI_IMMOBILE: "150"
+  SOGLIA_BPM_ALLARME: "180"
+  DESTINATARIO_ALLARME: "+39 333 1234567"
+
+  # --- Database ---
   CLICKHOUSE_URL: "jdbc:clickhouse://clickhouse:8123/bigintensive"
-  POSTGRES_HOST: "postgres"
-  POSTGRES_PORT: "5432"
-  POSTGRES_DB: "bigintensive"
+  CLICKHOUSE_USER: "default"
+  POSTGRES_URL: "jdbc:postgresql://postgres:5432/bigintensive"
   POSTGRES_USER: "postgres"
 
 ---
@@ -87,71 +99,16 @@ spec:
               memory: "1Gi"
               cpu: "500m"
 
+          envFrom:
+            - configMapRef:
+                name: kafka-consumer-config
+
           env:
-            - name: KAFKA_BOOTSTRAP_SERVERS
-              valueFrom:
-                configMapKeyRef:
-                  name: kafka-consumer-config
-                  key: KAFKA_BOOTSTRAP_SERVERS
-            - name: KAFKA_TOPIC
-              valueFrom:
-                configMapKeyRef:
-                  name: kafka-consumer-config
-                  key: KAFKA_TOPIC
-            - name: SAMPLE_INTERVAL
-              valueFrom:
-                configMapKeyRef:
-                  name: kafka-consumer-config
-                  key: SAMPLE_INTERVAL
-            - name: CLICKHOUSE_URL
-              value: "jdbc:clickhouse://clickhouse:8123/bigintensive"
-            - name: CLICKHOUSE_HOST
-              valueFrom:
-                configMapKeyRef:
-                  name: kafka-consumer-config
-                  key: CLICKHOUSE_HOST
-            - name: CLICKHOUSE_PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: kafka-consumer-config
-                  key: CLICKHOUSE_PORT
-            - name: CLICKHOUSE_DB
-              valueFrom:
-                configMapKeyRef:
-                  name: kafka-consumer-config
-                  key: CLICKHOUSE_DB
-            - name: CLICKHOUSE_USER
-              valueFrom:
-                configMapKeyRef:
-                  name: kafka-consumer-config
-                  key: CLICKHOUSE_USER
             - name: CLICKHOUSE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: bigintensive-secrets
                   key: CLICKHOUSE_PASSWORD
-            - name: POSTGRES_URL
-              value: "jdbc:postgresql://postgres:5432/bigintensive"
-            - name: POSTGRES_HOST
-              valueFrom:
-                configMapKeyRef:
-                  name: kafka-consumer-config
-                  key: POSTGRES_HOST
-            - name: POSTGRES_PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: kafka-consumer-config
-                  key: POSTGRES_PORT
-            - name: POSTGRES_DB
-              valueFrom:
-                configMapKeyRef:
-                  name: kafka-consumer-config
-                  key: POSTGRES_DB
-            - name: POSTGRES_USER
-              valueFrom:
-                configMapKeyRef:
-                  name: kafka-consumer-config
-                  key: POSTGRES_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:

@@ -18,34 +18,19 @@ import java.util.concurrent.atomic.AtomicReference;
 /** Rilevamento immobilita con Kafka Streams: lo stato sopravvive a riavvii e rebalance. */
 public class ConsumerKafka {
 
-    private static final String TOPIC_INGRESSO_PREDEFINITO = "heart-rate-events";
-    private static final String NOME_STORE = "stato-sessioni";
-
     public static String getNomeStore() {
-        return NOME_STORE;
+        return Configurazione.getNomeStore();
     }
-    public static String getTopicIngressoPredefinito() {
-        return TOPIC_INGRESSO_PREDEFINITO;
-    }
-    
-    
-
-    
 
     public static void main(String[] args) {
 
-        // Configurazione di Kafka Streams - Legge da variabili d'ambiente
-        String bootstrapServers = System.getenv("KAFKA_BOOTSTRAP_SERVERS");
-        if (bootstrapServers == null || bootstrapServers.isEmpty()) {
-            bootstrapServers = "localhost:9092";
-        }
-        String topicEnv = System.getenv("KAFKA_TOPIC");
-        final String topicIngresso = (topicEnv == null || topicEnv.isBlank())
-                ? TOPIC_INGRESSO_PREDEFINITO
-                : topicEnv;
+        Configurazione.stampaRiepilogo();
+        final String bootstrapServers = Configurazione.getKafkaBootstrapServers();
+        final String topicIngresso = Configurazione.getKafkaTopic();
+        final String nomeStore = Configurazione.getNomeStore();
 
         Properties props = new Properties();
-        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "rilevatore-immobilita");
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, Configurazione.getKafkaApplicationId());
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
@@ -53,7 +38,7 @@ public class ConsumerKafka {
 
         // Creazione dello state store persistente
         StoreBuilder<KeyValueStore<String, String>> store = Stores.keyValueStoreBuilder(
-                Stores.persistentKeyValueStore(NOME_STORE), Serdes.String(), Serdes.String());
+                Stores.persistentKeyValueStore(nomeStore), Serdes.String(), Serdes.String());
 
         //Creazione della pipeline di elaborazione dei messaggi
         StreamsBuilder builder = new StreamsBuilder();
@@ -66,7 +51,7 @@ public class ConsumerKafka {
         //sorgente.peek((chiave, valore) -> System.out.printf("Ricevuto messaggio con chiave %s e valore %s%n", chiave, valore));
 
         // Processamento dei messaggi con il rilevatore di immobilità
-        sorgente.process(RilevatoreImmobilita::new, NOME_STORE);
+        sorgente.process(RilevatoreImmobilita::new, nomeStore);
         boolean waiting = true;
 
         AtomicReference<KafkaStreams> istanzaCorrente = new AtomicReference<>();
