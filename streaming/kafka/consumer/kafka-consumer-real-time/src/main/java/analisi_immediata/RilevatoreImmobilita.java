@@ -17,16 +17,26 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
     
     private KeyValueStore<String, String> store;
     private ProcessorContext<String, String> context;
-    private int id_istanza = 0;
-    private static int NUMERO_ISTANZE = 0;
     
     private final Database db = new Database();
     private final List<CampioneDaSalvare> campioniDB = new ArrayList<>();
     private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
+    private void svuotaBuffer() {
+        if (campioniDB.isEmpty()) {
+            return;
+        }
+        List<CampioneDaSalvare> batch = new ArrayList<>(campioniDB);
+        campioniDB.clear();
+        db.databaseBulkInsert(batch);
+    }
 
-    private static void setNumeroIstanze() {
-        NUMERO_ISTANZE++;
+    private void salvaStato(String chiave, StatoSessione stato) {
+        try {
+            store.put(chiave, MAPPER.writeValueAsString(stato));
+        } catch (Exception e) {
+            System.err.println("Stato non salvabile per " + chiave + ": " + e.getMessage());
+        }
     }
 
     private StatoSessione leggiStato(String chiave) {
@@ -41,20 +51,10 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
         }
     }
 
-    private void salvaStato(String chiave, StatoSessione stato) {
-        try {
-            store.put(chiave, MAPPER.writeValueAsString(stato));
-        } catch (Exception e) {
-            System.err.println("Stato non salvabile per " + chiave + ": " + e.getMessage());
-        }
-    }
-
     @Override
     public void init(ProcessorContext<String, String> context) {
         this.context = context;
         this.store = context.getStateStore(ConsumerKafka.getNomeStore());
-        setNumeroIstanze();
-        this.id_istanza = NUMERO_ISTANZE;
         // Senza timer i campioni residui resterebbero in memoria finche non si arriva al batch pieno
         context.schedule(Duration.ofSeconds(Configurazione.getSecondiFlushBuffer()),
                 PunctuationType.WALL_CLOCK_TIME, timestamp -> svuotaBuffer());
@@ -63,15 +63,6 @@ class RilevatoreImmobilita implements Processor<String, String, String, String> 
     @Override
     public void close() {
         svuotaBuffer();
-    }
-
-    private void svuotaBuffer() {
-        if (campioniDB.isEmpty()) {
-            return;
-        }
-        List<CampioneDaSalvare> batch = new ArrayList<>(campioniDB);
-        campioniDB.clear();
-        db.databaseBulkInsert(batch);
     }
 
     @Override
