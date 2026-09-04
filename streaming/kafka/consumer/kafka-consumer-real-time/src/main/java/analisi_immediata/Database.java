@@ -52,7 +52,7 @@ public class Database {
         String user = Configurazione.getPostgresUser();
         String password = Configurazione.getPostgresPassword();
         try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, user, password)) {
-            String sql = "INSERT INTO session_summary (athlete_id, velocita_media, velocita_max, frequenza_cardiaca_media, frequenza_cardiaca_max, cadenza_media, distanza_totale, campioni, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO riepilogo_corse (athlete_id, velocita_media, velocita_max, frequenza_cardiaca_media, frequenza_cardiaca_max, cadenza_media, distanza_totale, campioni, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setInt(1, sample.athlete_id());
                 stmt.setDouble(2, velocitaMedia);
