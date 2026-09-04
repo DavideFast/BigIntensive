@@ -42,6 +42,7 @@ MAX_REST_MINUTES = int(os.getenv("MAX_REST_MINUTES", "60"))
 INITIAL_START_WINDOW_MINUTES = int(
     os.getenv("INITIAL_START_WINDOW_MINUTES", "60")
 )
+MIN_SESSION_SAMPLES = 5
 
 if MIN_SESSION_MINUTES < 1 or MAX_SESSION_MINUTES < MIN_SESSION_MINUTES:
     raise ValueError("Intervallo durata sessione non valido")
@@ -730,7 +731,7 @@ async def simulate_athlete(
                 - time.monotonic()
             )
 
-            if remaining <= 0:
+            if remaining <= 0 and athlete["sample_id"] >= MIN_SESSION_SAMPLES - 1:
 
                 # -------------------------------------------
                 # Ultimo campione

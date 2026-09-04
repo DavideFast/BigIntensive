@@ -165,6 +165,16 @@ public class RilevatoreImmobilita implements Processor<String, String, String, S
             }
             // Il simulatore usa "end"; manteniamo compatibilita con il precedente "session_end".
             if ("end".equals(sample.event_type()) || "session_end".equals(sample.event_type())) {
+                System.out.printf("Fine sessione: velocitaMedia=%.4f, velocitaMax=%.4f, frequenzaMedia=%.4f, "
+                                + "frequenzaMax=%.4f, cadenzaMedia=%.4f, distanzaMetri=%.4f, campioni=%d, durataMinuti=%d%n",
+                        campioniVelocita > 0 ? sommaVelocita / campioniVelocita : 0.0,
+                        velocitaMax,
+                        sommaFrequenza / campioni,
+                        frequenzaMax,
+                        sommaCadenza / campioni,
+                        distanzaTotale,
+                        campioni,
+                        (int) Math.round(campioni * Configurazione.getSecondiPerCampione() / 60.0));
                 db.databaseSummary(campioniVelocita > 0 ? sommaVelocita / campioniVelocita : 0.0, velocitaMax,
                         sommaFrequenza / campioni, frequenzaMax,
                         sommaCadenza / campioni, distanzaTotale, campioni,
