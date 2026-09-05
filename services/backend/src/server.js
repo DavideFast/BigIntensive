@@ -294,6 +294,7 @@ app.post("/api/v1/stopELTProcess", async (req, res) => {
 });
 
 app.post("/api/v1/startRunningPopulation", async (req, res) => {
+  //Nuova immagine
   try {
     const existingApplications = await k8sCustomObjectsApi.listNamespacedCustomObject({
       group: sparkApplicationGroup,
@@ -322,9 +323,7 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
       ),
     );
 
-    const runningApplication = applications.find((application) =>
-      activeStates.includes(application.status?.applicationState?.state),
-    );
+    const runningApplication = applications.find((application) => activeStates.includes(application.status?.applicationState?.state));
     if (runningApplication) {
       return res.status(200).json({
         success: true,
