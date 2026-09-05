@@ -351,7 +351,7 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
           mode: "cluster",
           image: "davidefast/bigintensive-sparkwithdependencies:latest",
           imagePullPolicy: "Always",
-          sparkVersion: "3.5.1",
+          sparkVersion: "3.5.3",
           mainApplicationFile: "local:///opt/jobs/RunningPopolationAnalysis.py",
           pythonVersion: "3",
           restartPolicy: { type: "Never" },

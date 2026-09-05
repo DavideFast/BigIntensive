@@ -54,8 +54,8 @@ data:
     spark.kubernetes.container.image              apache/spark:3.5.3
     spark.kubernetes.container.image.pullPolicy   IfNotPresent
     spark.kubernetes.executor.deleteOnTermination true
-    spark.kubernetes.driver.label.version         3.5.0
-    spark.kubernetes.executor.label.version       3.5.0
+    spark.kubernetes.driver.label.version         3.5.3
+    spark.kubernetes.executor.label.version       3.5.3
     spark.executor.cores                          2
     spark.executor.memory                         2g
     spark.dynamicAllocation.enabled               true
