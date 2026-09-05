@@ -369,6 +369,7 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
             "spark.executor.cores": "2",
             "spark.executor.memory": "2g",
             "spark.sql.shuffle.partitions": "10",
+            "spark.jars": "local:///opt/spark/jars/clickhouse-jdbc-0.6.3-all.jar,local:///opt/spark/jars/postgresql-42.7.2.jar",
             "spark.driver.extraClassPath": "/opt/spark/jars/*",
             "spark.executor.extraClassPath": "/opt/spark/jars/*",
           },
