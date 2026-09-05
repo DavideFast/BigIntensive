@@ -387,3 +387,15 @@ Then open:
 <br>
 
 For advanced operations (selective component deployment, extended runtime checks, change checklist), see [MANIFESTS.md](MANIFESTS.md).
+
+# Throubleshooting
+
+It may happen that the virtual switch used by Hyper-V could become misconfigured or disconnected, causing network issues for the Kubernetes cluster. In such cases this command could help to reset the virtual switch:
+
+```powershell
+Get-CimInstance Win32_Service -Filter "Name='SharedAccess'" | Select-Object -ExpandProperty ProcessId
+Stop-Process -Id <PID> -Force
+Restart-Service vmms -Force
+```
+
+Check if ehtX (the one attached to the default switch in Hyper-V) has a valid IP address assigned by the DHCP server.
