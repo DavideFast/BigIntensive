@@ -27,6 +27,7 @@ export KUBECONFIG
     --namespace "$OPERATOR_NAMESPACE" \
     --create-namespace \
     --version "$OPERATOR_VERSION" \
+    --set 'spark.jobNamespaces[0]=bigintensive' \
     --wait \
     --timeout 5m
 
