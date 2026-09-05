@@ -74,13 +74,14 @@ pre_deploy_cleanup() {
 
 pre_deploy_cleanup
 
+# Create the application namespace before operators create namespace-scoped resources in it.
+apply_manifest "$SCRIPT_DIR/00-namespace-and-secrets.yaml" "Namespace, Secrets & ConfigMaps"
+
 # The operator installs cluster-wide CRDs and watches SparkApplication resources.
 bash "$SCRIPT_DIR/install-spark-operator.sh"
 bash "$SCRIPT_DIR/install-keda.sh"
 
 # Apply in order
-apply_manifest "$SCRIPT_DIR/00-namespace-and-secrets.yaml" "Namespace, Secrets & ConfigMaps"
-
 $KUBECTL_CMD -n "$NAMESPACE" create configmap postgresql-schema \
     --from-file=schema.sql="$SCRIPT_DIR/../database/postgresql/schema.sql" \
     --dry-run=client -o yaml | $KUBECTL_CMD apply -f -
