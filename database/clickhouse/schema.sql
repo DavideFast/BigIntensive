@@ -64,7 +64,8 @@ CREATE TABLE IF NOT EXISTS allenamenti (
   created_at DateTime DEFAULT now()
 ) ENGINE = Distributed(bigintensive_cluster, bigintensive, allenamenti_local, cityHash64(athlete_id));
 
-CREATE TABLE IF NOT EXISTS allenamenti_raw
+-- Local staging table: the distributed table with the public name is defined below.
+CREATE TABLE IF NOT EXISTS allenamenti_raw_local
 (
     allenamento_id UInt64,
     athlete_id UInt64,

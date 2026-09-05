@@ -7,22 +7,22 @@ Comandi utili per la gestione del database Clickhouse sono:
 1. Accedere al pod Clickhouse:
 
 ```bash
-# Avviare il container ClickHouse (scegliere una replica dello shard 1)
-sudo kubectl exec -n bigintensive -it clickhouse-shard-1-0 -- clickhouse-client
+# Avviare il client ClickHouse sul database applicativo
+sudo kubectl exec -n bigintensive -it clickhouse-shard-1-0 -- clickhouse-client --database bigintensive
 ```
 
 2. Eseguire query SQL:
 
 ```sql
-SELECT DATABASES;
+SHOW DATABASES;
 ```
 
 ```sql
-SELECT TABLES FROM <nome_database>;
+SHOW TABLES FROM bigintensive;
 ```
 
 ```sql
-SELECT * FROM <nome_database>.<nome_tabella>;
+SELECT * FROM bigintensive.<nome_tabella> LIMIT 10;
 ```
 
 ## Struttura del database Clickhouse

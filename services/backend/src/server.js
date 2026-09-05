@@ -303,11 +303,9 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
       labelSelector: `app=${runningPopulationJobName}`,
     });
 
-    const applications = existingApplications.body.items || [];
+    const applications = existingApplications.items || existingApplications.body?.items || [];
     const finishedStates = ["COMPLETED", "FAILED", "FAILED_SUBMISSION", "SUBMISSION_FAILED"];
-    const finishedApplications = applications.filter((application) =>
-      finishedStates.includes(application.status?.applicationState?.state),
-    );
+    const finishedApplications = applications.filter((application) => finishedStates.includes(application.status?.applicationState?.state));
     await Promise.all(
       finishedApplications.map((application) =>
         k8sCustomObjectsApi.deleteNamespacedCustomObject({
@@ -320,9 +318,7 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
       ),
     );
 
-    const runningApplication = applications.find((application) =>
-      !finishedStates.includes(application.status?.applicationState?.state),
-    );
+    const runningApplication = applications.find((application) => !finishedStates.includes(application.status?.applicationState?.state));
     if (runningApplication) {
       return res.status(200).json({
         success: true,
@@ -375,19 +371,13 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
             coreLimit: "2000m",
             memory: "2g",
             serviceAccount: "spark",
-            envFrom: [
-              { configMapRef: { name: "bigintensive-config" } },
-              { secretRef: { name: "bigintensive-secrets" } },
-            ],
+            envFrom: [{ configMapRef: { name: "bigintensive-config" } }, { secretRef: { name: "bigintensive-secrets" } }],
             volumeMounts: [{ name: "running-population-scripts", mountPath: "/opt/jobs", readOnly: true }],
           },
           executor: {
             cores: 2,
             memory: "2g",
-            envFrom: [
-              { configMapRef: { name: "bigintensive-config" } },
-              { secretRef: { name: "bigintensive-secrets" } },
-            ],
+            envFrom: [{ configMapRef: { name: "bigintensive-config" } }, { secretRef: { name: "bigintensive-secrets" } }],
             volumeMounts: [{ name: "running-population-scripts", mountPath: "/opt/jobs", readOnly: true }],
           },
           volumes: [
@@ -402,7 +392,7 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
 
     res.status(200).json({
       success: true,
-      applicationName: application.body.metadata.name,
+      applicationName: application.metadata?.name || application.body?.metadata?.name,
       message: "SparkApplication RunningPopulation avviata",
     });
   } catch (error) {
