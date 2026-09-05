@@ -6,36 +6,6 @@ CREATE DATABASE IF NOT EXISTS bigintensive;
 
 
 -- ============================================================
--- TABELLA FINALE
--- ============================================================
-
-CREATE TABLE IF NOT EXISTS bigintensive.allenamenti
-(
-    allenamento_id UInt64,
-    athlete_id UInt64,
-    data_allenamento DateTime,
-
-    nome_esercizio LowCardinality(String),
-
-    serie_allenamento UInt8,
-    ripetizioni_allenamento UInt8,
-    recupero_allenamento UInt8,
-
-    peso_allenamento Decimal(5, 2),
-
-    created_at DateTime
-)
-ENGINE = MergeTree
-PARTITION BY toYYYYMM(data_allenamento)
-ORDER BY
-(
-    data_allenamento,
-    athlete_id,
-    allenamento_id
-);
-
-
--- ============================================================
 -- CONTROLLO DATI RAW
 -- ============================================================
 

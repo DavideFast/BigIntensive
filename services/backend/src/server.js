@@ -304,8 +304,12 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
     });
 
     const applications = existingApplications.items || existingApplications.body?.items || [];
-    const finishedStates = ["COMPLETED", "FAILED", "FAILED_SUBMISSION", "SUBMISSION_FAILED"];
-    const finishedApplications = applications.filter((application) => finishedStates.includes(application.status?.applicationState?.state));
+    const finishedStates = ["COMPLETED", "FAILED", "FAILED_SUBMISSION", "SUBMISSION_FAILED", "UNKNOWN"];
+    const activeStates = ["NEW", "SUBMITTED", "RUNNING", "PENDING_RERUN", "RESTARTING", "FAILING"];
+    const finishedApplications = applications.filter((application) => {
+      const state = application.status?.applicationState?.state;
+      return finishedStates.includes(state) || !activeStates.includes(state);
+    });
     await Promise.all(
       finishedApplications.map((application) =>
         k8sCustomObjectsApi.deleteNamespacedCustomObject({
@@ -318,7 +322,9 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
       ),
     );
 
-    const runningApplication = applications.find((application) => !finishedStates.includes(application.status?.applicationState?.state));
+    const runningApplication = applications.find((application) =>
+      activeStates.includes(application.status?.applicationState?.state),
+    );
     if (runningApplication) {
       return res.status(200).json({
         success: true,

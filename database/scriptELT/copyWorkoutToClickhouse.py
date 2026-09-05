@@ -89,31 +89,32 @@ def connect_clickhouse():
 
 def create_raw_table(ch):
 
-    print("Controllo tabella allenamenti_raw...")
+    print("Controllo tabelle ClickHouse...")
 
-    ch.command(
+    result = ch.query(
         """
-        CREATE DATABASE IF NOT EXISTS bigintensive
+        SELECT name, engine
+        FROM system.tables
+        WHERE database = 'bigintensive'
+          AND name IN ('allenamenti', 'allenamenti_raw')
         """
     )
-
-    ch.command(
-        """
-        CREATE TABLE IF NOT EXISTS bigintensive.allenamenti_raw
-        (
-            allenamento_id UInt64,
-            athlete_id UInt64,
-            data_allenamento DateTime,
-            struttura_allenamento String,
-            created_at DateTime
+    tables = {name: engine for name, engine in result.result_rows}
+    expected = {
+        "allenamenti": "Distributed",
+        "allenamenti_raw": "Distributed",
+    }
+    missing_or_incorrect = [
+        f"{name}={tables.get(name)!r} (atteso {engine})"
+        for name, engine in expected.items()
+        if tables.get(name) != engine
+    ]
+    if missing_or_incorrect:
+        raise RuntimeError(
+            "Schema ClickHouse non coerente: " + ", ".join(missing_or_incorrect)
         )
-        ENGINE = MergeTree
-        PARTITION BY toYYYYMM(data_allenamento)
-        ORDER BY allenamento_id
-        """
-    )
 
-    print("Tabella allenamenti_raw pronta.")
+    print("Tabelle Distributed allenamenti e allenamenti_raw pronte.")
 
 
 # ============================================================
@@ -251,7 +252,9 @@ def transform_raw_data(ch):
 
     for statement in statements:
         if statement.lstrip().upper().startswith("SELECT"):
-            ch.query(statement)
+            result = ch.query(statement)
+            if result.result_rows:
+                print(f"Risultato controllo ClickHouse: {result.result_rows[0]}")
         else:
             ch.command(statement)
 
