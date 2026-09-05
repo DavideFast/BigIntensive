@@ -1,10 +1,11 @@
-# Deploy di BigIntensive su k3s
+# MyFitnessHub deployment on k3s
 
-Questa cartella contiene la base Kubernetes per avviare BigIntensive su k3s senza passare da Docker Compose.
+This repository contains the Kubernetes manifests and instructions to deploy MyFitnessHub on a k3s cluster.
+This folder contains the Kubernetes base to run MyFitnessHub on k3s without using Docker Compose.
 
-Per i dettagli tecnici dei manifest (ownership, ordine completo, checklist cambi), vedi [MANIFESTS.md](MANIFESTS.md).
+For technical details of the manifests (ownership, complete order, change checklist), see [MANIFESTS.md](MANIFESTS.md).
 
-Il cluster gestisce:
+The cluster manages:
 
 - `backend`
 - `frontend`
@@ -12,7 +13,7 @@ Il cluster gestisce:
 - `kafka`
 - `kafka-ui`
 
-## Indice:
+## Index:
 
 - [Topologia distribuita prevista](#topologia-distribuita-prevista)
 - [Creazione della macchina virtuale con Ubuntu](#creazione-della-macchina-virtuale-con-ubuntu-altri-sistemi-operativi-non-sono-testati)
@@ -24,9 +25,9 @@ Il cluster gestisce:
 - [Step 4: verifica stabilità del cluster](#step-4-verifica-stabilit%C3%A0-del-cluster)
 - [Troubleshooting rapido](#troubleshooting-rapido)
 
-# Topologia distribuita prevista
+# Expected Distributed Topology
 
-Il cluster target usa 3 PC fisici, ognuno registrato come nodo K3s:
+The target cluster uses 3 physical PCs, each registered as a K3s node:
 
 ```text
 PC 1: K3s server/control-plane + workload
@@ -34,7 +35,7 @@ PC 2: K3s agent/worker + workload
 PC 3: K3s agent/worker + workload
 ```
 
-La composizione dei servizi distribuiti prevista è:
+The expected composition of distributed services is:
 
 ```text
 Kafka
@@ -56,91 +57,91 @@ Spark
   K3s distribuisce gli executor sui nodi disponibili
 ```
 
-Nota: il bootstrap dei topic Kafka crea i nuovi topic con replication factor `3`, ma
-non modifica topic già esistenti creati con replication factor `1`. Su un cluster già
-popolato serve una migrazione delle assegnazioni; in sviluppo puoi usare
-`RESET_NAMESPACE=true` solo se la cancellazione dei dati è accettabile.
+Note: the bootstrap of Kafka topics creates new topics with replication factor `3`, but
+does not modify existing topics created with replication factor `1`. On an already
+populated cluster, a reassignment migration is required; in development, you can use
+`RESET_NAMESPACE=true` only if data deletion is acceptable.
 
-KRaft e ClickHouse Keeper sono componenti distinti: KRaft coordina Kafka, mentre Keeper coordina le repliche ClickHouse. L'aggiunta di un quarto PC non richiede un nuovo ruolo fisso per Spark; K3s può schedulare nuovi executor sui nodi disponibili quando un job ne richiede altri.
-
-<br>
-<br>
-
-# Creazione della macchina virtuale con Ubuntu (altri sistemi operativi non sono testati).
-
-Le informazioni per creare la macchina virtuale si riferiscono a Hyper-V e VirtualBox.
-In Hyper-V, creare una nuova macchina virtuale con le seguenti impostazioni:
-
-- Generazione 2
-- Memoria: 16000 MB
-- Disco rigido: 500 GB
-- Scheda di rete esterna: Default Switch (Wi-fi)
-- Scheda di rete intra cluster: External Virtual Switch (collegato alla rete fisica)
-- Disabilitare Secure Boot
-- Image ISO: Ubuntu 25.04/26.04 LTS
-
-L'ordine di inserimento della scheda di rete influenza quale interfaccia verrà usata per tale rete. La prima inserita si chiamerà eth0 mentre la seconda eth1. La scheda di rete intra-cluster deve essere configurata in modo tale da abilitare lo spoofing degli indirizzi MAC.
-
-In VirtualBox, creare una nuova macchina virtuale con le seguenti impostazioni:
-
-- Memoria: 16000 MB
-- Core: 5
-- Disco rigido: 500 GB
-- Scheda di rete intra-cluster: Bridge (collegata alla rete fisica)
-- Scheda di rete esterna: NAT
-- Image ISO: Ubuntu 25.04/26.04 LTS
-
-L'ordine di inserimento della scheda di rete influenza quale interfaccia verrà usata per tale rete. La prima inserita si chiamerà enp0s3 mentre la seconda enp0s8. Bisogna spuntare permetti tutto sullo switch virtuale per abilitare lo spoofing degli indirizzi MAC.
+KRaft and ClickHouse Keeper are distinct components: KRaft coordinates Kafka, while Keeper coordinates ClickHouse replicas. Adding a fourth PC does not require a new fixed role for Spark; K3s can schedule new executors on available nodes when a job requires more.
 
 <br>
 <br>
 
-# Creazione rete LAN del cluster
+# Creation of the virtual machine with Ubuntu (other operating systems are not tested).
 
-Il progetto nasce per girare su 3 nodi fisici. Pertanto la topologia e le configurazioni sono ottimizzate per questo scenario.
-Il nodo server K3s ospita il controllo del cluster e può anche eseguire workload. I nodi agent/worker ospitano solo workload. I servizi Kafka e ClickHouse sono distribuiti su tutti i nodi per garantire resilienza e performance.
+The information for creating the virtual machine refers to Hyper-V and VirtualBox.
+In Hyper-V, create a new virtual machine with the following settings:
 
-Il sistema viene interconnesso tramite uno switch di rete. Tutti i nodi vengono connessi tramite cavo ethernet allo switch (senza management)
-e pertanto dovranno essere configurati con IP statici. I nodi avranno un altra scheda di rete (essendo portatili wi-fi) che useranno per accedere a internet per aggiornamenti e download di pacchetti. Nonchè per simulare un accesso remoto al cluster da un PC esterno. In questo caso il nodo server K3s dovrà essere raggiungibile dall'esterno tramite il suo IP statico.
+- Generation 2
+- Memory: 16000 MB
+- Hard disk: 500 GB
+- External network card: Default Switch (Wi-fi)
+- Intra-cluster network card: External Virtual Switch (connected to the physical network)
+- Disable Secure Boot
+- ISO Image: Ubuntu 25.04/26.04 LTS
+
+The order of insertion of the network card influences which interface will be used for that network. The first inserted will be called eth0 while the second eth1. The intra-cluster network card must be configured to enable MAC address spoofing.
+
+In VirtualBox, create a new virtual machine with the following settings:
+
+- Memory: 16000 MB
+- Cores: 5
+- Hard disk: 500 GB
+- Intra-cluster network card: Bridge (connected to the physical network)
+- External network card: NAT
+- ISO Image: Ubuntu 25.04/26.04 LTS
+
+The order of insertion of the network card influences which interface will be used for that network. The first inserted will be called enp0s3 while the second enp0s8. You need to check "allow all" on the virtual switch to enable MAC address spoofing.
+
+<br>
+<br>
+
+# Creation of the cluster LAN
+
+The project is designed to run on 3 physical nodes. Therefore, the topology and configurations are optimized for this scenario.
+The K3s server node hosts the cluster control and can also run workloads. The agent/worker nodes only host workloads. Kafka and ClickHouse services are distributed across all nodes to ensure resilience and performance.
+
+The system is interconnected via a network switch. All nodes are connected via ethernet cable to the switch (without management)
+and therefore must be configured with static IPs. The nodes will have another network card (being Wi-Fi laptops) that they will use to access the internet for updates and package downloads. As well as to simulate remote access to the cluster from an external PC. In this case, the K3s server node must be reachable from the outside via its static IP.
 
 ```text
-sudo ip addr add <IP_STATIC_NODO>/24 dev <INTERFACE>
+sudo ip addr add <IP_STATIC_NODE>/24 dev <INTERFACE>
 ```
 
-Per vedere le interfacce di rete disponibili:
+To see the available network interfaces:
 
 ```bash
 ip addr show
 ```
 
-Solo per virtualBox
+Only for VirtualBox
 
 ```bash
 sudo nmcli device set enp0s3 managed no
 ```
 
 ```bash
-# Configurazione IP del master
+# IP configuration of the master
 sudo ip addr add 192.168.1.10/24 dev eth0
 ```
 
 ```bash
-# Configurazione IP del worker-1
+# IP configuration of worker-1
 sudo ip addr add 192.168.1.20/24 dev eth1
 ```
 
 ```bash
-# Configurazione IP del worker-2
+# IP configuration of worker-2
 sudo ip addr add 192.168.1.30/24 dev enp0s3
 ```
 
-Testare poi la connettività tra i nodi con ping:
+Then test the connectivity between the nodes with ping:
 
 ```text
-ping <IP_STATIC_NODO>
+ping <IP_STATIC_NODE>
 ```
 
-Se si vogliono far persistere tali configurazioni bisogna usare i comandi di nmcli:
+If you want these configurations to persist, you need to use the nmcli commands:
 
 ```bash
 sudo nmcli device status
@@ -155,79 +156,79 @@ sudo nmcli connection show
 <br>
 <br>
 
-# Step 0: verifica il cluster
+# Step 0: verify the cluster
 
-Assicurati che k3s sia avviato e che `kubectl` punti al suo contesto:
+Make sure that k3s is running and that `kubectl` is pointing to its context:
 
 ```powershell
 kubectl config current-context
 kubectl get nodes
 ```
 
-Se il contesto non e' quello giusto, selezionalo prima di continuare.
+If the context is not correct, select it before continuing.
 
 <br>
 <br>
 
-# Step 1: configurazione master
+# Step 1: master configuration
 
-## Aggiornamento preliminare del sistema operativo:
+## Preliminary update of the operating system:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
 ```
 
-## Installare servizi di base
+## Install basic services
 
 ```bash
 sudo apt install git ca-certificates helm -y
 ```
 
-Helm è necessario per installare il Spark Operator, che gestisce i job Spark su Kubernetes. Helm è un package manager come apt o npm che permette di installare applicazioni complesse come lo Spark Operator (richiede la coordinazione di più file yaml) in maniera veloce.
+Helm is necessary to install the Spark Operator, which manages Spark jobs on Kubernetes. Helm is a package manager like apt or npm that allows you to quickly install complex applications like the Spark Operator (requires coordination of multiple yaml files).
 
-## Installare K3s
+## Install K3s
 
 ```bash
 curl -sfL https://get.k3s.io | sh -
 ```
 
-## Copiare la repository del progetto nella home dell'utente
+## Copy the project repository to the user's home directory
 
 ```bash
 cd ~
 git clone https://github.com/DavideFast/BigIntensive.git
 ```
 
-## Configurare il nodo master K3s
+## Configure the K3s master node
 
-Creare file config.yaml per il nodo server k3s:
+Create the config.yaml file for the k3s server node:
 
 ```bash
 sudo mkdir -p /etc/rancher/k3s
 sudo nano /etc/rancher/k3s/config.yaml
 ```
 
-Inserire il seguente contenuto, sostituendo `<IP_STATIC_NODO>` con l'IP statico del nodo server e `<INTERFACE>` con l'interfaccia di rete corretta:
+Insert the following content, replacing `<IP_STATIC_NODE>` with the static IP of the server node and `<INTERFACE>` with the correct network interface:
 
 ```yaml
-node-ip: "<IP_STATIC_NODO>"
+node-ip: "<IP_STATIC_NODE>"
 flannel-iface: "<INTERFACE>"
 ```
 
-Riavviare il servizio k3s-server:
+Restart the k3s-server service:
 
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl restart k3s
 ```
 
-## Recupero del token per il join dei nodi agent/worker
+## Retrieve the token for joining agent/worker nodes
 
 ```bash
 sudo cat /var/lib/rancher/k3s/server/node-token
 ```
 
-Nel caso specifico:
+In this specific case:
 
 ```bash
 #TOKEN
@@ -237,41 +238,41 @@ K10f8eed66f2b617a72eb273c752e47b1e9f81f0132219beec50ec42101b25d6dd0::server:926a
 <br>
 <br>
 
-# Step 2: configurazione worker
+# Step 2: worker configuration
 
-La macchina virtuale deve essere configurata come il server master, con le stesse impostazioni di memoria, disco e rete.
+The virtual machine must be configured like the master server, with the same memory, disk, and network settings.
 
-## Installare K3s come agent/worker:
+## Install K3s as an agent/worker:
 
-Inizializzare il nodo con il comando:
+Initialize the node with the command:
 
 ```bash
 sudo apt update && sudo apt install curl -y
 ```
 
-Installare K3s come agent/worker, sostituendo `<NOME_ASSEGNATO>` con un nome univoco per il nodo e `<SERVER_IP>` e `<TOKEN>` con i valori ottenuti dal server master:
+Install K3s as an agent/worker, replacing `<NOME_ASSEGNATO>` with a unique name for the node and `<SERVER_IP>` and `<TOKEN>` with the values obtained from the master server:
 
 ```bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-name <NOME_ASSEGNATO>" K3S_URL=https://<SERVER_IP>:6443 K3S_TOKEN='<TOKEN>' sh -
 ```
 
-Bisogna aggiornare il file di configurazione del nodo:
+You need to update the node configuration file:
 
 ```bash
 sudo mkdir -p /etc/rancher/k3s
 sudo nano /etc/rancher/k3s/config.yaml
 ```
 
-Dentro al file scrivere:
+Inside the file write:
 
 ```yaml
 server: "https://<SERVER_IP>:6443"
 token: "<TOKEN>"
-node-ip: "<IP_STATIC_NODO>"
+node-ip: "<IP_STATIC_NODE>"
 flannel-iface: "<INTERFACE>"
 ```
 
-Dopo di che salvare il file e riavviare il servizio k3s-agent:
+After that, save the file and restart the k3s-agent service:
 
 ```bash
 sudo systemctl daemon-reload
@@ -279,26 +280,26 @@ sudo systemctl restart k3s-agent
 ```
 
 > [!TIP]
-> Potrebbe essere necessario aprire delle porte sul firewall del master esponendo:
+> You may need to open some ports on the master firewall, exposing:
 >
 > - 6443 TCP per l'API server di Kubernetes (worker->master)
 > - 8472 UDP per il traffico di rete tra i nodi (flannel VXLAN)
 > - 10250 TCP per il kubelet (master->worker e traffico interno)
 >
-> Le regole vanno aggiunte direttamente tramite iptables e non tramite ufw che non è attivo di default su Ubuntu Desktop.
+> The rules should be added directly via iptables and not through ufw, which is not active by default on Ubuntu Desktop.
 
 <br>
 <br>
 
-# Step 3: applica i manifest
+# Step 3: apply the manifests
 
-Se si tratta della prima installazione, puoi fare il deploy di tutti i manifest con:
+If this is the first installation, you can deploy all the manifests with:
 
 ```bash
 bash k3s/deploy-all.sh
 ```
 
-Altrimenti se è già attivo e non ci sono dati salvati, puoi fare il deploy con:
+Otherwise, if it is already active and there is no saved data, you can deploy with:
 
 ```bash
 RESET_NAMESPACE=true bash k3s/deploy-all.sh
@@ -307,43 +308,43 @@ RESET_NAMESPACE=true bash k3s/deploy-all.sh
 <br>
 <br>
 
-# Step 4: verifica stabilità del cluster
+# Step 4: check cluster stability
 
-## Controlla che i pod siano attivi e stabili
+## Check that the pods are active and stable
 
 ```bash
 kubectl get pods -n bigintensive -w
 ```
 
-Aspettati inizialmente `ContainerCreating` sui servizi stateful, poi `Running` per i pod applicativi.
+Initially expect `ContainerCreating` on the stateful services, then `Running` for the application pods.
 
-## Verifica PostgreSQL
+## Check PostgreSQL
 
-Lo StatefulSet `postgres` monta `database/postgresql/schema.sql` come script di inizializzazione. Lo script viene eseguito da PostgreSQL solo al primo avvio del volume dati.
+The `postgres` StatefulSet mounts `database/postgresql/schema.sql` as an initialization script. The script is executed by PostgreSQL only on the first start of the data volume.
 
 ```bash
 kubectl get statefulset postgres -n bigintensive
 kubectl logs statefulset/postgres -n bigintensive
 ```
 
-## Esponi i servizi nel browser
+## Expose the services in the browser
 
-Il manifest usa `traefik` come ingress class e questi host:
+The manifest uses `traefik` as the ingress class and these hosts:
 
-- `http://bigintensive.local` per il frontend
-- `http://api.bigintensive.local` per il backend
-- `http://kafka-ui.bigintensive.local` per Kafka UI
-- `http://jupyter.bigintensive.local` per Jupyter
+- `http://bigintensive.local` for the frontend
+- `http://api.bigintensive.local` for the backend
+- `http://kafka-ui.bigintensive.local` for Kafka UI
+- `http://jupyter.bigintensive.local` for Jupyter
 
-Devi far puntare questi nomi all'IP del nodo k3s nel file hosts della macchina da cui navighi.
+You need to point these names to the IP of the k3s node in the hosts file of the machine you are browsing from.
 
-Se navighi da entrambe le macchine host, aggiorna il file hosts su entrambe con l'IP della VM server.
+If you are browsing from both host machines, update the hosts file on both with the IP of the server VM.
 
 ```bash
 sudo nano /etc/hosts
 ```
 
-Esempio file hosts:
+Example hosts file:
 
 ```text
 192.168.1.10 bigintensive.local
@@ -352,29 +353,29 @@ Esempio file hosts:
 192.168.1.10 jupyter.bigintensive.local
 ```
 
-Aprire direttamente `http://192.168.1.10` non basta, perche' l'Ingress instrada in base all'hostname richiesto.
+Opening `http://192.168.1.10` directly is not enough, because the Ingress routes based on the requested hostname.
 
-## Verifica l'app
+## Check the app
 
-Per un controllo automatico rapido di stato deploy, rollout e servizi:
+For a quick automatic check of deploy status, rollout, and services:
 
 ```bash
 bash k3s/validate-deploy.sh
 ```
 
-Se vuoi fare deploy e controlli in un solo comando:
+If you want to do deploy and checks in a single command:
 
 ```bash
 bash k3s/validate-deploy.sh --deploy-first
 ```
 
-Controlla prima la health del backend:
+First check the health of the backend:
 
 ```bash
 kubectl port-forward -n bigintensive svc/backend 3001:3001
 ```
 
-Poi apri:
+Then open:
 
 - `http://localhost:3001/health`
 - `http://bigintensive.local`
@@ -385,4 +386,4 @@ Poi apri:
 <br>
 <br>
 
-Per operazioni avanzate (deploy selettivo componenti, runtime checks estesi, checklist modifiche), vedi [MANIFESTS.md](MANIFESTS.md).
+For advanced operations (selective component deployment, extended runtime checks, change checklist), see [MANIFESTS.md](MANIFESTS.md).
