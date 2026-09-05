@@ -117,6 +117,18 @@ It runs as a Kubernetes Deployment with only one replica because it is mainly us
 
 It is used as orchestrator to manage all the components of the project and scale them if necessary.
 
+# Throubleshooting
+
+It may happen that the virtual switch used by Hyper-V could become misconfigured or disconnected, causing network issues for the Kubernetes cluster. In such cases this command could help to reset the virtual switch:
+
+```powershell
+Get-CimInstance Win32_Service -Filter "Name='SharedAccess'" | Select-Object -ExpandProperty ProcessId
+Stop-Process -Id <PID> -Force
+Restart-Service vmms -Force
+```
+
+Check if ehtX (the one attached to the default switch in Hyper-V) has a valid IP address assigned by the DHCP server.
+
 # Recommended Startup
 
 To start the cluster, follow the guide in [k3s/README.md](k3s/README.md).
