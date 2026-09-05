@@ -14,11 +14,31 @@ def main():
         .getOrCreate()
     )
 
+    # Register both JDBC drivers explicitly in the driver JVM.
+    spark._jvm.java.lang.Class.forName("com.clickhouse.jdbc.ClickHouseDriver")
+    spark._jvm.java.lang.Class.forName("org.postgresql.Driver")
+
     spark.sparkContext.setLogLevel("WARN")
 
-    df = spark.read.format("jdbc").option("url", CLICKHOUSE_URL).option("dbtable", CLICKHOUSE_TABLE).option("user", CLICKHOUSE_PROPS["user"]).option("password", CLICKHOUSE_PROPS["password"]).load()
+    df = (
+        spark.read.format("jdbc")
+        .option("url", CLICKHOUSE_URL)
+        .option("dbtable", CLICKHOUSE_TABLE)
+        .option("user", CLICKHOUSE_PROPS["user"])
+        .option("password", CLICKHOUSE_PROPS["password"])
+        .option("driver", CLICKHOUSE_PROPS["driver"])
+        .load()
+    )
 
-    df_postgres = spark.read.format("jdbc").option("url", POSTGRES_URL).option("dbtable", POSTGRES_TABLE).option("user", POSTGRES_PROPS["user"]).option("password", POSTGRES_PROPS["password"]).load()
+    df_postgres = (
+        spark.read.format("jdbc")
+        .option("url", POSTGRES_URL)
+        .option("dbtable", POSTGRES_TABLE)
+        .option("user", POSTGRES_PROPS["user"])
+        .option("password", POSTGRES_PROPS["password"])
+        .option("driver", POSTGRES_PROPS["driver"])
+        .load()
+    )
 
     df.show(5)
     df_postgres.show(5)
