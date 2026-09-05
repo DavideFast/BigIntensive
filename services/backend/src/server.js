@@ -369,6 +369,8 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
             "spark.executor.cores": "2",
             "spark.executor.memory": "2g",
             "spark.sql.shuffle.partitions": "10",
+            "spark.driver.extraClassPath": "/opt/spark/jars/*",
+            "spark.executor.extraClassPath": "/opt/spark/jars/*",
           },
           driver: {
             cores: 2,
