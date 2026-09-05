@@ -371,29 +371,18 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
             "spark.sql.shuffle.partitions": "10",
             "spark.jars": "/opt/spark/jars/clickhouse-jdbc-0.6.3-all.jar,/opt/spark/jars/postgresql-42.7.2.jar",
           },
-          deps: {
-            pyFiles: ["local:///opt/jobs/config.py"],
-          },
           driver: {
             cores: 2,
             coreLimit: "2000m",
             memory: "2g",
             serviceAccount: "spark",
             envFrom: [{ configMapRef: { name: "bigintensive-config" } }, { secretRef: { name: "bigintensive-secrets" } }],
-            volumeMounts: [{ name: "running-population-scripts", mountPath: "/opt/jobs", readOnly: true }],
           },
           executor: {
             cores: 2,
             memory: "2g",
             envFrom: [{ configMapRef: { name: "bigintensive-config" } }, { secretRef: { name: "bigintensive-secrets" } }],
-            volumeMounts: [{ name: "running-population-scripts", mountPath: "/opt/jobs", readOnly: true }],
           },
-          volumes: [
-            {
-              name: "running-population-scripts",
-              configMap: { name: "running-population-job-script" },
-            },
-          ],
         },
       },
     });
