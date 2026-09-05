@@ -88,7 +88,7 @@ export default function ManageSmartwatchConnections() {
               if (!data.success) {
                 throw new Error(data.error || "Impossibile avviare RunningPopulation");
               }
-              alert(`${data.message}: ${data.jobName || "job gia' attivo"}`);
+              alert(`${data.message}: ${data.applicationName || data.jobName || "nome non disponibile"}`);
             })
             .catch((err) => alert(`Errore nell'avvio di RunningPopulation: ${err.message}`))
         }
