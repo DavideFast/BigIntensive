@@ -309,7 +309,7 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
     const activeStates = ["NEW", "SUBMITTED", "RUNNING", "PENDING_RERUN", "RESTARTING", "FAILING"];
     const finishedApplications = applications.filter((application) => {
       const state = application.status?.applicationState?.state;
-      return finishedStates.includes(state) || !activeStates.includes(state);
+      return finishedStates.includes(state);
     });
     await Promise.all(
       finishedApplications.map((application) =>
@@ -323,7 +323,10 @@ app.post("/api/v1/startRunningPopulation", async (req, res) => {
       ),
     );
 
-    const runningApplication = applications.find((application) => activeStates.includes(application.status?.applicationState?.state));
+    const runningApplication = applications.find((application) => {
+      const state = application.status?.applicationState?.state;
+      return !state || activeStates.includes(state);
+    });
     if (runningApplication) {
       return res.status(200).json({
         success: true,
