@@ -294,7 +294,6 @@ app.post("/api/v1/stopELTProcess", async (req, res) => {
 });
 
 app.post("/api/v1/startRunningPopulation", async (req, res) => {
-  //Nuova immagine
   try {
     const existingApplications = await k8sCustomObjectsApi.listNamespacedCustomObject({
       group: sparkApplicationGroup,
